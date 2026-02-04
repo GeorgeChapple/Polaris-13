@@ -4,8 +4,7 @@ using UnityEngine.InputSystem;
 #endif
 
 // Made by: Jason Lodge
-// Summary: Uses unity new input system to change raw control values for movement, jumping, etc.
-
+// Summary: Uses unity's new input system to change raw control values for movement, jumping, etc.
 public class PlayerInputManager : MonoBehaviour
 {
     [Header("Character Input Values")]
@@ -20,21 +19,21 @@ public class PlayerInputManager : MonoBehaviour
         MoveInput(value.Get<Vector2>());
     }
 
-
     public void OnJump(InputValue value)
     {
         JumpInput(value.isPressed);
     }
+
     public void OnLook(InputValue value)
     {
-        LookInput(value.Get<Vector2>());        
+        LookInput(value.Get<Vector2>());
     }
+
     public void OnInteract(InputValue value)
     {
         InteractInput(value.isPressed);
     }
 #endif
-
 
     public void MoveInput(Vector2 newMoveDirection)
     {
@@ -45,7 +44,6 @@ public class PlayerInputManager : MonoBehaviour
     {
         look = newLookDirection;
     }
-
 
     public void JumpInput(bool newJumpState)
     {
