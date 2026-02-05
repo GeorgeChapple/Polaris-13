@@ -9,7 +9,8 @@ public class SP_SpaceJunk : MonoBehaviour
     private float spawnTimer;
     private RS_Move rocket;
     public List<GameObject> debrisPrefabs = new List<GameObject>();
-    public List<GameObject> debris = new List<GameObject>();
+    public List<GameObject> Xdebris = new List<GameObject>();
+    public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Vector3 spaceBounds = new Vector3 (20, 20, 20);
 
     private void Awake()
@@ -21,7 +22,7 @@ public class SP_SpaceJunk : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //transform.rotation = Quaternion.LookRotation(rocket.worldDirection);
+        transform.rotation = Quaternion.LookRotation(rocket.worldDirection);
         SpawnDebris();
         MoveDebris();
         DestroyDebris();
@@ -40,7 +41,7 @@ public class SP_SpaceJunk : MonoBehaviour
                 GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)]);
                 newDebris.transform.SetParent(this.transform);
                 newDebris.transform.localPosition = new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2 * -1);
-                debris.Add(newDebris);
+                debris.Add(newDebris, rocket.worldDirection);
                 spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
                 spawnTimer = 0;
             }
@@ -49,17 +50,16 @@ public class SP_SpaceJunk : MonoBehaviour
 
     private void MoveDebris()
     {
-        for (int i = 0; i < debris.Count; i++)
+        foreach (GameObject obj in debris.Keys)
         {
-            GameObject obj = debris[i];
-            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + (Vector3.forward * rocket.speed), Time.deltaTime);
+            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + ((Vector3.forward + debris[obj] - rocket.worldDirection) * rocket.speed), Time.deltaTime);
         }
     }
 
     private void DestroyDebris()
     {
         List<GameObject> destroyList = new List<GameObject>();
-        foreach (GameObject obj in debris)
+        foreach (GameObject obj in debris.Keys)
         {
             if (obj.transform.localPosition.z > spaceBounds.z / 2)
             {
