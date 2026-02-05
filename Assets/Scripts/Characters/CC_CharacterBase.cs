@@ -3,24 +3,13 @@ using UnityEngine;
 // Made by: Jason Lodge
 // Summary: Holds all shared logic between all characters, player included.
 // That is movement, Values like health and levels, (will have more as i figure it out) etc.
-// Will also interact with this stuff: https://catlikecoding.com/unity/tutorials/movement/complex-gravity/
-
-// Notes for future: I wanted to use rigid body so the space travelling and all of that could be dynamic
-// , like if your floating and use thrusters to move it feels spacey and if you got close to one of the
-// complex gravity drivers then it wouldnt be fighting against it like a character controller would.
-
-// So for future reference,
-// Ground mode: Rigidbody is kinematic(exception: explosions or other)
-// Space mode: Rigidbody is not kinematic
-// that all needs to be proven to work of course but i'll get to that later.
-
 
 [RequireComponent(typeof(Rigidbody))]
-public class CharacterBase : MonoBehaviour
+public class CC_CharacterBase : MonoBehaviour
 {
-    public enum locomotionType { GroundMode, SpaceMode }
+    public enum LocomotionType { GroundMode, SpaceMode }
 
-    public locomotionType type = locomotionType.GroundMode;
+    public LocomotionType locomotionType = LocomotionType.GroundMode;
 
     [Header("Player Movement")]
     public float moveSpeed = 5f;
@@ -30,7 +19,32 @@ public class CharacterBase : MonoBehaviour
     public float jumpPower = 10f;
 
     [Header("Surface Stabalisation")]
-    public float torqueStrength = 2f;
+    public float torqueStrength = 5f;
+
+    [Tooltip("How far to check for a surface to start ramping stabilisation.")]
+    public float stabiliseRange = 10f;
+
+    [Tooltip("Extra buffer so we start stabilising slightly before contact.")]
+    public float stabilisePadding = 0.25f;
+
+    [Tooltip("Curve mapping proximity 0-1 to stabilisation multiplier.")]
+    public AnimationCurve stabiliseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+    [Tooltip("Maximum multiplier applied to torqueStrength (final = torqueStrength * curve * max).")]
+    public float stabiliseMaxMult = 1f;
+
+    [Header("Space Thrusters")]
+    public float thrusterAccel = 4f;
+    public float spaceTurnSpeed = 30f;
+
+    [Header("Space Rotation")]
+    public float rollMaxSpeed = 30f;
+    public float rollAccel = 4f;
+    public float rollDamping = 2f;
+
+
+    [Header("Gravity Detection")]
+    public float zeroGravityThreshold = 0.25f;
 
     [Header("Grounded Check")]
     public bool grounded = true;
@@ -69,19 +83,24 @@ public class CharacterBase : MonoBehaviour
     public bool invertY = false;
 
     // cinemachine
-    public float cinemachineTargetPitch;
+    protected float cinemachineTargetPitch;
 
     // internals
     protected Rigidbody rb;
-
     protected float verticalVelocity;
+    protected float yaw;
     protected float jumpTimeoutDelta;
     protected float fallTimeoutDelta;
+    protected Vector2 pendingLook;
+    protected float pendingRoll;
+    protected float rollSpeed;
 
-    // keep velocity as a "desired" and smooth towards it
+
+    // keep velocity as a desired and smooth towards it
     protected Vector3 desiredPlanarVelocity;
 
     Vector3 upAxis;
+    Vector3 currentGravity;
 
     protected virtual void Awake()
     {
@@ -94,12 +113,36 @@ public class CharacterBase : MonoBehaviour
     }
 
     // Call in FixedUpdate (physics)
-    public virtual void TickMotorFixed(Vector2 moveInput, bool jumpInput)
+    public virtual void TickMotorFixed(Vector2 moveInput, bool jumpInput, float rollInput)
     {
-        TorqueStabalisation();
-        GroundedCheck();
-        MoveAndGravity(moveInput);
-        Jump(jumpInput);
+        // keep our up axis updated from gravity
+        currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
+
+        UpdateLocomotionMode();
+
+        pendingRoll = -rollInput;
+
+        // rotation
+        if (locomotionType == LocomotionType.SpaceMode)
+        {
+            SpaceRotation();
+        }
+        else
+        {
+            ApplyYawRotation(); // do yaw in physics so it behaves properly with rigidbody + gravity up
+            TorqueStabalisation();
+        }
+
+        // grounded should only matter in ground mode
+        if (locomotionType == LocomotionType.GroundMode) { GroundedCheck(); }
+        else { grounded = false; }
+
+        // movement
+        if (locomotionType == LocomotionType.SpaceMode) { SpaceThrusters(moveInput, jumpInput); }
+        else { MoveAndGravity(moveInput); Jump(jumpInput); }
+
+        // clear pending look after we use it in physics
+        pendingLook = Vector2.zero;
     }
 
     // Call in LateUpdate (camera).
@@ -108,8 +151,23 @@ public class CharacterBase : MonoBehaviour
         CameraRotation(lookInput, isMouse);
     }
 
+    protected virtual void UpdateLocomotionMode()
+    {
+        // if we are not inside any sources (or all sources return near-zero), swap to space mode
+        float gMag = currentGravity.magnitude;
+
+        if (gMag <= zeroGravityThreshold)
+        {
+            locomotionType = LocomotionType.SpaceMode;
+            return;
+        }
+
+        locomotionType = LocomotionType.GroundMode;
+    }
+
     protected virtual void GroundedCheck()
     {
+        if (jumpTimeoutDelta <= 0) { return; } // can't ground unless jump time out is over
         Vector3 spherePosition = groundedCheckObj.position;
         grounded = Physics.CheckSphere(spherePosition, groundedRadius, groundLayers, QueryTriggerInteraction.Ignore);
     }
@@ -133,72 +191,145 @@ public class CharacterBase : MonoBehaviour
 
         if (invertY) { lookY = -lookY; }
 
-        // pitch
-        cinemachineTargetPitch -= lookY; // mouse up = look up
+        // store for fixed update
+        pendingLook += new Vector2(lookX, lookY);
+
+        // pitch always affects camera target first
+        float prevPitch = cinemachineTargetPitch;
+        cinemachineTargetPitch -= lookY;
         cinemachineTargetPitch = ClampAngle(cinemachineTargetPitch, bottomClamp, topClamp);
         cinemachineCameraTarget.localRotation = Quaternion.Euler(cinemachineTargetPitch, 0f, 0f);
 
-        // yaw
-        transform.Rotate(transform.localRotation.x, transform.localRotation.y + lookX, transform.localRotation.z);
+        // ground yaw uses gravity up axis
+        if (locomotionType == LocomotionType.GroundMode)
+        {
+            yaw += lookX;
+        }
+    }
 
-        // note - this all needs to be translated into local for when the character would be upside down
+    protected virtual void ApplyYawRotation()
+    {
+        if (Mathf.Abs(yaw) < 0.0001f) { return; }
+
+        // rotate around the current surface up
+        Quaternion delta = Quaternion.AngleAxis(yaw, upAxis);
+        rb.MoveRotation(delta * rb.rotation);
+
+        yaw = 0f;
     }
 
     protected virtual void TorqueStabalisation()
     {
-        // check if we have ground below us, before stabilising our rotation
-        // shoot ray in current gravity direction, limiting its range
-        Vector3 currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
+        if (locomotionType == LocomotionType.SpaceMode) { return; }
 
-        // get a ray to shoot toward the surface up to check if we're close enough to stabilise ourselves
-        Ray ray = new Ray(transform.position, -upAxis *5);
-        Debug.DrawRay(transform.position, -upAxis *5, Color.red);
+        // check how close we are to the ground along current gravity direction
+        float proximity01 = 0f;
 
-        if (grounded || Physics.Raycast(ray, 5)) // stabilise ourselves
+        if (grounded) // we're close enough
         {
-            Vector3 torqueAxis = Vector3.Cross(transform.up, upAxis);
-            rb.AddTorque(torqueAxis * torqueStrength, ForceMode.Force); // will try lerping this later
+            proximity01 = 1f;
         }
-    }
+        else // shoot ray to check how close we are
+        {
+            float range = Mathf.Max(0.01f, stabiliseRange);
+            float castDist = range + stabilisePadding;
 
+            Ray ray = new Ray(transform.position, -upAxis);
+            Debug.DrawRay(transform.position, -upAxis * castDist, Color.red);
+
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, castDist, groundLayers, QueryTriggerInteraction.Ignore))
+            {
+                // map distance to proximity
+                float d = Mathf.Clamp(hit.distance - stabilisePadding, 0f, range);
+                proximity01 = 1f - (d / range);
+            }
+        }
+
+        // run through curve and scale to max
+        float curve = stabiliseCurve != null ? stabiliseCurve.Evaluate(proximity01) : proximity01;
+        float strength = torqueStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
+
+        if (strength <= 0.0001f) { return; }
+
+        // align our current up to the gravity up axis
+        Quaternion current = rb.rotation;
+
+        // rotate our current up onto the surface up
+        Quaternion toUp = Quaternion.FromToRotation(current * Vector3.up, upAxis);
+        Quaternion target = toUp * current;
+
+        // smooth it
+        float t = 1f - Mathf.Exp(-strength * Time.fixedDeltaTime);
+        rb.MoveRotation(Quaternion.Slerp(current, target, t));
+    }
     protected virtual void MoveAndGravity(Vector2 moveInput)
     {
-        // convert input into a direction relative to current facing direction
-        Vector3 inputDir = transform.right * moveInput.x + transform.forward * moveInput.y;
-        inputDir.y = 0f;
+        // camera-based planar axes
+        Vector3 camForward = Vector3.ProjectOnPlane(cinemachineCameraTarget.forward, upAxis);
+        Vector3 camRight = Vector3.ProjectOnPlane(cinemachineCameraTarget.right, upAxis);
 
-        // current planar velocity from Rigidbody
-        Vector3 currentVel = rb.linearVelocity;
-        Vector3 currentPlanar = new Vector3(currentVel.x, currentVel.y, currentVel.z);
+        // if camera is looking almost straight up/down, projection can get tiny, so fallback
+        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(transform.forward, upAxis); }
+        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(transform.right, upAxis); }
 
-        // calculate our target speed with current gravity included
-        float targetSpeed = (moveInput == Vector2.zero) ? 0f : moveSpeed;
-        Vector3 targetPlanar = inputDir.normalized * targetSpeed;
-        Vector3 currentVely = new Vector3(0, currentVel.y, 0);
-        targetPlanar += currentVely;
+        camForward.Normalize();
+        camRight.Normalize();
 
+        // build movement direction from camera planar axes
+        Vector3 moveDir = (camRight * moveInput.x + camForward * moveInput.y);
+        if (moveDir.sqrMagnitude > 1f) { moveDir.Normalize(); }
 
-        // smooth toward the target planar velocity
-        desiredPlanarVelocity = Vector3.Lerp(currentPlanar, targetPlanar, accelerationRate * Time.fixedDeltaTime);
+        // current velocity from Rigidbody
+        Vector3 current = rb.linearVelocity;
 
-        if (grounded && jumpTimeout <= 0)
+        // split into planar (along surface) and vertical (along gravity axis)
+        Vector3 currentPlanarVel = Vector3.ProjectOnPlane(current, upAxis);
+        Vector3 currentVerticalVel = current - currentPlanarVel;
+
+        // if no input, dont force planar to zero unless grounded
+        if (moveInput == Vector2.zero)
         {
-            desiredPlanarVelocity = new Vector3(desiredPlanarVelocity.x, 0, desiredPlanarVelocity.z);
+            if (grounded)
+            {
+                float t = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
+                desiredPlanarVelocity = Vector3.Lerp(currentPlanarVel, Vector3.zero, t);
+                rb.linearVelocity = desiredPlanarVelocity + currentVerticalVel;
+                return;
+            }
+
+            rb.linearVelocity = currentPlanarVel + currentVerticalVel;
+            return;
         }
 
-        // preserve Y from verticalVelocity (jump / gravity)
-        Vector3 finalVelocity = desiredPlanarVelocity;
-        rb.linearVelocity = finalVelocity;
+        // calculate target planar velocity
+        Vector3 targetPlanarVel = moveDir * moveSpeed;
+
+        // smooth toward the target planar velocity
+        desiredPlanarVelocity = Vector3.Lerp(currentPlanarVel, targetPlanarVel, accelerationRate * Time.fixedDeltaTime);
+
+        if (grounded && jumpTimeoutDelta <= 0f)
+        {
+            currentVerticalVel = Vector3.zero;
+        }
+
+        // keep vertical from gravity/jump, apply smoothed planar
+        rb.linearVelocity = desiredPlanarVelocity + currentVerticalVel;
     }
 
-
     protected virtual void Jump(bool jumpPressed)
-    { // translate this to local
+    {
         if (grounded)
         {
             fallTimeoutDelta = fallTimeout;
 
-            if (jumpPressed && jumpTimeoutDelta <= 0f) { rb.AddForce(transform.InverseTransformDirection(0, jumpPower, 0), ForceMode.Impulse); grounded = false; }
+            if (jumpPressed && jumpTimeoutDelta <= 0f)
+            {
+                // jump along current up axis so it works on walls/ceilings
+                rb.AddForce(upAxis * jumpPower, ForceMode.Impulse);
+                grounded = false;
+            }
+
             if (jumpTimeoutDelta > 0f) { jumpTimeoutDelta -= Time.deltaTime; }
         }
         else
@@ -206,6 +337,67 @@ public class CharacterBase : MonoBehaviour
             jumpTimeoutDelta = jumpTimeout;
             if (fallTimeoutDelta > 0f) { fallTimeoutDelta -= Time.deltaTime; }
         }
+    }
+
+    protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed)
+    {
+        // add force as thrusters would have inertia
+        // movement is relative to camera orientation
+
+        if (cinemachineCameraTarget == null) { return; }
+
+        Vector3 forward = cinemachineCameraTarget.forward;
+        Vector3 right = cinemachineCameraTarget.right;
+
+        Vector3 accel = (right * moveInput.x + forward * moveInput.y);
+
+        if (jumpPressed)
+        {
+            accel += cinemachineCameraTarget.up;
+        }
+
+        if (accel.sqrMagnitude > 1f) { accel.Normalize(); }
+
+        rb.AddForce(accel * thrusterAccel, ForceMode.Acceleration);
+    }
+
+    protected virtual void SpaceRotation()
+    {
+        Quaternion current = rb.rotation;
+
+        float dt = Time.fixedDeltaTime;
+
+        Vector3 camUp = cinemachineCameraTarget.up;
+        Vector3 camRight = cinemachineCameraTarget.right;
+        Vector3 camForward = cinemachineCameraTarget.forward;
+        camUp.Normalize();
+        camRight.Normalize();
+        camForward.Normalize();
+
+        // yaw/pitch
+        float yawDelta = pendingLook.x * (spaceTurnSpeed / 180f) * dt * 180f;
+        float pitchDelta = -pendingLook.y * (spaceTurnSpeed / 180f) * dt * 180f;
+
+        Quaternion yawQ = Quaternion.AngleAxis(yawDelta, camUp);
+        Quaternion pitchQ = Quaternion.AngleAxis(pitchDelta, camRight);
+
+        // accelerate to target roll speed
+        float targetRollSpeed = pendingRoll * rollMaxSpeed;
+
+        // accelerate toward target
+        rollSpeed = Mathf.MoveTowards(rollSpeed, targetRollSpeed, rollAccel * rollMaxSpeed * dt);
+
+        // when no input, damp the roll back down
+        if (Mathf.Abs(pendingRoll) < 0.001f)
+        {
+            rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * dt);
+        }
+
+        float rollDelta = rollSpeed * dt;
+        Quaternion rollQ = Quaternion.AngleAxis(rollDelta, camForward);
+
+        // apply
+        rb.MoveRotation(rollQ * pitchQ * yawQ * current);
     }
 
     protected static float ClampAngle(float angle, float min, float max)

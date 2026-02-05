@@ -5,13 +5,16 @@ using UnityEngine.InputSystem;
 
 // Made by: Jason Lodge
 // Summary: Uses unity's new input system to change raw control values for movement, jumping, etc.
-public class PlayerInputManager : MonoBehaviour
+public class CC_PlayerInputManager : MonoBehaviour
 {
     [Header("Character Input Values")]
     public Vector2 move;
     public Vector2 look;
     public bool jump;
     public bool interact;
+
+    [Header("Space Input Values")]
+    public float roll;
 
 #if ENABLE_INPUT_SYSTEM
     public void OnMove(InputValue value)
@@ -33,6 +36,11 @@ public class PlayerInputManager : MonoBehaviour
     {
         InteractInput(value.isPressed);
     }
+
+    public void OnRoll(InputValue value)
+    {
+        RollInput(value.Get<float>());
+    }
 #endif
 
     public void MoveInput(Vector2 newMoveDirection)
@@ -53,5 +61,10 @@ public class PlayerInputManager : MonoBehaviour
     public void InteractInput(bool newInteractState)
     {
         interact = newInteractState;
+    }
+
+    public void RollInput(float newRoll)
+    {
+        roll = newRoll;
     }
 }
