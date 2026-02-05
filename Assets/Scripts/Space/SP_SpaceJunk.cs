@@ -59,13 +59,7 @@ public class SP_SpaceJunk : MonoBehaviour
     private void DestroyDebris()
     {
         List<GameObject> destroyList = new List<GameObject>();
-        foreach (GameObject obj in debris.Keys)
-        {
-            if (obj.transform.localPosition.z > spaceBounds.z / 2)
-            {
-                destroyList.Add(obj);
-            }
-        }        
+        destroyList = Physics.OverlapBox(transform.position,)
         foreach (GameObject obj in destroyList)
         {
             debris.Remove(obj);
