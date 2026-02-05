@@ -1,0 +1,111 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class SP_SpaceJunk : MonoBehaviour
+{
+    [SerializeField] private int maxDeris = 20;
+    [SerializeField] private Vector2 spawnTimeRange = new Vector2(3, 6);
+    private float spawnTimeLimit;
+    private float spawnTimer;
+    private RS_Move rocket;
+    public List<GameObject> debrisPrefabs = new List<GameObject>();
+    public List<GameObject> debris = new List<GameObject>();
+    public Vector3 spaceBounds = new Vector3 (20, 20, 20);
+
+    private void Awake()
+    {
+        spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
+        rocket = FindFirstObjectByType<RS_Move>();
+    } 
+
+    // Update is called once per frame
+    void Update()
+    {
+        //transform.rotation = Quaternion.LookRotation(rocket.worldDirection);
+        SpawnDebris();
+        MoveDebris();
+        DestroyDebris();
+    }
+
+    private void SpawnDebris()
+    {
+        if (debris.Count < 20)
+        {
+            if (spawnTimer <= spawnTimeLimit)
+            {
+                spawnTimer += Time.deltaTime;
+            }
+            else
+            {
+                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)]);
+                newDebris.transform.SetParent(this.transform);
+                newDebris.transform.localPosition = new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2 * -1);
+                debris.Add(newDebris);
+                spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
+                spawnTimer = 0;
+            }
+        }
+    }
+
+    private void MoveDebris()
+    {
+        for (int i = 0; i < debris.Count; i++)
+        {
+            GameObject obj = debris[i];
+            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + (Vector3.forward * rocket.speed), Time.deltaTime);
+        }
+    }
+
+    private void DestroyDebris()
+    {
+        List<GameObject> destroyList = new List<GameObject>();
+        foreach (GameObject obj in debris)
+        {
+            if (obj.transform.localPosition.z > spaceBounds.z / 2)
+            {
+                destroyList.Add(obj);
+            }
+        }        
+        foreach (GameObject obj in destroyList)
+        {
+            debris.Remove(obj);
+            Destroy(obj);
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        DrawBox(transform.position, transform.rotation, spaceBounds, Color.red);
+    }
+
+    public void DrawBox(Vector3 pos, Quaternion rot, Vector3 scale, Color c)
+    {
+        Matrix4x4 m = new Matrix4x4();
+        m.SetTRS(pos, rot, scale);
+
+        var point1 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, 0.5f));
+        var point2 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, 0.5f));
+        var point3 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, -0.5f));
+        var point4 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, -0.5f));
+
+        var point5 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, 0.5f));
+        var point6 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, 0.5f));
+        var point7 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, -0.5f));
+        var point8 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, -0.5f));
+
+        Debug.DrawLine(point1, point2, c);
+        Debug.DrawLine(point2, point3, c);
+        Debug.DrawLine(point3, point4, c);
+        Debug.DrawLine(point4, point1, c);
+
+        Debug.DrawLine(point5, point6, c);
+        Debug.DrawLine(point6, point7, c);
+        Debug.DrawLine(point7, point8, c);
+        Debug.DrawLine(point8, point5, c);
+
+        Debug.DrawLine(point1, point5, c);
+        Debug.DrawLine(point2, point6, c);
+        Debug.DrawLine(point3, point7, c);
+        Debug.DrawLine(point4, point8, c);
+    }
+}

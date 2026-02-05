@@ -49,7 +49,7 @@ public class RS_Move : MonoBehaviour
     void AutoMoveShip(Vector3 posToMoveTo)
     {
         // lerp ship pos to
-        worldPosition = Vector3.Lerp(worldPosition, worldDirection * speed, Time.deltaTime);
+        worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed), Time.deltaTime);
 
         // lerp ship rotation to
         
