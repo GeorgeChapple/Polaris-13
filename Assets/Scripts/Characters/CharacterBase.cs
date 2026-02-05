@@ -26,6 +26,7 @@ public class CharacterBase : MonoBehaviour
     public float jumpHeight = 2f;
     public float gravity = -9.81f;
     public float terminalVelocity = 53.0f;
+    public float jumpPower = 10f;
 
     [Header("Grounded Check")]
     public bool grounded = true;
@@ -137,47 +138,72 @@ public class CharacterBase : MonoBehaviour
         // yaw
         yaw += lookX;
         rb.MoveRotation(Quaternion.Euler(0f, yaw, 0f));
+
+        // note - this all needs to be translated into local for when the character would be upside down
     }
 
 
     protected virtual void Move(Vector2 moveInput)
     {
-        // convert input into a direction relative to current facing direction
+        //Vector3 prevYVel = new Vector3(rb.linearVelocity.y
+
+        //// convert input into a direction relative to current facing direction
+        //Vector3 inputDir = (transform.right * moveInput.x + transform.forward * moveInput.y);
+        //inputDir.y = 0f;
+
+        //float targetSpeed = (moveInput == Vector2.zero) ? 0f : moveSpeed;
+        //Vector3 targetPlanar = inputDir.normalized * targetSpeed;
+
+        //// current planar velocity from Rigidbody
+        //Vector3 currentVel = rb.linearVelocity;
+        //Vector3 currentPlanar = new Vector3(currentVel.x, 0f, currentVel.z);
+
+        //// smooth toward the target planar velocity
+        //desiredPlanarVelocity = Vector3.MoveTowards(currentPlanar, targetPlanar, accelerationRate * Time.fixedDeltaTime);
+
+        //// preserve Y from verticalVelocity (jump / gravity)
+        ////Vector3 finalVelocity = desiredPlanarVelocity + (transform.up * verticalVelocity);
+        //Vector3 finalVelocity = desiredPlanarVelocity;
+        //rb.linearVelocity = finalVelocity;
+
         Vector3 inputDir = (transform.right * moveInput.x + transform.forward * moveInput.y);
         inputDir.y = 0f;
 
-        float targetSpeed = (moveInput == Vector2.zero) ? 0f : moveSpeed;
-        Vector3 targetPlanar = inputDir.normalized * targetSpeed;
-
-        // current planar velocity from Rigidbody
-        Vector3 currentVel = rb.linearVelocity;
-        Vector3 currentPlanar = new Vector3(currentVel.x, 0f, currentVel.z);
-
-        // smooth toward the target planar velocity
-        desiredPlanarVelocity = Vector3.MoveTowards(currentPlanar, targetPlanar, accelerationRate * Time.fixedDeltaTime);
-
-        // preserve Y from verticalVelocity (jump / gravity)
-        Vector3 finalVelocity = desiredPlanarVelocity + (transform.up * verticalVelocity);
-        rb.linearVelocity = finalVelocity;
+        rb.AddForce(inputDir *3, ForceMode.Acceleration);
+        
+        //do some torque stuff here or maybe rather than stabalising just force its rotation to be in line with ground
     }
 
     protected virtual void JumpAndGravity(bool jumpPressed)
     {
+        //if (grounded)
+        //{
+        //    fallTimeoutDelta = fallTimeout;
+
+        //    // stop falling when grounded
+        //    if (verticalVelocity < 0f) { verticalVelocity = 0f; }
+        //    if (jumpPressed && jumpTimeoutDelta <= 0f) { verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity); }
+        //    if (jumpTimeoutDelta > 0f) { jumpTimeoutDelta -= Time.deltaTime; }
+        //}
+        //else
+        //{
+        //    jumpTimeoutDelta = jumpTimeout;
+
+        //    if (fallTimeoutDelta > 0f) { fallTimeoutDelta -= Time.deltaTime; }
+        //    if (verticalVelocity < terminalVelocity) { verticalVelocity += gravity * Time.deltaTime; } // gravity
+        //}
+
         if (grounded)
         {
             fallTimeoutDelta = fallTimeout;
 
-            // stop falling when grounded
-            if (verticalVelocity < 0f) { verticalVelocity = 0f; }
-            if (jumpPressed && jumpTimeoutDelta <= 0f) { verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity); }
+            if (jumpPressed && jumpTimeoutDelta <= 0f) { rb.AddForce(new Vector3(0, jumpPower, 0), ForceMode.Impulse); }
             if (jumpTimeoutDelta > 0f) { jumpTimeoutDelta -= Time.deltaTime; }
         }
         else
         {
             jumpTimeoutDelta = jumpTimeout;
-
             if (fallTimeoutDelta > 0f) { fallTimeoutDelta -= Time.deltaTime; }
-            if (verticalVelocity < terminalVelocity) { verticalVelocity += gravity * Time.deltaTime; } // gravity
         }
     }
 

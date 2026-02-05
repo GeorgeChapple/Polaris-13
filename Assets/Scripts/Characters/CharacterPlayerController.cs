@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 
 // Made by: Jason Lodge
 // Summary: Player controller, drives all the locomotion code in the character base and things like interaction.
+// This is separated as the character base will be used by AI too to be modular.
 [RequireComponent(typeof(CharacterBase))]
 public class CharacterPlayerController : MonoBehaviour
 {
