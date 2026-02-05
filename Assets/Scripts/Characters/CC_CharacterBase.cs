@@ -75,7 +75,6 @@ public class CharacterBase : MonoBehaviour
     protected Rigidbody rb;
 
     protected float verticalVelocity;
-    protected float yaw; // accumulated yaw
     protected float jumpTimeoutDelta;
     protected float fallTimeoutDelta;
 
@@ -132,10 +131,7 @@ public class CharacterBase : MonoBehaviour
         float lookX = look.x * sx * dt;
         float lookY = look.y * sy * dt;
 
-        if (invertY)
-        {
-            lookY = -lookY;
-        }
+        if (invertY) { lookY = -lookY; }
 
         // pitch
         cinemachineTargetPitch -= lookY; // mouse up = look up
@@ -143,8 +139,7 @@ public class CharacterBase : MonoBehaviour
         cinemachineCameraTarget.localRotation = Quaternion.Euler(cinemachineTargetPitch, 0f, 0f);
 
         // yaw
-        yaw += lookX;
-        rb.MoveRotation(Quaternion.Euler(0f, yaw, 0f));
+        transform.Rotate(transform.localRotation.x, transform.localRotation.y + lookX, transform.localRotation.z);
 
         // note - this all needs to be translated into local for when the character would be upside down
     }
@@ -152,23 +147,24 @@ public class CharacterBase : MonoBehaviour
     protected virtual void TorqueStabalisation()
     {
         // check if we have ground below us, before stabilising our rotation
-        // shoot ray in current gravity direction, limit its range
+        // shoot ray in current gravity direction, limiting its range
         Vector3 currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
 
         // get a ray to shoot toward the surface up to check if we're close enough to stabilise ourselves
-        Ray ray = new Ray(transform.position, -upAxis);
+        Ray ray = new Ray(transform.position, -upAxis *5);
+        Debug.DrawRay(transform.position, -upAxis *5, Color.red);
 
         if (grounded || Physics.Raycast(ray, 5)) // stabilise ourselves
         {
             Vector3 torqueAxis = Vector3.Cross(transform.up, upAxis);
-            rb.AddTorque(torqueAxis * torqueStrength, ForceMode.Force);
+            rb.AddTorque(torqueAxis * torqueStrength, ForceMode.Force); // will try lerping this later
         }
     }
 
     protected virtual void MoveAndGravity(Vector2 moveInput)
     {
         // convert input into a direction relative to current facing direction
-        Vector3 inputDir = (transform.right * moveInput.x + transform.forward * moveInput.y);
+        Vector3 inputDir = transform.right * moveInput.x + transform.forward * moveInput.y;
         inputDir.y = 0f;
 
         // current planar velocity from Rigidbody
@@ -202,7 +198,7 @@ public class CharacterBase : MonoBehaviour
         {
             fallTimeoutDelta = fallTimeout;
 
-            if (jumpPressed && jumpTimeoutDelta <= 0f) { rb.AddForce(new Vector3(0, jumpPower, 0), ForceMode.Impulse); grounded = false; }
+            if (jumpPressed && jumpTimeoutDelta <= 0f) { rb.AddForce(transform.InverseTransformDirection(0, jumpPower, 0), ForceMode.Impulse); grounded = false; }
             if (jumpTimeoutDelta > 0f) { jumpTimeoutDelta -= Time.deltaTime; }
         }
         else
