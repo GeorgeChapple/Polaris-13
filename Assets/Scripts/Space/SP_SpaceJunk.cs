@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 public class SP_SpaceJunk : MonoBehaviour
 {
@@ -8,8 +9,8 @@ public class SP_SpaceJunk : MonoBehaviour
     private float spawnTimeLimit;
     private float spawnTimer;
     private RS_Move rocket;
-    public List<GameObject> debrisPrefabs = new List<GameObject>();
-    public List<GameObject> Xdebris = new List<GameObject>();
+    public List<GameObject> debrisPrefabs = new List<GameObject>(); 
+    public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Vector3 spaceBounds = new Vector3 (20, 20, 20);
 
@@ -25,7 +26,12 @@ public class SP_SpaceJunk : MonoBehaviour
         transform.rotation = Quaternion.LookRotation(rocket.worldDirection);
         SpawnDebris();
         MoveDebris();
-        DestroyDebris();
+        Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
+        foundObjects.Clear();
+        foreach (Collider col in colliders)
+        {
+            foundObjects.Add(col.gameObject);
+        }
     }
 
     private void SpawnDebris()
@@ -39,8 +45,8 @@ public class SP_SpaceJunk : MonoBehaviour
             else
             {
                 GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)]);
-                newDebris.transform.SetParent(this.transform);
-                newDebris.transform.localPosition = new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2 * -1);
+                //newDebris.transform.SetParent(this.transform);
+                newDebris.transform.localPosition = new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2);
                 debris.Add(newDebris, rocket.worldDirection);
                 spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
                 spawnTimer = 0;
@@ -52,18 +58,7 @@ public class SP_SpaceJunk : MonoBehaviour
     {
         foreach (GameObject obj in debris.Keys)
         {
-            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + ((Vector3.forward + debris[obj] - rocket.worldDirection) * rocket.speed), Time.deltaTime);
-        }
-    }
-
-    private void DestroyDebris()
-    {
-        List<GameObject> destroyList = new List<GameObject>();
-        destroyList = Physics.OverlapBox(transform.position,)
-        foreach (GameObject obj in destroyList)
-        {
-            debris.Remove(obj);
-            Destroy(obj);
+            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + ((Vector3.back + debris[obj] - rocket.worldDirection) * rocket.speed), Time.deltaTime);
         }
     }
 
