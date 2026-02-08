@@ -339,6 +339,8 @@ MonoBehaviour:
   look: {x: 0, y: 0}
   jump: 0
   interact: 0
+  sprint: 0
+  crouch: 0
   roll: 0
 --- !u!114 &523400244
 MonoBehaviour:
@@ -368,6 +370,15 @@ MonoBehaviour:
   locomotionType: 0
   moveSpeed: 6
   accelerationRate: 15
+  sprintSpeedMult: 1.5
+  sprintFovMult: 1.15
+  fovSharpness: 8
+  cCam: {fileID: 294493963}
+  crouchSpeedMult: 0.5
+  crouchCameraYOffset: -0.5
+  crouchSharpness: 14
+  bodyCapsule: {fileID: 1500723363}
+  crouchCapsuleHeightMult: 0.6
   jumpPower: 5
   torqueStrength: 10
   stabiliseRange: 20

@@ -1,3 +1,4 @@
+using Unity.Cinemachine;
 using UnityEngine;
 
 // Made by: Jason Lodge
@@ -24,6 +25,33 @@ public class CC_CharacterBase : MonoBehaviour
     [Header("Player Movement")]
     public float moveSpeed = 5f;
     public float accelerationRate = 12f;
+
+    [Header("Sprint")]
+    public float sprintSpeedMult = 1.5f;
+
+    [Tooltip("FOV multiplier while sprinting (1 = normal).")]
+    public float sprintFovMult = 1.15f;
+
+    [Tooltip("How quickly FOV changes.")]
+    public float fovSharpness = 8f;
+
+    [Tooltip("Camera (Cinemachine)")]
+    public CinemachineCamera cCam;
+
+    [Header("Crouch")]
+    public float crouchSpeedMult = 0.5f;
+
+    [Tooltip("Local Y offset applied to the camera target when crouched.")]
+    public float crouchCameraYOffset = -0.5f;
+
+    [Tooltip("How quickly crouch transitions.")]
+    public float crouchSharpness = 14f;
+
+    [Tooltip("Capsule collider on the body. Changes size when crouched.")]
+    public CapsuleCollider bodyCapsule;
+
+    [Tooltip("Capsule height multiplier while crouched.")]
+    public float crouchCapsuleHeightMult = 0.6f;
 
     [Header("Jump / Gravity")]
     public float jumpPower = 10f;
@@ -111,6 +139,19 @@ public class CC_CharacterBase : MonoBehaviour
     protected Rigidbody rb;
     protected float jumpTimeoutDelta;
     protected float fallTimeoutDelta;
+    bool jumpedThisTick;
+
+    // sprint/crouch state
+    protected bool sprinting;
+    protected bool crouching;
+
+    // fov state
+    protected float baseFov;
+
+    // crouch state
+    Vector3 camTargetBaseLocalPos;
+    float capsuleBaseHeight;
+    Vector3 capsuleBaseCenter;
 
     // look
     protected Vector2 pendingLook;
@@ -140,10 +181,26 @@ public class CC_CharacterBase : MonoBehaviour
         {
             bodyRotation = transform.rotation;
         }
+
+        // cache camera and base fov
+        if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
+
+        // cache camera target local position so crouch just offsets it
+        if (cinemachineCameraTarget != null)
+        {
+            camTargetBaseLocalPos = cinemachineCameraTarget.localPosition;
+        }
+
+        // cache capsule defaults (body, not ball)
+        if (bodyCapsule != null)
+        {
+            capsuleBaseHeight = bodyCapsule.height;
+            capsuleBaseCenter = bodyCapsule.center;
+        }
     }
 
     // Call in FixedUpdate (physics)
-    public virtual void TickMotorFixed(Vector2 moveInput, bool jumpInput, float rollInput)
+    public virtual void TickMotorFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput)
     {
         // keep our up axis updated from gravity
         currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
@@ -151,6 +208,14 @@ public class CC_CharacterBase : MonoBehaviour
         UpdateLocomotionMode();
 
         pendingRoll = -rollInput;
+
+        // clear each tick
+        jumpedThisTick = false;
+        bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded;
+
+        // crouch wins over sprint
+        crouching = crouchInput && canCrouch;
+        sprinting = sprintInput && !crouching;
 
         // grounded should only matter in ground mode
         if (locomotionType == LocomotionType.GroundMode) { GroundedCheck(); }
@@ -186,6 +251,8 @@ public class CC_CharacterBase : MonoBehaviour
     {
         CameraRotation(lookInput, isMouse);
         UpdateBodyFollow();
+        UpdateCrouch();
+        UpdateSprintFov();
     }
 
     protected virtual void UpdateLocomotionMode()
@@ -250,6 +317,52 @@ public class CC_CharacterBase : MonoBehaviour
         float rotT = 1f - Mathf.Exp(-bodyFollowRotSharpness * Time.deltaTime);
         bodyTransform.rotation = Quaternion.Slerp(bodyTransform.rotation, bodyRotation, rotT);
     }
+
+    protected virtual void UpdateCrouch()
+    {
+        bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded && !jumpedThisTick;
+        if (!canCrouch) { crouching = false; }
+
+        // change cam height and lower collider size
+        if (cinemachineCameraTarget != null)
+        {
+            Vector3 target = camTargetBaseLocalPos;
+            if (crouching) { target.y += crouchCameraYOffset; }
+
+            float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
+            cinemachineCameraTarget.localPosition = Vector3.Lerp(cinemachineCameraTarget.localPosition, target, t);
+        }
+
+        if (bodyCapsule != null)
+        {
+            float targetHeight = capsuleBaseHeight * (crouching ? crouchCapsuleHeightMult : 1f);
+
+            // center.y shifts by half the height delta to only affect top height
+            float heightDelta = targetHeight - bodyCapsule.height;
+            Vector3 targetCenter = bodyCapsule.center;
+            targetCenter.y += heightDelta * 0.5f;
+
+            float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
+
+            bodyCapsule.height = Mathf.Lerp(bodyCapsule.height, targetHeight, t);
+            bodyCapsule.center = Vector3.Lerp(bodyCapsule.center, targetCenter, t);
+        }
+    }
+
+    protected virtual void UpdateSprintFov()
+    {
+        if (cCam == null) { return; }
+
+        float targetFov = baseFov;
+
+        // only raise fov when sprinting
+        if (sprinting) { targetFov = baseFov * sprintFovMult; }
+
+        float t = 1f - Mathf.Exp(-fovSharpness * Time.deltaTime);
+        cCam.Lens.FieldOfView = Mathf.Lerp(cCam.Lens.FieldOfView, targetFov, t);
+    }
+
+
     protected virtual void GroundMove(Vector2 moveInput)
     {
         if (cinemachineCameraTarget == null) { return; }
@@ -293,8 +406,11 @@ public class CC_CharacterBase : MonoBehaviour
             rb.linearVelocity = planarVel + verticalVel;
             return;
         }
+        float speedMult = 1f;
+        if (sprinting) { speedMult *= sprintSpeedMult; }
+        if (crouching) { speedMult *= crouchSpeedMult; }
 
-        Vector3 targetPlanarVel = moveDir * moveSpeed;
+        Vector3 targetPlanarVel = moveDir * (moveSpeed * speedMult);
         float accelT = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
         Vector3 newPlanarVel = Vector3.Lerp(planarVel, targetPlanarVel, accelT);
 
@@ -310,11 +426,16 @@ public class CC_CharacterBase : MonoBehaviour
 
             if (jumpPressed && jumpTimeoutDelta <= 0f)
             {
+
                 // jump along current up axis so it works on walls/ceilings
                 rb.AddForce(upAxis * jumpPower, ForceMode.Impulse);
 
                 grounded = false;
                 jumpTimeoutDelta = jumpTimeout;
+
+                // when jumping stop crouching
+                crouching = false;
+                jumpedThisTick = true;
             }
         }
 
@@ -404,7 +525,11 @@ public class CC_CharacterBase : MonoBehaviour
 
         if (accel.sqrMagnitude > 1f) { accel.Normalize(); }
 
-        rb.AddForce(accel * thrusterAccel, ForceMode.Acceleration);
+        float speedMult = 1f;
+        if (sprinting) { speedMult *= sprintSpeedMult; }
+        if (crouching) { speedMult *= crouchSpeedMult; }
+
+        rb.AddForce(accel * (thrusterAccel * speedMult), ForceMode.Acceleration);
     }
 
     protected virtual void SpaceBodyRotation()

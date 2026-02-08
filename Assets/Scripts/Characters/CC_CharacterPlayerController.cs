@@ -59,7 +59,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         // movement / physics
-        characterBase.TickMotorFixed(input.move, input.jump, input.roll);
+        characterBase.TickMotorFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
 
         input.jump = false;
     }
