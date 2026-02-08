@@ -4,6 +4,16 @@ using UnityEngine;
 // Summary: Holds all shared logic between all characters, player included.
 // That is movement, Values like health and levels, (will have more as i figure it out) etc.
 
+//TODO:
+// Movement --
+// Camera --
+// Follow Gravity --
+// Translate all movement and rotation into local space --
+// Split Movement and body into two, should allow for locomotion to scrape and roll on floor as much as it likes without messing with camera. --
+// Crouch
+// Sprint
+// Camera Bobbing
+
 [RequireComponent(typeof(Rigidbody))]
 public class CC_CharacterBase : MonoBehaviour
 {
@@ -35,13 +45,12 @@ public class CC_CharacterBase : MonoBehaviour
 
     [Header("Space Thrusters")]
     public float thrusterAccel = 4f;
-    public float spaceTurnSpeed = 30f;
 
     [Header("Space Rotation")]
+    public float spaceTurnSpeed = 30f;
     public float rollMaxSpeed = 30f;
     public float rollAccel = 4f;
     public float rollDamping = 2f;
-
 
     [Header("Gravity Detection")]
     public float zeroGravityThreshold = 0.25f;
@@ -54,6 +63,19 @@ public class CC_CharacterBase : MonoBehaviour
 
     public float jumpTimeout = 0.1f;
     public float fallTimeout = 0.15f;
+
+    [Header("Body")]
+    [Tooltip("Visual body object.")]
+    public Transform bodyTransform;
+
+    [Tooltip("How far the body sits above the ball along up axis.")]
+    public float bodyUpOffset = 1f;
+
+    [Tooltip("How fast body position follows ball.")]
+    public float bodyFollowPosSharpness = 50f;
+
+    [Tooltip("How fast body rotation follows its target rotation (up axis).")]
+    public float bodyFollowRotSharpness = 50f;
 
     [Header("Cinemachine")]
     [Tooltip("The follow target set in the Cinemachine camera that the camera will follow")]
@@ -87,29 +109,37 @@ public class CC_CharacterBase : MonoBehaviour
 
     // internals
     protected Rigidbody rb;
-    protected float verticalVelocity;
-    protected float yaw;
     protected float jumpTimeoutDelta;
     protected float fallTimeoutDelta;
+
+    // look
     protected Vector2 pendingLook;
     protected float pendingRoll;
     protected float rollSpeed;
 
+    // body orientation state
+    protected Quaternion bodyRotation = Quaternion.identity;
 
-    // keep velocity as a desired and smooth towards it
-    protected Vector3 desiredPlanarVelocity;
-
+    // gravity
     Vector3 upAxis;
     Vector3 currentGravity;
 
     protected virtual void Awake()
     {
         rb = GetComponent<Rigidbody>();
-
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         jumpTimeoutDelta = jumpTimeout;
         fallTimeoutDelta = fallTimeout;
+
+        if (bodyTransform != null)
+        {
+            bodyRotation = bodyTransform.rotation;
+        }
+        else
+        {
+            bodyRotation = transform.rotation;
+        }
     }
 
     // Call in FixedUpdate (physics)
@@ -122,24 +152,30 @@ public class CC_CharacterBase : MonoBehaviour
 
         pendingRoll = -rollInput;
 
-        // rotation
-        if (locomotionType == LocomotionType.SpaceMode)
-        {
-            SpaceRotation();
-        }
-        else
-        {
-            ApplyYawRotation(); // do yaw in physics so it behaves properly with rigidbody + gravity up
-            TorqueStabalisation();
-        }
-
         // grounded should only matter in ground mode
         if (locomotionType == LocomotionType.GroundMode) { GroundedCheck(); }
         else { grounded = false; }
 
-        // movement
-        if (locomotionType == LocomotionType.SpaceMode) { SpaceThrusters(moveInput, jumpInput); }
-        else { MoveAndGravity(moveInput); Jump(jumpInput); }
+        // movement is always applied to the ball
+        if (locomotionType == LocomotionType.SpaceMode)
+        {
+            SpaceThrusters(moveInput, jumpInput);
+        }
+        else
+        {
+            GroundMove(moveInput);
+            Jump(jumpInput);
+        }
+
+        // body rotation only applied to the body
+        if (locomotionType == LocomotionType.SpaceMode)
+        {
+            SpaceBodyRotation();
+        }
+        else
+        {
+            GroundBodyRotation();
+        }
 
         // clear pending look after we use it in physics
         pendingLook = Vector2.zero;
@@ -149,11 +185,11 @@ public class CC_CharacterBase : MonoBehaviour
     public virtual void TickCameraLate(Vector2 lookInput, bool isMouse)
     {
         CameraRotation(lookInput, isMouse);
+        UpdateBodyFollow();
     }
 
     protected virtual void UpdateLocomotionMode()
     {
-        // if we are not inside any sources (or all sources return near-zero), swap to space mode
         float gMag = currentGravity.magnitude;
 
         if (gMag <= zeroGravityThreshold)
@@ -167,7 +203,9 @@ public class CC_CharacterBase : MonoBehaviour
 
     protected virtual void GroundedCheck()
     {
-        if (jumpTimeoutDelta <= 0) { return; } // can't ground unless jump time out is over
+        // can't ground unless jump time out is over
+        if (jumpTimeoutDelta > 0f) { grounded = false; return; }
+
         Vector3 spherePosition = groundedCheckObj.position;
         grounded = Physics.CheckSphere(spherePosition, groundedRadius, groundLayers, QueryTriggerInteraction.Ignore);
     }
@@ -182,7 +220,6 @@ public class CC_CharacterBase : MonoBehaviour
         float baseX = isMouse ? mouseBaseX : stickBaseX;
         float baseY = isMouse ? mouseBaseY : stickBaseY;
 
-        // overall multipliers
         float sx = baseX * lookMultX;
         float sy = baseY * lookMultY;
 
@@ -195,127 +232,75 @@ public class CC_CharacterBase : MonoBehaviour
         pendingLook += new Vector2(lookX, lookY);
 
         // pitch always affects camera target first
-        float prevPitch = cinemachineTargetPitch;
         cinemachineTargetPitch -= lookY;
         cinemachineTargetPitch = ClampAngle(cinemachineTargetPitch, bottomClamp, topClamp);
         cinemachineCameraTarget.localRotation = Quaternion.Euler(cinemachineTargetPitch, 0f, 0f);
-
-        // ground yaw uses gravity up axis
-        if (locomotionType == LocomotionType.GroundMode)
-        {
-            yaw += lookX;
-        }
     }
 
-    protected virtual void ApplyYawRotation()
+    protected virtual void UpdateBodyFollow()
     {
-        if (Mathf.Abs(yaw) < 0.0001f) { return; }
+        if (bodyTransform == null) { return; }
 
-        // rotate around the current surface up
-        Quaternion delta = Quaternion.AngleAxis(yaw, upAxis);
-        rb.MoveRotation(delta * rb.rotation);
+        // body sits above the ball along up axis, and follows smoothly
+        Vector3 targetPos = rb.position + (upAxis * bodyUpOffset);
+        float posT = 1f - Mathf.Exp(-bodyFollowPosSharpness * Time.deltaTime);
+        bodyTransform.position = Vector3.Lerp(bodyTransform.position, targetPos, posT);
 
-        yaw = 0f;
+        // follow the calculated body rotation smoothly
+        float rotT = 1f - Mathf.Exp(-bodyFollowRotSharpness * Time.deltaTime);
+        bodyTransform.rotation = Quaternion.Slerp(bodyTransform.rotation, bodyRotation, rotT);
     }
-
-    protected virtual void TorqueStabalisation()
+    protected virtual void GroundMove(Vector2 moveInput)
     {
-        if (locomotionType == LocomotionType.SpaceMode) { return; }
+        if (cinemachineCameraTarget == null) { return; }
 
-        // check how close we are to the ground along current gravity direction
-        float proximity01 = 0f;
+        // current velocity split
+        Vector3 vel = rb.linearVelocity;
+        Vector3 planarVel = Vector3.ProjectOnPlane(vel, upAxis);
+        Vector3 verticalVel = vel - planarVel;
 
-        if (grounded) // we're close enough
+        if (grounded)
         {
-            proximity01 = 1f;
-        }
-        else // shoot ray to check how close we are
-        {
-            float range = Mathf.Max(0.01f, stabiliseRange);
-            float castDist = range + stabilisePadding;
-
-            Ray ray = new Ray(transform.position, -upAxis);
-            Debug.DrawRay(transform.position, -upAxis * castDist, Color.red);
-
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, castDist, groundLayers, QueryTriggerInteraction.Ignore))
-            {
-                // map distance to proximity
-                float d = Mathf.Clamp(hit.distance - stabilisePadding, 0f, range);
-                proximity01 = 1f - (d / range);
-            }
+            verticalVel = Vector3.zero;
         }
 
-        // run through curve and scale to max
-        float curve = stabiliseCurve != null ? stabiliseCurve.Evaluate(proximity01) : proximity01;
-        float strength = torqueStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
+        // when in air in ground mode, dont allow air movement
+        if (!grounded)
+        {
+            rb.linearVelocity = planarVel + verticalVel;
+            return;
+        }
 
-        if (strength <= 0.0001f) { return; }
-
-        // align our current up to the gravity up axis
-        Quaternion current = rb.rotation;
-
-        // rotate our current up onto the surface up
-        Quaternion toUp = Quaternion.FromToRotation(current * Vector3.up, upAxis);
-        Quaternion target = toUp * current;
-
-        // smooth it
-        float t = 1f - Mathf.Exp(-strength * Time.fixedDeltaTime);
-        rb.MoveRotation(Quaternion.Slerp(current, target, t));
-    }
-    protected virtual void MoveAndGravity(Vector2 moveInput)
-    {
-        // camera-based planar axes
+        // build desired direction relative to camera, projected on surface plane
         Vector3 camForward = Vector3.ProjectOnPlane(cinemachineCameraTarget.forward, upAxis);
         Vector3 camRight = Vector3.ProjectOnPlane(cinemachineCameraTarget.right, upAxis);
 
         // if camera is looking almost straight up/down, projection can get tiny, so fallback
-        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(transform.forward, upAxis); }
-        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(transform.right, upAxis); }
+        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(bodyRotation * Vector3.forward, upAxis); }
+        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(bodyRotation * Vector3.right, upAxis); }
 
         camForward.Normalize();
         camRight.Normalize();
 
-        // build movement direction from camera planar axes
         Vector3 moveDir = (camRight * moveInput.x + camForward * moveInput.y);
         if (moveDir.sqrMagnitude > 1f) { moveDir.Normalize(); }
 
-        // current velocity from Rigidbody
-        Vector3 current = rb.linearVelocity;
-
-        // split into planar (along surface) and vertical (along gravity axis)
-        Vector3 currentPlanarVel = Vector3.ProjectOnPlane(current, upAxis);
-        Vector3 currentVerticalVel = current - currentPlanarVel;
-
-        // if no input, dont force planar to zero unless grounded
+        // grounded movement + friction
         if (moveInput == Vector2.zero)
         {
-            if (grounded)
-            {
-                float t = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
-                desiredPlanarVelocity = Vector3.Lerp(currentPlanarVel, Vector3.zero, t);
-                rb.linearVelocity = desiredPlanarVelocity + currentVerticalVel;
-                return;
-            }
-
-            rb.linearVelocity = currentPlanarVel + currentVerticalVel;
+            float t = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
+            planarVel = Vector3.Lerp(planarVel, Vector3.zero, t);
+            rb.linearVelocity = planarVel + verticalVel;
             return;
         }
 
-        // calculate target planar velocity
         Vector3 targetPlanarVel = moveDir * moveSpeed;
+        float accelT = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
+        Vector3 newPlanarVel = Vector3.Lerp(planarVel, targetPlanarVel, accelT);
 
-        // smooth toward the target planar velocity
-        desiredPlanarVelocity = Vector3.Lerp(currentPlanarVel, targetPlanarVel, accelerationRate * Time.fixedDeltaTime);
-
-        if (grounded && jumpTimeoutDelta <= 0f)
-        {
-            currentVerticalVel = Vector3.zero;
-        }
-
-        // keep vertical from gravity/jump, apply smoothed planar
-        rb.linearVelocity = desiredPlanarVelocity + currentVerticalVel;
+        rb.linearVelocity = newPlanarVel + verticalVel;
     }
+
 
     protected virtual void Jump(bool jumpPressed)
     {
@@ -327,22 +312,83 @@ public class CC_CharacterBase : MonoBehaviour
             {
                 // jump along current up axis so it works on walls/ceilings
                 rb.AddForce(upAxis * jumpPower, ForceMode.Impulse);
-                grounded = false;
-            }
 
+                grounded = false;
+                jumpTimeoutDelta = jumpTimeout;
+            }
+        }
+
+        // timers
+        if (grounded)
+        {
             if (jumpTimeoutDelta > 0f) { jumpTimeoutDelta -= Time.deltaTime; }
         }
         else
         {
-            jumpTimeoutDelta = jumpTimeout;
+            jumpTimeoutDelta = Mathf.Max(0f, jumpTimeoutDelta - Time.deltaTime);
             if (fallTimeoutDelta > 0f) { fallTimeoutDelta -= Time.deltaTime; }
         }
+    }
+
+    protected virtual void GroundBodyRotation()
+    {
+        if (bodyTransform == null) { return; }
+
+        // align body up to gravity up axis with curve ramp
+        float strength = GetStabiliseStrength();
+        if (strength > 0.0001f)
+        {
+            Quaternion current = bodyRotation;
+
+            Quaternion toUp = Quaternion.FromToRotation(current * Vector3.up, upAxis);
+            Quaternion target = toUp * current;
+
+            float t = 1f - Mathf.Exp(-strength * Time.fixedDeltaTime);
+            bodyRotation = Quaternion.Slerp(current, target, t);
+        }
+
+        // rotate body around gravity up axis
+        float yawDelta = pendingLook.x;
+        if (Mathf.Abs(yawDelta) > 0.0001f)
+        {
+            Quaternion yawQ = Quaternion.AngleAxis(yawDelta, upAxis);
+            bodyRotation = yawQ * bodyRotation;
+        }
+    }
+
+    protected virtual float GetStabiliseStrength()
+    {
+        if (locomotionType == LocomotionType.SpaceMode) { return 0f; }
+
+        float proximity01 = 0f;
+
+        if (grounded)
+        {
+            proximity01 = 1f;
+        }
+        else
+        {
+            float range = Mathf.Max(0.01f, stabiliseRange);
+            float castDist = range + stabilisePadding;
+
+            Ray ray = new Ray(rb.position, -upAxis);
+            Debug.DrawRay(rb.position, -upAxis * castDist, Color.red);
+
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, castDist, groundLayers, QueryTriggerInteraction.Ignore))
+            {
+                float d = Mathf.Clamp(hit.distance - stabilisePadding, 0f, range);
+                proximity01 = 1f - (d / range);
+            }
+        }
+
+        float curve = stabiliseCurve != null ? stabiliseCurve.Evaluate(proximity01) : proximity01;
+        return torqueStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
     }
 
     protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed)
     {
         // add force as thrusters would have inertia
-        // movement is relative to camera orientation
 
         if (cinemachineCameraTarget == null) { return; }
 
@@ -361,10 +407,11 @@ public class CC_CharacterBase : MonoBehaviour
         rb.AddForce(accel * thrusterAccel, ForceMode.Acceleration);
     }
 
-    protected virtual void SpaceRotation()
+    protected virtual void SpaceBodyRotation()
     {
-        Quaternion current = rb.rotation;
+        if (bodyTransform == null || cinemachineCameraTarget == null) { return; }
 
+        Quaternion current = bodyRotation;
         float dt = Time.fixedDeltaTime;
 
         Vector3 camUp = cinemachineCameraTarget.up;
@@ -381,13 +428,10 @@ public class CC_CharacterBase : MonoBehaviour
         Quaternion yawQ = Quaternion.AngleAxis(yawDelta, camUp);
         Quaternion pitchQ = Quaternion.AngleAxis(pitchDelta, camRight);
 
-        // accelerate to target roll speed
+        // acceleration oriented roll
         float targetRollSpeed = pendingRoll * rollMaxSpeed;
-
-        // accelerate toward target
         rollSpeed = Mathf.MoveTowards(rollSpeed, targetRollSpeed, rollAccel * rollMaxSpeed * dt);
 
-        // when no input, damp the roll back down
         if (Mathf.Abs(pendingRoll) < 0.001f)
         {
             rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * dt);
@@ -396,8 +440,7 @@ public class CC_CharacterBase : MonoBehaviour
         float rollDelta = rollSpeed * dt;
         Quaternion rollQ = Quaternion.AngleAxis(rollDelta, camForward);
 
-        // apply
-        rb.MoveRotation(rollQ * pitchQ * yawQ * current);
+        bodyRotation = rollQ * pitchQ * yawQ * current;
     }
 
     protected static float ClampAngle(float angle, float min, float max)
@@ -412,6 +455,10 @@ public class CC_CharacterBase : MonoBehaviour
     {
         Color col = grounded ? new Color(0, 1, 0, 0.35f) : new Color(1, 0, 0, 0.35f);
         Gizmos.color = col;
-        Gizmos.DrawSphere(groundedCheckObj.position, groundedRadius);
+
+        if (groundedCheckObj != null)
+        {
+            Gizmos.DrawSphere(groundedCheckObj.position, groundedRadius);
+        }
     }
 }
