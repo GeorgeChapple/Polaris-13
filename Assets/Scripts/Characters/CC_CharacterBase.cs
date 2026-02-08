@@ -3,7 +3,6 @@ using UnityEngine;
 
 // Made by: Jason Lodge
 // Summary: Holds all shared logic between all characters, player included.
-// That is movement, Values like health and levels, (will have more as i figure it out) etc.
 
 //TODO:
 // Movement --
@@ -11,8 +10,8 @@ using UnityEngine;
 // Follow Gravity --
 // Translate all movement and rotation into local space --
 // Split Movement and body into two, should allow for locomotion to scrape and roll on floor as much as it likes without messing with camera. --
-// Crouch
-// Sprint
+// Crouch --
+// Sprint --
 // Camera Bobbing
 
 [RequireComponent(typeof(Rigidbody))]
