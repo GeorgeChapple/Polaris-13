@@ -68,6 +68,9 @@ public class CC_CharacterPlayerController : MonoBehaviour
     {
         // camera / rotation
         characterBase.TickCameraLate(input.look, IsCurrentDeviceMouse);
+
+        // interaction
+        characterBase.TickInteract(input.interact);
     }
 
     private void SetCursorLocked(bool shouldLock)

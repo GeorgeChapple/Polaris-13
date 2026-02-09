@@ -22,21 +22,21 @@ public class CC_PlayerInputManager : MonoBehaviour
 
 #if ENABLE_INPUT_SYSTEM
     public void OnMove(InputValue value) { MoveInput(value.Get<Vector2>()); }
-    public void OnJump(InputValue value) { JumpInput(value.isPressed); }
     public void OnLook(InputValue value) { LookInput(value.Get<Vector2>()); }
+    public void OnJump(InputValue value) { JumpInput(value.isPressed); }
+    public void OnSprint(InputValue value) { SprintInput(value.isPressed); }
+    public void OnCrouch(InputValue value) { CrouchInput(value.isPressed); }
     public void OnInteract(InputValue value) { InteractInput(value.isPressed); }
     public void OnRoll(InputValue value) { RollInput(value.Get<float>()); }
 
-    public void OnSprint(InputValue value) { SprintInput(value.isPressed); }
-    public void OnCrouch(InputValue value) { CrouchInput(value.isPressed); }
 #endif
 
     public void MoveInput(Vector2 newMoveDirection) { move = newMoveDirection; }
     public void LookInput(Vector2 newLookDirection) { look = newLookDirection; }
     public void JumpInput(bool newJumpState) { jump = newJumpState; }
+    public void SprintInput(bool newSprint) { sprint = newSprint; }
+    public void CrouchInput(bool newCrouch) { crouch = newCrouch; }
     public void InteractInput(bool newInteractState) { interact = newInteractState; }
     public void RollInput(float newRoll) { roll = newRoll; }
 
-    public void SprintInput(bool newSprint) { sprint = newSprint; }
-    public void CrouchInput(bool newCrouch) { crouch = newCrouch; }
 }
