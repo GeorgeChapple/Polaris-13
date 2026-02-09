@@ -36,7 +36,11 @@ public class CC_CharacterValues : MonoBehaviour
     [Tooltip("Delay before stamina regen starts after draining.")]
     public float staminaRegenDelay = 0.5f;
 
+    [Tooltip("Extra delay applied when stamina has been depleted (hit 0).")]
+    public float staminaDepletedRegenDelay = 1.75f;
+
     float staminaRegenDelayTimer;
+    bool staminaWasDepleted;
 
     [Header("Oxygen")]
     public float maxOxygen = 100f;
@@ -77,6 +81,9 @@ public class CC_CharacterValues : MonoBehaviour
         SetExp(exp, false);
 
         isDead = (health <= 0f);
+
+        staminaRegenDelayTimer = 0f;
+        staminaWasDepleted = (stamina <= 0f);
 
         RefreshUI();
     }
@@ -183,6 +190,10 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetStamina(float value, bool clamp = true)
     {
         stamina = clamp ? Mathf.Clamp(value, 0f, maxStamina) : value;
+
+        // depleted state
+        if (stamina <= 0f) { staminaWasDepleted = true; }
+
         RefreshUI();
     }
 
@@ -201,16 +212,36 @@ public class CC_CharacterValues : MonoBehaviour
         maxStamina = Mathf.Max(0f, value);
         if (refill) { stamina = maxStamina; }
         else { stamina = Mathf.Clamp(stamina, 0f, maxStamina); }
+
+        staminaWasDepleted = (stamina <= 0f);
+
         RefreshUI();
     }
+
     // Call once per frame to drain/regenerate stamina.
-    public void TickStamina(bool sprinting)
+    public void TickStamina(bool sprinting, bool allowRegen)
     {
         // sprint drains stamina
         if (sprinting)
         {
             DrainStamina(sprintStaminaDrainPerSecond * Time.deltaTime);
-            staminaRegenDelayTimer = staminaRegenDelay;
+
+            if (staminaWasDepleted)
+            {
+                // if depleted set timer to longer one
+                staminaRegenDelayTimer = staminaDepletedRegenDelay;
+            }
+            else
+            {
+                // regen delay after any drain
+                staminaRegenDelayTimer = staminaRegenDelay;
+            }
+            return;
+        }
+
+        // if we are not allowed to regen, hold timer
+        if (!allowRegen)
+        {
             return;
         }
 
@@ -226,14 +257,35 @@ public class CC_CharacterValues : MonoBehaviour
 
     public void DrainStamina(float amount)
     {
-        if (amount <= 0f) { return; }
+        float prev = stamina;
+
         SetStamina(stamina - amount, true);
+
+        // if just hit 0, apply longer delay
+        if (prev > 0f && stamina <= 0f)
+        {
+            staminaWasDepleted = true;
+        }
     }
 
     public void RegenStamina(float amount)
     {
         if (amount <= 0f) { return; }
+
+        // if depleted, enforce the delay before any regen
+        if (staminaWasDepleted && stamina <= 0f)
+        {
+            // if timer still running, do nothing
+            if (staminaRegenDelayTimer > 0f) { return; }
+        }
+
         SetStamina(stamina + amount, true);
+
+        // once we have stamina again, clear depleted flag
+        if (stamina > 0f)
+        {
+            staminaWasDepleted = false;
+        }
     }
 
     public bool HasStamina(float min = 0.01f)

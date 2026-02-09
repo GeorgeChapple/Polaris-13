@@ -12,7 +12,7 @@ using UnityEngine;
 // Split Movement and body into two, should allow for locomotion to scrape and roll on floor as much as it likes without messing with camera. --
 // Crouch --
 // Sprint --
-// Camera Bobbing
+// Camera Bobbing --
 
 [RequireComponent(typeof(Rigidbody))]
 public class CC_CharacterBase : MonoBehaviour
@@ -126,6 +126,28 @@ public class CC_CharacterBase : MonoBehaviour
     [Tooltip("How far in degrees you can move the camera down")]
     public float bottomClamp = -90.0f;
 
+    [Header("Camera Bobbing")]
+    [Tooltip("If true, camera bobbing is enabled (ground mode only).")]
+    public bool enableCameraBobbing = true;
+
+    [Tooltip("Bobbing frequency at full speed.")]
+    public float bobFrequency = 1.8f;
+
+    [Tooltip("Vertical bob amplitude at full speed.")]
+    public float bobAmplitude = 0.01f;
+
+    [Tooltip("Side-to-side bob amplitude at full speed.")]
+    public float bobSideAmplitude = 0.005f;
+
+    [Tooltip("How quickly bob blends in/out.")]
+    public float bobSharpness = 6f;
+
+    [Tooltip("Extra bob multiplier while sprinting.")]
+    public float sprintBobMult = 1.25f;
+
+    [Tooltip("Bob multiplier while crouching.")]
+    public float crouchBobMult = 0.5f;
+
     [Header("Look Sensitivity")]
     [Tooltip("Overall horizontal multiplier (applies to mouse + stick).")]
     public float lookMultX = 1f;
@@ -163,6 +185,11 @@ public class CC_CharacterBase : MonoBehaviour
     Vector3 camTargetBaseLocalPos;
     float capsuleBaseHeight;
     Vector3 capsuleBaseCenter;
+
+    // camera bobbing state
+    float bobTime;
+    Vector3 bobOffset;
+    Vector3 bobOffsetVel;
 
     // look
     protected Vector2 pendingLook;
@@ -229,8 +256,14 @@ public class CC_CharacterBase : MonoBehaviour
 
         pendingRoll = -rollInput;
 
+        // grounded should only matter in ground mode
+        if (locomotionType == LocomotionType.GroundMode) { GroundedCheck(); }
+        else { grounded = false; }
+
         // clear each tick
         jumpedThisTick = false;
+
+        // crouch only in ground mode + grounded
         bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded;
 
         // crouch wins over sprint
@@ -243,14 +276,10 @@ public class CC_CharacterBase : MonoBehaviour
             sprinting = false;
         }
 
-        // grounded should only matter in ground mode
-        if (locomotionType == LocomotionType.GroundMode) { GroundedCheck(); }
-        else { grounded = false; }
-
         // movement is always applied to the ball
         if (locomotionType == LocomotionType.SpaceMode)
         {
-            SpaceThrusters(moveInput, jumpInput);
+            SpaceThrusters(moveInput, jumpInput, crouchInput);
         }
         else
         {
@@ -279,12 +308,17 @@ public class CC_CharacterBase : MonoBehaviour
         UpdateBodyFollow();
         UpdateCrouch();
         UpdateSprintFov();
+        UpdateCameraBobbing();
 
         if (values != null)
         {
             // only drain stamina when sprinting in ground mode and grounded
             bool shouldDrain = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
-            values.TickStamina(shouldDrain);
+
+            // only regen stamina when grounded in ground mode
+            bool allowRegen = locomotionType == LocomotionType.GroundMode && grounded;
+
+            values.TickStamina(shouldDrain, allowRegen);
 
             // if we run out of stamina, force sprint off
             if (sprinting && !values.HasStamina())
@@ -401,6 +435,48 @@ public class CC_CharacterBase : MonoBehaviour
         cCam.Lens.FieldOfView = Mathf.Lerp(cCam.Lens.FieldOfView, targetFov, t);
     }
 
+    protected virtual void UpdateCameraBobbing()
+    {
+        if (!enableCameraBobbing || cinemachineCameraTarget == null) { return; }
+
+        // bob only in ground mode and grounded
+        bool allowBob = locomotionType == LocomotionType.GroundMode && grounded;
+
+        // use planar speed for intensity
+        Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, upAxis);
+        float speed01 = Mathf.Clamp01(planarVel.magnitude / Mathf.Max(0.01f, moveSpeed));
+
+        // no input movement or not allowed, fade out bob
+        Vector3 targetBob = Vector3.zero;
+
+        if (allowBob && speed01 > 0.01f)
+        {
+            float mult = speed01;
+
+            // sprint/crouch affects bob intensity
+            if (sprinting) { mult *= sprintBobMult; }
+            if (crouching) { mult *= crouchBobMult; }
+
+            bobTime += Time.deltaTime * bobFrequency * (0.5f + mult);
+
+            float y = Mathf.Sin(bobTime * Mathf.PI * 2f) * bobAmplitude * mult;
+            float x = Mathf.Cos(bobTime * Mathf.PI * 2f * 0.5f) * bobSideAmplitude * mult;
+
+            targetBob = new Vector3(x, y, 0f);
+        }
+        else
+        {
+            // reset time slowly so coming to stop feels clean
+            bobTime = Mathf.MoveTowards(bobTime, 0f, Time.deltaTime * bobFrequency);
+        }
+
+        // smooth bob offset
+        float smoothTime = (bobSharpness <= 0f) ? 0.01f : (1f / bobSharpness);
+        bobOffset = Vector3.SmoothDamp(bobOffset, targetBob, ref bobOffsetVel, smoothTime);
+
+        // apply bob on top of base local pos + crouch offset
+        cinemachineCameraTarget.localPosition += bobOffset;
+    }
 
     protected virtual void GroundMove(Vector2 moveInput)
     {
@@ -456,7 +532,6 @@ public class CC_CharacterBase : MonoBehaviour
         rb.linearVelocity = newPlanarVel + verticalVel;
     }
 
-
     protected virtual void Jump(bool jumpPressed)
     {
         if (grounded)
@@ -465,7 +540,6 @@ public class CC_CharacterBase : MonoBehaviour
 
             if (jumpPressed && jumpTimeoutDelta <= 0f)
             {
-
                 // jump along current up axis so it works on walls/ceilings
                 rb.AddForce(upAxis * jumpPower, ForceMode.Impulse);
 
@@ -546,7 +620,7 @@ public class CC_CharacterBase : MonoBehaviour
         return torqueStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
     }
 
-    protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed)
+    protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed, bool crouchPressed)
     {
         // add force as thrusters would have inertia
 
@@ -554,19 +628,17 @@ public class CC_CharacterBase : MonoBehaviour
 
         Vector3 forward = cinemachineCameraTarget.forward;
         Vector3 right = cinemachineCameraTarget.right;
+        Vector3 up = cinemachineCameraTarget.up;
 
         Vector3 accel = (right * moveInput.x + forward * moveInput.y);
 
-        if (jumpPressed)
-        {
-            accel += cinemachineCameraTarget.up;
-        }
+        if (jumpPressed) { accel += up; }
+        if (crouchPressed) { accel -= up; }
 
         if (accel.sqrMagnitude > 1f) { accel.Normalize(); }
 
         float speedMult = 1f;
         if (sprinting) { speedMult *= sprintSpeedMult; }
-        if (crouching) { speedMult *= crouchSpeedMult; }
 
         rb.AddForce(accel * (thrusterAccel * speedMult), ForceMode.Acceleration);
     }
@@ -606,6 +678,7 @@ public class CC_CharacterBase : MonoBehaviour
 
         bodyRotation = rollQ * pitchQ * yawQ * current;
     }
+
     protected virtual InteractableObject GetLookInteractable()
     {
         Transform origin =
@@ -624,6 +697,7 @@ public class CC_CharacterBase : MonoBehaviour
 
         return null;
     }
+
     public virtual void TickInteract(bool interactHeld)
     {
         bool pressed = interactHeld && !interactWasHeld;
@@ -741,7 +815,6 @@ public class CC_CharacterBase : MonoBehaviour
             }
         }
     }
-
 
     protected static float ClampAngle(float angle, float min, float max)
     {

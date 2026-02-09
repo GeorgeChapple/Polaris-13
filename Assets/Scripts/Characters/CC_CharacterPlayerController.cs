@@ -60,8 +60,6 @@ public class CC_CharacterPlayerController : MonoBehaviour
     {
         // movement / physics
         characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
-
-        input.jump = false;
     }
 
     private void LateUpdate()
