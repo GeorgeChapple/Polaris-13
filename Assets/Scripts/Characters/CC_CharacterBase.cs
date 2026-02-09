@@ -21,6 +21,9 @@ public class CC_CharacterBase : MonoBehaviour
 
     public LocomotionType locomotionType = LocomotionType.GroundMode;
 
+    [Header("References")]
+    public CC_CharacterValues values;
+
     [Header("Player Movement")]
     public float moveSpeed = 5f;
     public float accelerationRate = 12f;
@@ -182,6 +185,8 @@ public class CC_CharacterBase : MonoBehaviour
 
     protected virtual void Awake()
     {
+        if (values == null) { values = GetComponent<CC_CharacterValues>(); }
+
         rb = GetComponent<Rigidbody>();
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
@@ -214,8 +219,8 @@ public class CC_CharacterBase : MonoBehaviour
         }
     }
 
-    // Call in FixedUpdate (physics)
-    public virtual void TickMotorFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput)
+    // Call in FixedUpdate.
+    public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput)
     {
         // keep our up axis updated from gravity
         currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
@@ -231,6 +236,12 @@ public class CC_CharacterBase : MonoBehaviour
         // crouch wins over sprint
         crouching = crouchInput && canCrouch;
         sprinting = sprintInput && !crouching;
+
+        // if no stamina, no sprint
+        if (values != null && sprinting && !values.HasStamina())
+        {
+            sprinting = false;
+        }
 
         // grounded should only matter in ground mode
         if (locomotionType == LocomotionType.GroundMode) { GroundedCheck(); }
@@ -261,13 +272,26 @@ public class CC_CharacterBase : MonoBehaviour
         pendingLook = Vector2.zero;
     }
 
-    // Call in LateUpdate (camera).
-    public virtual void TickCameraLate(Vector2 lookInput, bool isMouse)
+    // Call in LateUpdate.
+    public virtual void TickLate(Vector2 lookInput, bool isMouse)
     {
         CameraRotation(lookInput, isMouse);
         UpdateBodyFollow();
         UpdateCrouch();
         UpdateSprintFov();
+
+        if (values != null)
+        {
+            // only drain stamina when sprinting in ground mode and grounded
+            bool shouldDrain = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
+            values.TickStamina(shouldDrain);
+
+            // if we run out of stamina, force sprint off
+            if (sprinting && !values.HasStamina())
+            {
+                sprinting = false;
+            }
+        }
     }
 
     protected virtual void UpdateLocomotionMode()

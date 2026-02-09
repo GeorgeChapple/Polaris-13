@@ -1,18 +1,44 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 // Made By: Jason Lodge
 // Summary: Houses all character values (reusable for npcs).
 // List of all - Health, Stamina / Oxygen, Level/Exp, TBC.
 public class CC_CharacterValues : MonoBehaviour
 {
+    [System.Serializable]
+    public class FillUI
+    {
+        public Image img;
+
+        public void SetFill(float f01)
+        {
+            if (img == null) { return; }
+
+            float v = Mathf.Clamp01(f01);
+
+            img.fillAmount = Mathf.Clamp01(v);
+        }
+    }
+
     [Header("Health")]
     public float maxHealth = 100f;
     [SerializeField] float health = 100f;
 
-    [Header("Stamina / Oxygen")]
+    [Header("Stamina")]
     public float maxStamina = 100f;
     [SerializeField] float stamina = 100f;
 
+    [Header("Stamina Settings")]
+    public float sprintStaminaDrainPerSecond = 12f;
+    public float staminaRegenPerSecond = 10f;
+
+    [Tooltip("Delay before stamina regen starts after draining.")]
+    public float staminaRegenDelay = 0.5f;
+
+    float staminaRegenDelayTimer;
+
+    [Header("Oxygen")]
     public float maxOxygen = 100f;
     [SerializeField] float oxygen = 100f;
 
@@ -24,6 +50,12 @@ public class CC_CharacterValues : MonoBehaviour
     public int expToNextLevel = 100;
 
     public bool isDead;
+
+    [Header("UI")]
+    public FillUI[] healthUI;
+    public FillUI[] staminaUI;
+    public FillUI[] oxygenUI;
+    public FillUI[] expUI;
 
     // Getters
     public float Health => health;
@@ -45,6 +77,8 @@ public class CC_CharacterValues : MonoBehaviour
         SetExp(exp, false);
 
         isDead = (health <= 0f);
+
+        RefreshUI();
     }
 
     void Awake()
@@ -52,11 +86,63 @@ public class CC_CharacterValues : MonoBehaviour
         SetDefaults();
     }
 
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        // update bars when tweaking values
+        maxHealth = Mathf.Max(0f, maxHealth);
+        maxStamina = Mathf.Max(0f, maxStamina);
+        maxOxygen = Mathf.Max(0f, maxOxygen);
+
+        health = Mathf.Clamp(health, 0f, maxHealth);
+        stamina = Mathf.Clamp(stamina, 0f, maxStamina);
+        oxygen = Mathf.Clamp(oxygen, 0f, maxOxygen);
+
+        level = Mathf.Max(1, level);
+        exp = Mathf.Max(0, exp);
+        expToNextLevel = Mathf.Max(1, expToNextLevel);
+
+        isDead = (health <= 0f);
+
+        RefreshUI();
+    }
+#endif
+
+    // UI
+    public void RefreshUI()
+    {
+        float h01 = (maxHealth <= 0f) ? 0f : (health / maxHealth);
+        float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
+        float o01 = (maxOxygen <= 0f) ? 0f : (oxygen / maxOxygen);
+        float e01 = (expToNextLevel <= 0) ? 0f : Mathf.Clamp01((float)exp / expToNextLevel);
+
+        if (healthUI != null)
+        {
+            for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].SetFill(h01); } }
+        }
+
+        if (staminaUI != null)
+        {
+            for (int i = 0; i < staminaUI.Length; i++) { if (staminaUI[i] != null) { staminaUI[i].SetFill(s01); } }
+        }
+
+        if (oxygenUI != null)
+        {
+            for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].SetFill(o01); } }
+        }
+
+        if (expUI != null)
+        {
+            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].SetFill(e01); } }
+        }
+    }
+
     // Health
     public void SetHealth(float value, bool clamp = true)
     {
         health = clamp ? Mathf.Clamp(value, 0f, maxHealth) : value;
         isDead = (health <= 0f);
+        RefreshUI();
     }
 
     public void AddHealth(float amount)
@@ -76,24 +162,28 @@ public class CC_CharacterValues : MonoBehaviour
         else { health = Mathf.Clamp(health, 0f, maxHealth); }
 
         isDead = (health <= 0f);
+        RefreshUI();
     }
 
     public void Kill()
     {
         SetHealth(0f, true);
         isDead = true;
+        RefreshUI();
     }
 
     public void Revive(float healthPercent = 1f)
     {
         isDead = false;
         SetHealth(maxHealth * Mathf.Clamp01(healthPercent), true);
+        RefreshUI();
     }
 
     // Stamina
     public void SetStamina(float value, bool clamp = true)
     {
         stamina = clamp ? Mathf.Clamp(value, 0f, maxStamina) : value;
+        RefreshUI();
     }
 
     public void AddStamina(float amount)
@@ -111,12 +201,51 @@ public class CC_CharacterValues : MonoBehaviour
         maxStamina = Mathf.Max(0f, value);
         if (refill) { stamina = maxStamina; }
         else { stamina = Mathf.Clamp(stamina, 0f, maxStamina); }
+        RefreshUI();
+    }
+    // Call once per frame to drain/regenerate stamina.
+    public void TickStamina(bool sprinting)
+    {
+        // sprint drains stamina
+        if (sprinting)
+        {
+            DrainStamina(sprintStaminaDrainPerSecond * Time.deltaTime);
+            staminaRegenDelayTimer = staminaRegenDelay;
+            return;
+        }
+
+        // regen after delay
+        if (staminaRegenDelayTimer > 0f)
+        {
+            staminaRegenDelayTimer -= Time.deltaTime;
+            return;
+        }
+
+        RegenStamina(staminaRegenPerSecond * Time.deltaTime);
+    }
+
+    public void DrainStamina(float amount)
+    {
+        if (amount <= 0f) { return; }
+        SetStamina(stamina - amount, true);
+    }
+
+    public void RegenStamina(float amount)
+    {
+        if (amount <= 0f) { return; }
+        SetStamina(stamina + amount, true);
+    }
+
+    public bool HasStamina(float min = 0.01f)
+    {
+        return stamina > min;
     }
 
     // Oxygen
     public void SetOxygen(float value, bool clamp = true)
     {
         oxygen = clamp ? Mathf.Clamp(value, 0f, maxOxygen) : value;
+        RefreshUI();
     }
 
     public void AddOxygen(float amount)
@@ -134,6 +263,7 @@ public class CC_CharacterValues : MonoBehaviour
         maxOxygen = Mathf.Max(0f, value);
         if (refill) { oxygen = maxOxygen; }
         else { oxygen = Mathf.Clamp(oxygen, 0f, maxOxygen); }
+        RefreshUI();
     }
 
     // Level / Exp
@@ -141,6 +271,7 @@ public class CC_CharacterValues : MonoBehaviour
     {
         level = Mathf.Max(1, newLevel);
         if (resetExp) { exp = 0; }
+        RefreshUI();
     }
 
     public void AddLevel(int amount, bool resetExp = true)
@@ -152,17 +283,18 @@ public class CC_CharacterValues : MonoBehaviour
     {
         exp = Mathf.Max(0, newExp);
         if (allowLevelUp) { TryLevelUp(); }
+        RefreshUI();
     }
 
     public void AddExp(int amount, bool allowLevelUp = true)
     {
         exp = Mathf.Max(0, exp + amount);
         if (allowLevelUp) { TryLevelUp(); }
+        RefreshUI();
     }
 
     public bool TryLevelUp()
     {
-        // simple flat exp threshold for now
         bool leveled = false;
 
         while (expToNextLevel > 0 && exp >= expToNextLevel)
@@ -194,5 +326,7 @@ public class CC_CharacterValues : MonoBehaviour
 
         SetLevel(newLevel, false);
         SetExp(newExp, true);
+
+        RefreshUI();
     }
 }

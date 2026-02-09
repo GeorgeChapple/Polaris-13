@@ -59,7 +59,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         // movement / physics
-        characterBase.TickMotorFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
+        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
 
         input.jump = false;
     }
@@ -67,7 +67,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
     private void LateUpdate()
     {
         // camera / rotation
-        characterBase.TickCameraLate(input.look, IsCurrentDeviceMouse);
+        characterBase.TickLate(input.look, IsCurrentDeviceMouse);
 
         // interaction
         characterBase.TickInteract(input.interact);
