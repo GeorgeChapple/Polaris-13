@@ -11,7 +11,9 @@ public class RS_Move : MonoBehaviour
     [Header("Global Values")]
     public Vector3 worldPosition;
     public Vector3 worldDirection;
-    public float speed;
+    public Vector3 targetPosition;
+    [HideInInspector] public float speed;
+    public float targetSpeed;
 
     public enum moveMode { Manual, Automatic, Deactivated }
 
@@ -21,48 +23,39 @@ public class RS_Move : MonoBehaviour
     [SerializeField] private float speedChangeAmt = 5;
     [SerializeField] private float directionChangeSpeedMax = 5;
     [SerializeField] private float directionChangeSpeedMin = 5;
+    [SerializeField] private float directionChangeSpeedAuto = 5;
 
     [SerializeField] private Vector3 anchorPoint = Vector3.zero;
 
     private Vector2 controllerDir = Vector2.zero; // max of 1 on both axis positive and negative
-    private float targetSpeed;
+    
 
     void Update()
     {
-        if (mode == moveMode.Manual)
+        if (mode != moveMode.Deactivated)
         {
-            // Update Direction
-            // Update Movement
             UpdateDirection();
             MoveShip();
         }
-        else if (mode == moveMode.Automatic)
-        {
-            AutoMoveShip(worldPosition);
-        }
-        else
-        {
-            // when ship is deactivated, do nothing
-        }
-    }
-
-    void AutoMoveShip(Vector3 posToMoveTo)
-    {
-        // lerp ship pos to
-        worldPosition = Vector3.Lerp(worldPosition, worldDirection * speed, Time.deltaTime);
-
-        // lerp ship rotation to
-        
     }
 
     void MoveShip()
     {
+        if ((targetPosition - worldPosition).magnitude > targetSpeed)
+        {
+            speed = Mathf.Lerp(speed, targetSpeed, Time.deltaTime);
+        }
+        else
+        {
+            speed = Mathf.Lerp(speed, 0, Time.deltaTime);
+        }
+            worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed), Time.deltaTime);
         // lerp to target speed and clamp to target speed when close enough
 
 
         // move ship in direction using speed value
 
-        
+
     }
 
     void UpdateDirection()
@@ -73,6 +66,11 @@ public class RS_Move : MonoBehaviour
 
             // calculate percentage of vec2 controller from zero to max
             // add to world direction using calculated speed value with max and min clamp
+        }
+        else if (mode == moveMode.Automatic)
+        {
+            Vector3 targetDirection = (targetPosition - worldPosition).normalized;
+            worldDirection = Vector3.Slerp(worldDirection, targetDirection, Time.deltaTime);
         }
     }
 
