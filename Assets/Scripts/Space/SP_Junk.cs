@@ -8,10 +8,13 @@ public class SP_Junk : MonoBehaviour
     [HideInInspector] public Vector3 junkRotationRate;
     private SP_SpaceJunk spaceManager;
     [SerializeField] private float scaleSpeed = 1;
+    [SerializeField] private float resetTime = 20;
+    private float resetTimer;
     private bool scaling = false;
 
     private void Awake()
     {
+        resetTimer = resetTime;
         junkRotation.eulerAngles = Vector3.one * Random.value * 360;
         junkRotationRate = Vector3.one * Random.value * 5;
         spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
@@ -25,6 +28,11 @@ public class SP_Junk : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        resetTimer += Time.deltaTime;
+        if (resetTimer > resetTime && !spaceManager.debris.ContainsKey(this.gameObject))
+        {
+            spaceManager.debris.Add(this.gameObject, spaceManager.rocket.worldDirection);
+        }
         if (!spaceManager.foundObjects.Contains(this.gameObject)) {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
@@ -32,14 +40,16 @@ public class SP_Junk : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Rocket")) {
-            spaceManager.debris.Remove(this.gameObject);
-            if (this.GetComponent<Rigidbody>() != null)
-            { 
-                Rigidbody rb = this.AddComponent<Rigidbody>();
-                rb.useGravity = false;
-            }
-        }
+        resetTimer = 0;
+        spaceManager.debris.Remove(this.gameObject);
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (GetComponent<Rigidbody>() == null)
+        {
+            rb = this.AddComponent<Rigidbody>();
+        } 
+        rb.useGravity = false;
+        Vector3 forceDirection = collision.transform.position - transform.position.normalized;
+        rb.AddForce(forceDirection * 100);
     }
 
     private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)

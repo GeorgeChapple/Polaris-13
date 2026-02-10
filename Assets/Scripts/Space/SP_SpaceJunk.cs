@@ -8,7 +8,7 @@ public class SP_SpaceJunk : MonoBehaviour
     [SerializeField] private Vector2 spawnTimeRange = new Vector2(3, 6);
     private float spawnTimeLimit;
     private float spawnTimer;
-    private RS_Move rocket;
+    [HideInInspector] public RS_Move rocket;
     public List<GameObject> debrisPrefabs = new List<GameObject>(); 
     public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
@@ -47,9 +47,8 @@ public class SP_SpaceJunk : MonoBehaviour
             }
             else
             {
-                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)]);
+                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)], new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2), transform.rotation);
                 //newDebris.transform.SetParent(this.transform);
-                newDebris.transform.localPosition = new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2);
                 newDebris.transform.eulerAngles = Vector3.back;
                 debris.Add(newDebris, rocket.worldDirection);
                 spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
