@@ -387,6 +387,7 @@ GameObject:
   m_Component:
   - component: {fileID: 709164550}
   - component: {fileID: 709164549}
+  - component: {fileID: 709164551}
   m_Layer: 0
   m_Name: Space
   m_TagString: Untagged
@@ -414,7 +415,7 @@ MonoBehaviour:
   - {fileID: 6631385764811997710, guid: 47437d22ce60b7d499486613c57e0aa5, type: 3}
   - {fileID: 8506519994881310762, guid: 4c882442c56a3744c8d769fa9f540d45, type: 3}
   foundObjects: []
-  spaceBounds: {x: 50, y: 50, z: 50}
+  spaceBounds: {x: 20, y: 20, z: 50}
 --- !u!4 &709164550
 Transform:
   m_ObjectHideFlags: 0
@@ -430,6 +431,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!64 &709164551
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 709164548}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -661,7 +684,7 @@ GameObject:
   - component: {fileID: 1257378898}
   m_Layer: 0
   m_Name: Rocket
-  m_TagString: Untagged
+  m_TagString: Rocket
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -709,7 +732,7 @@ MeshCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 1173722378}
 --- !u!33 &1257378900
@@ -1898,7 +1921,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

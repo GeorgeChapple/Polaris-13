@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2340087091595257484}
   - component: {fileID: 7169641760333690737}
   - component: {fileID: 4049813068787933684}
+  - component: {fileID: -2663229028271085907}
   m_Layer: 0
   m_Name: Blue
   m_TagString: Untagged
@@ -121,3 +122,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4f3c35bbbefca74ea463c50d498e3dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  junkRotation: {x: 0, y: 0, z: 0, w: 0}
+  junkRotationRate: {x: 0, y: 0, z: 0}
+  scaleSpeed: 1
+--- !u!114 &-2663229028271085907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6214114723776247556}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26db57f8fbf1ee2408ec85d64e8339d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  innerFalloffRadius: 1
+  innerRadius: 5
+  outerRadius: 10
+  outerFalloffRadius: 15

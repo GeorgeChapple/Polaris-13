@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 7623231038395461893}
   - component: {fileID: 5297540580283850344}
   - component: {fileID: 4439795789904053721}
+  - component: {fileID: -5836148406243554594}
+  - component: {fileID: 3266762785018572811}
   m_Layer: 0
   m_Name: Green
   m_TagString: Untagged
@@ -121,3 +123,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4f3c35bbbefca74ea463c50d498e3dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  junkRotation: {x: 0, y: 0, z: 0, w: 0}
+  junkRotationRate: {x: 0, y: 0, z: 0}
+  scaleSpeed: 1
+--- !u!114 &-5836148406243554594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 550642222715239637}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26db57f8fbf1ee2408ec85d64e8339d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  innerFalloffRadius: 1
+  innerRadius: 5
+  outerRadius: 10
+  outerFalloffRadius: 15
+--- !u!54 &3266762785018572811
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 550642222715239637}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0

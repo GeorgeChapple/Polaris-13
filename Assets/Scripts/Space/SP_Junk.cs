@@ -1,8 +1,8 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Android;
 
-public class SP_DestroyJunk : MonoBehaviour
+public class SP_Junk : MonoBehaviour
 {
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
@@ -27,6 +27,18 @@ public class SP_DestroyJunk : MonoBehaviour
     {
         if (!spaceManager.foundObjects.Contains(this.gameObject)) {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Rocket")) {
+            spaceManager.debris.Remove(this.gameObject);
+            if (this.GetComponent<Rigidbody>() != null)
+            { 
+                Rigidbody rb = this.AddComponent<Rigidbody>();
+                rb.useGravity = false;
+            }
         }
     }
 

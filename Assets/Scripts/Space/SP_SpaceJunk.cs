@@ -62,7 +62,7 @@ public class SP_SpaceJunk : MonoBehaviour
     {
         foreach (GameObject obj in debris.Keys)
         {
-            SP_DestroyJunk junkComponent = obj.GetComponent<SP_DestroyJunk>();
+            SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
             Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
             junkComponent.junkRotation.eulerAngles = Vector3.Lerp(junkComponent.junkRotation.eulerAngles, junkComponent.junkRotation.eulerAngles + junkComponent.junkRotationRate, Time.deltaTime);
             obj.transform.eulerAngles = Quaternion.LookRotation(objDirection).eulerAngles + junkComponent.junkRotation.eulerAngles;
