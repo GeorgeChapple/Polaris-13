@@ -205,13 +205,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.27781588, y: -0.36497167, z: 0.1150751, w: 0.8811196}
+  m_LocalPosition: {x: 20, y: 20, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 35, y: -45, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -406,15 +406,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71a2d3737ae936249b2d30cdc0e033f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxDeris: 100
-  spawnTimeRange: {x: 0.6, y: 1}
+  maxDebris: 100
+  spawnTimeRange: {x: 0.2, y: 0.4}
   debrisPrefabs:
   - {fileID: 6214114723776247556, guid: 77675850f4a4e634aad948be3b82a52c, type: 3}
   - {fileID: 550642222715239637, guid: 828bf4571b6dcb548b69d1b4c3ff0711, type: 3}
   - {fileID: 6631385764811997710, guid: 47437d22ce60b7d499486613c57e0aa5, type: 3}
   - {fileID: 8506519994881310762, guid: 4c882442c56a3744c8d769fa9f540d45, type: 3}
   foundObjects: []
-  spaceBounds: {x: 29, y: 20, z: 100}
+  spaceBounds: {x: 30, y: 30, z: 100}
 --- !u!4 &709164550
 Transform:
   m_ObjectHideFlags: 0

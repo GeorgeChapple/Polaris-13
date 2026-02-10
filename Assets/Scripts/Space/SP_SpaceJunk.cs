@@ -4,7 +4,7 @@ using System.Linq;
 
 public class SP_SpaceJunk : MonoBehaviour
 {
-    [SerializeField] private int maxDeris = 20;
+    [SerializeField] private int maxDebris = 20;
     [SerializeField] private Vector2 spawnTimeRange = new Vector2(3, 6);
     private float spawnTimeLimit;
     private float spawnTimer;
@@ -36,7 +36,7 @@ public class SP_SpaceJunk : MonoBehaviour
 
     private void SpawnDebris()
     {
-        if (debris.Count < 20)
+        if (debris.Count < maxDebris)
         {
             if (spawnTimer <= spawnTimeLimit)
             {
