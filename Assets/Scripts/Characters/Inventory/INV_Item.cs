@@ -6,6 +6,7 @@ using UnityEngine;
 public class INV_Item : ScriptableObject
 {
     [Header("Info")]
+    [SerializeField] private string itemID;
     [SerializeField] private string m_name;
     [SerializeField] private string description;
 
@@ -22,6 +23,7 @@ public class INV_Item : ScriptableObject
     public ObjectType objectType = ObjectType.Item;
 
     // getters
+    public string ItemID => itemID;
     public string Name => m_name;
     public string Description => description;
     public Sprite Icon => icon;
@@ -29,7 +31,7 @@ public class INV_Item : ScriptableObject
     public Material Material => material;
 
     // utility
-    public Vector2Int GridSize // forces a minimum size of 1,1
+    public Vector2Int ItemGridSize // forces a minimum size of 1,1
     {
         get
         {

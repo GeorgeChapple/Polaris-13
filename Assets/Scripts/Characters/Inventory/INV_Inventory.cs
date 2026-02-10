@@ -19,6 +19,9 @@ public class INV_Inventory : MonoBehaviour
     [Tooltip("Grid parent with GridLayoutGroup.")]
     [SerializeField] private RectTransform gridRoot;
 
+    [Tooltip("Parent all item instances will be under.")]
+    [SerializeField] private RectTransform itemGridRoot;
+
     [Tooltip("Single grid cell prefab.")]
     [SerializeField] private GameObject gridCellPrefab;
 
@@ -50,18 +53,19 @@ public class INV_Inventory : MonoBehaviour
     public class ItemInstance
     {
         public INV_Item data;
-        public Vector2Int topLeft;
         public Vector2Int size;
+        public enum Rotation { Vertical, Horizontal };
+        public Rotation rotation;
         public RectTransform ui;
     }
 
     private void Start()
     {
-        EnsureGrid();
+        GenerateGrid();
     }
 
-    // makes sure grid is setup before we update it
-    private void EnsureGrid()
+    // generates the grid to use for inventory
+    private void GenerateGrid()
     {
         if (gridGenerated) { return; }
         if (gridRoot == null || gridCellPrefab == null)
@@ -101,5 +105,44 @@ public class INV_Inventory : MonoBehaviour
         }
 
         gridGenerated = true;
+    }
+    // makes sure grid is setup correctly before attempting to update it
+    private void EnsureGrid()
+    {
+        if (gridGenerated) { return; }
+    }
+    private void UpdateGrid()
+    {
+
+    }
+
+    // utility
+    private bool SnapItemToGrid(float gridX, float gridY, ItemInstance item)
+    {
+        // check grid spaces that would be occupied by object
+        // if any of the checked grid spaces are occupied then return false
+        return false;
+    }
+    // checks if item can occupy space, called by dropped item using interact
+    private bool LookForOccupyableSpace(Vector2 size)
+    {
+        // use loop and check each space using check space occupyable func
+        return false;
+    }
+
+    private bool CheckSpaceOccupyable(float gridX, float gridY, Vector2 size)
+    {
+        // check spaces starting from grid x and grid y
+        // check spaces it will occupy using size
+        // (if grid y size is greater than 1, dont check bottom row since there would be no spaces under that row and vice versa for x and last column) 
+        // return true or false
+        return false;
+    }
+    // creates iteminstance to use in inventory
+    private bool CreateItemInstance(INV_Item item)
+    {
+        // after creating the instance, force its size to be per item grid size in INV_Item
+        // do cell size multiplied by item grid size for its respective x and y
+        return false;
     }
 }
