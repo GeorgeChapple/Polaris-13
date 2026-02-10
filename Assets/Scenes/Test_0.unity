@@ -680,12 +680,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   globalParent: {fileID: 0}
   worldPosition: {x: 0, y: 0, z: 0}
-  worldDirection: {x: 0, y: 0, z: 1}
-  speed: 5
+  worldDirection: {x: 0, y: 0, z: 0}
+  targetPosition: {x: 0, y: 0, z: 0}
+  speed: 0
+  targetSpeed: 5
   mode: 1
   speedChangeAmt: 5
   directionChangeSpeedMax: 5
   directionChangeSpeedMin: 5
+  directionChangeSpeedAuto: 5
   anchorPoint: {x: 0, y: 0, z: 0}
 --- !u!64 &1257378899
 MeshCollider:

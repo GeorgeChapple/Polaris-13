@@ -24,7 +24,10 @@ public class SP_SpaceJunk : MonoBehaviour
     void Update()
     {
         //transform.rotation = Quaternion.LookRotation(rocket.worldDirection);
-        SpawnDebris();
+        if (rocket.speed > 0.1f)
+        {
+            SpawnDebris();
+        }
         MoveDebris();
         Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
         foundObjects.Clear();
