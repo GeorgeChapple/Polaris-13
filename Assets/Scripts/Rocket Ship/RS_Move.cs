@@ -70,7 +70,7 @@ public class RS_Move : MonoBehaviour
         else if (mode == moveMode.Automatic)
         {
             Vector3 targetDirection = (targetPosition - worldPosition).normalized;
-            worldDirection = Vector3.Lerp(worldDirection, targetDirection, Time.deltaTime);
+            worldDirection = Vector3.Slerp(worldDirection, targetDirection, Time.deltaTime);
         }
     }
 
