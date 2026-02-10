@@ -406,15 +406,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71a2d3737ae936249b2d30cdc0e033f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxDeris: 20
+  maxDeris: 100
   spawnTimeRange: {x: 0.6, y: 1}
   debrisPrefabs:
   - {fileID: 6214114723776247556, guid: 77675850f4a4e634aad948be3b82a52c, type: 3}
   - {fileID: 550642222715239637, guid: 828bf4571b6dcb548b69d1b4c3ff0711, type: 3}
   - {fileID: 6631385764811997710, guid: 47437d22ce60b7d499486613c57e0aa5, type: 3}
   - {fileID: 8506519994881310762, guid: 4c882442c56a3744c8d769fa9f540d45, type: 3}
-  debris: []
-  spaceBounds: {x: 20, y: 20, z: 20}
+  foundObjects: []
+  spaceBounds: {x: 29, y: 20, z: 100}
 --- !u!4 &709164550
 Transform:
   m_ObjectHideFlags: 0

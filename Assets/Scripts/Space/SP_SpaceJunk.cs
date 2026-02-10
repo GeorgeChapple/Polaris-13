@@ -23,7 +23,7 @@ public class SP_SpaceJunk : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        transform.rotation = Quaternion.LookRotation(rocket.worldDirection);
+        //transform.rotation = Quaternion.LookRotation(rocket.worldDirection);
         SpawnDebris();
         MoveDebris();
         Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
@@ -47,6 +47,7 @@ public class SP_SpaceJunk : MonoBehaviour
                 GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)]);
                 //newDebris.transform.SetParent(this.transform);
                 newDebris.transform.localPosition = new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2);
+                newDebris.transform.eulerAngles = Vector3.back;
                 debris.Add(newDebris, rocket.worldDirection);
                 spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
                 spawnTimer = 0;
@@ -58,7 +59,9 @@ public class SP_SpaceJunk : MonoBehaviour
     {
         foreach (GameObject obj in debris.Keys)
         {
-            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + ((Vector3.back + debris[obj] - rocket.worldDirection) * rocket.speed), Time.deltaTime);
+            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
+            obj.transform.rotation = Quaternion.LookRotation(objDirection);
+            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + objDirection, Time.deltaTime);
         }
     }
 
