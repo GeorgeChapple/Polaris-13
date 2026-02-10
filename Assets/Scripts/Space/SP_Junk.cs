@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Net.Sockets;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -6,14 +7,21 @@ public class SP_Junk : MonoBehaviour
 {
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
+    [HideInInspector] public Vector3 objDirection;
     private SP_SpaceJunk spaceManager;
     [SerializeField] private float scaleSpeed = 1;
     [SerializeField] private float resetTime = 20;
     private float resetTimer;
     private bool scaling = false;
+    private Rigidbody rb;
 
     private void Awake()
     {
+        rb = GetComponent<Rigidbody>();
+        if (GetComponent<Rigidbody>() == null)
+        {
+            rb = this.AddComponent<Rigidbody>();
+        }
         resetTimer = resetTime;
         junkRotation.eulerAngles = Vector3.one * Random.value * 360;
         junkRotationRate = Vector3.one * Random.value * 5;
@@ -32,6 +40,7 @@ public class SP_Junk : MonoBehaviour
         if (resetTimer > resetTime && !spaceManager.debris.ContainsKey(this.gameObject))
         {
             spaceManager.debris.Add(this.gameObject, spaceManager.rocket.worldDirection);
+            rb.AddForce(objDirection * 100);
         }
         if (!spaceManager.foundObjects.Contains(this.gameObject)) {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
@@ -41,15 +50,14 @@ public class SP_Junk : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         resetTimer = 0;
-        spaceManager.debris.Remove(this.gameObject);
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (GetComponent<Rigidbody>() == null)
-        {
-            rb = this.AddComponent<Rigidbody>();
-        } 
         rb.useGravity = false;
-        Vector3 forceDirection = collision.transform.position - transform.position.normalized;
-        rb.AddForce(forceDirection * 100);
+        Vector3 forceDirection = (Vector3.back - spaceManager.rocket.worldDirection).normalized;
+        if (collision.gameObject.CompareTag("Rocket"))
+        {
+            forceDirection = collision.transform.position - transform.position.normalized; 
+            rb.AddForce(forceDirection * 100);
+        }
+        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
     }
 
     private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)

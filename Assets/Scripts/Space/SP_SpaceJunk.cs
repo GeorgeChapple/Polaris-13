@@ -53,6 +53,8 @@ public class SP_SpaceJunk : MonoBehaviour
                 debris.Add(newDebris, rocket.worldDirection);
                 spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
                 spawnTimer = 0;
+                newDebris.GetComponent<SP_Junk>().objDirection = (Vector3.back + debris[newDebris] - rocket.worldDirection).normalized * rocket.speed;
+                newDebris.GetComponent<Rigidbody>().AddForce(newDebris.GetComponent<SP_Junk>().objDirection * 100);
             }
         }
     }
@@ -62,10 +64,11 @@ public class SP_SpaceJunk : MonoBehaviour
         foreach (GameObject obj in debris.Keys)
         {
             SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
-            junkComponent.junkRotation.eulerAngles = Vector3.Lerp(junkComponent.junkRotation.eulerAngles, junkComponent.junkRotation.eulerAngles + junkComponent.junkRotationRate, Time.deltaTime);
-            obj.transform.eulerAngles = Quaternion.LookRotation(objDirection).eulerAngles + junkComponent.junkRotation.eulerAngles;
-            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + objDirection, Time.deltaTime);
+            junkComponent.objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
+            //junkComponent.junkRotation.eulerAngles = Vector3.Lerp(junkComponent.junkRotation.eulerAngles, junkComponent.junkRotation.eulerAngles + junkComponent.junkRotationRate, Time.deltaTime);
+            //obj.transform.eulerAngles = Quaternion.LookRotation(junkComponent.objDirection).eulerAngles;
+            //obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + objDirection, Time.deltaTime);
+            //obj.GetComponent<Rigidbody>().AddForce(objDirection * 0.001f, ForceMode.Impulse);
         }
     }
 
