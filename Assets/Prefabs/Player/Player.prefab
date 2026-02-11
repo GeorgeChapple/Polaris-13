@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 4833083285757464627}
   - component: {fileID: 8446721204199128200}
   - component: {fileID: 7688958629425929295}
-  - component: {fileID: 311182865434369812}
   m_Layer: 5
   m_Name: Items
   m_TagString: Untagged
@@ -76,30 +75,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &311182865434369812
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 722773987520577095}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a8695521f0d02e499659fee002a26c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_ChildAlignment: 0
-  m_StartCorner: 0
-  m_StartAxis: 0
-  m_CellSize: {x: 30, y: 30}
-  m_Spacing: {x: 0, y: 0}
-  m_Constraint: 0
-  m_ConstraintCount: 2
 --- !u!1 &864714552109357627
 GameObject:
   m_ObjectHideFlags: 0
@@ -261,10 +236,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inventoryGridMaxHeight: 3
   inventoryGridMaxWidth: 10
-  gridRoot: {fileID: 8609366648692967514}
+  gridRoot: {fileID: 7416075966039751954}
   itemGridRoot: {fileID: 4833083285757464627}
   gridCellPrefab: {fileID: 7850465892296457764, guid: dc8cb3add5aeedd439f3cbbb65a4d0fa, type: 3}
   itemUIPrefab: {fileID: 7850465892296457764, guid: f9e53926364655248bc50381cd209861, type: 3}
+  logPlacement: 1
 --- !u!1 &1015223365284675570
 GameObject:
   m_ObjectHideFlags: 0
@@ -616,7 +592,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8609366648692967514
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1694,6 +1670,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lockCursorOnStart: 1
+  inMenu: 0
+  pauseMenuRoot: {fileID: 8102134890253006248}
+  inventoryMenuRoot: {fileID: 2437130736283423829}
 --- !u!114 &8578470881332336096
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2093,7 +2072,7 @@ RectTransform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1522374163354050571}
   - {fileID: 8609366648692967514}
