@@ -28,7 +28,7 @@ public class SP_SpaceJunk : MonoBehaviour
         {
             SpawnDebris();
         }
-        MoveDebris();
+        RotateDebrisVelocity();
         Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
         foundObjects.Clear();
         foreach (Collider col in colliders)
@@ -59,16 +59,25 @@ public class SP_SpaceJunk : MonoBehaviour
         }
     }
 
+    private void RotateDebrisVelocity()
+    {
+        foreach (GameObject obj in debris.Keys)
+        {
+            Rigidbody rb = obj.GetComponent<Rigidbody>();
+            rb.linearVelocity = rb.linearVelocity.magnitude * obj.GetComponent<SP_Junk>().objDirection.normalized;
+        }
+    }
+
     private void MoveDebris()
     {
         foreach (GameObject obj in debris.Keys)
         {
             SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
             junkComponent.objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
-            //junkComponent.junkRotation.eulerAngles = Vector3.Lerp(junkComponent.junkRotation.eulerAngles, junkComponent.junkRotation.eulerAngles + junkComponent.junkRotationRate, Time.deltaTime);
-            //obj.transform.eulerAngles = Quaternion.LookRotation(junkComponent.objDirection).eulerAngles;
-            //obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + objDirection, Time.deltaTime);
-            //obj.GetComponent<Rigidbody>().AddForce(objDirection * 0.001f, ForceMode.Impulse);
+            junkComponent.junkRotation.eulerAngles = Vector3.Lerp(junkComponent.junkRotation.eulerAngles, junkComponent.junkRotation.eulerAngles + junkComponent.junkRotationRate, Time.deltaTime);
+            obj.transform.eulerAngles = Quaternion.LookRotation(junkComponent.objDirection).eulerAngles;
+            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + junkComponent.objDirection, Time.deltaTime);
+            obj.GetComponent<Rigidbody>().AddForce(junkComponent.objDirection * 0.001f, ForceMode.Impulse);
         }
     }
 

@@ -31,16 +31,19 @@ public class SP_Junk : MonoBehaviour
     private void Start()
     {
         StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
+        GetObjectDirection();
+        rb.AddForce(objDirection * 100);
+        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
     }
 
     // Update is called once per frame
     void Update()
     {
+        GetObjectDirection();
         resetTimer += Time.deltaTime;
         if (resetTimer > resetTime && !spaceManager.debris.ContainsKey(this.gameObject))
         {
-            spaceManager.debris.Add(this.gameObject, spaceManager.rocket.worldDirection);
-            rb.AddForce(objDirection * 100);
+            rb.AddForce(objDirection * 100, ForceMode.Acceleration);
         }
         if (!spaceManager.foundObjects.Contains(this.gameObject)) {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
@@ -51,13 +54,35 @@ public class SP_Junk : MonoBehaviour
     {
         resetTimer = 0;
         rb.useGravity = false;
-        Vector3 forceDirection = (Vector3.back - spaceManager.rocket.worldDirection).normalized;
+        Vector3 forceDirection;
+        //forceDirection = (Vector3.back - spaceManager.rocket.worldDirection).normalized;
         if (collision.gameObject.CompareTag("Rocket"))
         {
-            forceDirection = collision.transform.position - transform.position.normalized; 
+            resetTimer = resetTime - 1;
+            if (resetTimer < 0)
+            {
+                resetTimer = 0;
+            }
+            //forceDirection = (collision.transform.position - transform.position).normalized;
+            forceDirection = Vector3.zero;
+            float xPos = transform.position.x;
+            if (xPos < 0)
+            {
+                forceDirection += Vector3.left;
+            }
+            else
+            {
+                forceDirection += Vector3.right;
+            }
             rb.AddForce(forceDirection * 100);
+            rb.AddTorque(Vector3.one * Random.Range(-10, 10));
         }
         rb.AddTorque(Vector3.one * Random.Range(-10, 10));
+    }
+
+    private void GetObjectDirection()
+    { 
+        objDirection = (Vector3.back + spaceManager.debris[this.gameObject] - spaceManager.rocket.worldDirection).normalized * spaceManager.rocket.speed;
     }
 
     private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)
