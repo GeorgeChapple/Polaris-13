@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 // Made By: Jason Lodge
 // Summary: Inventory multi space style, Inventory has grid and uses INV_Item as the data holder for it.
+
 // Sets up a grid for inventory spaces, any item added goes through multiple checks before finally snapping to a spot on the grid
 // grid is its own object and uses grid layout group to align grid spaces
 // then items are instantiated into another object using the grid space top left corner world positions into local
@@ -21,6 +22,9 @@ public class INV_Inventory : MonoBehaviour
     [Tooltip("Max amount of spaces in inventory width wise")]
     [SerializeField] private int inventoryGridMaxWidth = 10;
 
+    [Tooltip("Amount of spaces in hot bar.")]
+    [SerializeField] private int hotbarSpaces;
+
     [Tooltip("Grid parent with GridLayoutGroup.")]
     [SerializeField] private RectTransform gridRoot;
 
@@ -29,6 +33,12 @@ public class INV_Inventory : MonoBehaviour
 
     [Tooltip("Single grid cell prefab.")]
     [SerializeField] private GameObject gridCellPrefab;
+
+    [Tooltip("Hotbar parent with HorizontalLayoutGroup")]
+    private RectTransform hotBarRoot;
+
+    [Tooltip("Parent all item instances in hotbar will be under")]
+    private RectTransform itemHotBarRoot;
 
     [Header("Items")]
     [Tooltip("Item UI prefab (needs to have INV_ItemUI).")]

@@ -9,6 +9,12 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 {
     [SerializeField] private Image icon;
 
+    [SerializeField] private Image durabilityBar;
+
+    [SerializeField] private float durabilityBarMaxHeight;
+    [SerializeField] private float durabilityBarWidthFromEdge;
+    [SerializeField] private float durabilityBarYOffset;
+
     private INV_Inventory inv;
     private INV_Inventory.ItemInstance itemInst;
 
@@ -58,6 +64,9 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     {
         if (itemInst == null || rt == null) { return; }
         if (visualRT == null) { return; }
+
+        durabilityBar.rectTransform.anchoredPosition = new Vector2(0f, durabilityBarYOffset);
+        durabilityBar.rectTransform.sizeDelta = new Vector2(rt.sizeDelta.x - durabilityBarWidthFromEdge, durabilityBarMaxHeight);
 
         // reset first so we get consistent results
         visualRT.localEulerAngles = Vector3.zero;
