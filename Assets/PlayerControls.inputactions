@@ -113,6 +113,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "DropItem",
+                    "type": "PassThrough",
+                    "id": "c7006656-b59f-4c08-b571-57f313054b77",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "DropHeldItem",
+                    "type": "PassThrough",
+                    "id": "68e2a4ea-5149-40e2-aeb3-737411cacfde",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -383,7 +401,7 @@
                 {
                     "name": "",
                     "id": "d9333266-4750-4ce7-9f56-bd341892fd3d",
-                    "path": "<Keyboard>/i",
+                    "path": "<Keyboard>/r",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -434,6 +452,28 @@
                     "action": "Hotbar",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "2c177e3c-d718-4504-b5aa-4e0a325f6999",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DropItem",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2d88789d-b54f-4fc4-bf46-f3f562db04ad",
+                    "path": "<Keyboard>/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "DropHeldItem",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },

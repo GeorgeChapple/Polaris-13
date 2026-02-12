@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // Made By: Jason Lodge
@@ -10,9 +11,13 @@ using UnityEngine.UI;
 // grid doesnt get generated again, as we can just keep it there toggled off using set active for gameobject in player controller
 public class INV_Inventory : MonoBehaviour
 {
+    [Header("Inventory Menu")]
+    [Tooltip("Make sure the inventory menu root is active, so we can set up the grid then close the menu after.")]
+    [SerializeField] private GameObject inventoryMenuRoot;
+
     [Header("Grid")]
     [Tooltip("Max amount of spaces in inventory height wise")]
-    [SerializeField] private int inventoryGridMaxHeight = 3;
+    [SerializeField] private int inventoryGridMaxHeight = 4;
     [Tooltip("Max amount of spaces in inventory width wise")]
     [SerializeField] private int inventoryGridMaxWidth = 10;
 
@@ -29,11 +34,19 @@ public class INV_Inventory : MonoBehaviour
     [Tooltip("Item UI prefab (needs to have INV_ItemUI).")]
     [SerializeField] private GameObject itemUIPrefab;
 
+    [Tooltip("Item prefab we will use to drop an item with (needs to have INV_ItemDrop).")]
+    [SerializeField] private GameObject itemPrefab;
+
+    [Tooltip("Transform we will spawn dropped items from.")]
+    [SerializeField] private GameObject dropItemTransform;
+
     [Header("Debug")]
     [SerializeField] private bool logPlacement;
 
     // runtime
     private bool gridGenerated;
+    public INV_ItemUI heldItem;
+    public INV_ItemUI hoverItem;
 
     private GridLayoutGroup gridLayoutGroup;
     private Vector2 cellSize;
@@ -47,7 +60,7 @@ public class INV_Inventory : MonoBehaviour
     // item instances
     [SerializeField] private readonly List<ItemInstance> items = new List<ItemInstance>();
 
-    [System.Serializable] 
+    [System.Serializable]
     public class InventoryGridSpace
     {
         public Vector2Int position;
@@ -55,7 +68,7 @@ public class INV_Inventory : MonoBehaviour
         public ItemInstance occupyingItem;
     }
 
-    public class ItemInstance
+    public class ItemInstance // used for saving items and inventory
     {
         public INV_Item data;
 
@@ -68,6 +81,10 @@ public class INV_Inventory : MonoBehaviour
         // where the item is placed
         public Vector2Int cell;
 
+        // item specifics
+        public float maxDurability;
+        public float currentDurability;
+
         // ui
         public RectTransform ui;
         public INV_ItemUI uiHandler;
@@ -76,6 +93,26 @@ public class INV_Inventory : MonoBehaviour
     private void Start()
     {
         GenerateGrid();
+        if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+    }
+
+    private void Update()
+    {
+        // if menu is closed, don't do UI hover checks.
+        if (inventoryMenuRoot != null && !inventoryMenuRoot.activeInHierarchy)
+        {
+            hoverItem = null;
+            return;
+        }
+        if (inventoryMenuRoot.activeInHierarchy)
+        { // update all items when inventory menu open
+            foreach (ItemInstance item in items)
+            {
+                item.uiHandler.ApplyUpdatedVisuals();
+            }
+        }
+        // hover detection
+        UpdateHoverItem();
     }
 
     // generates the grid to use for inventory
@@ -224,6 +261,27 @@ public class INV_Inventory : MonoBehaviour
         return new Vector2(topLeftLocal.x, topLeftLocal.y);
     }
 
+    // snaps an items rect so the correct corner matches the target cell anchored position
+    // vertical uses top-left, horizontal uses bottom-left
+    private void SnapItemToTopLeft(ItemInstance item, Vector2 targetCellTopLeftAnchored)
+    {
+        if (item == null || item.ui == null) { return; }
+
+        RectTransform rect = item.ui;
+
+        // keep these consistent for snapping
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+
+        // get the rect corners in local space (relative to its pivot/transform)
+        Vector3[] corners = new Vector3[4];
+        rect.GetLocalCorners(corners);
+
+        Vector2 offset = corners[1];
+        rect.anchoredPosition = targetCellTopLeftAnchored + offset;
+    }
+
     // placement
     private bool TryPlaceItemAtCell(int gridX, int gridY, ItemInstance item, bool clearOld)
     {
@@ -247,7 +305,7 @@ public class INV_Inventory : MonoBehaviour
 
         // snap ui
         Vector2 anchored = GetAnchoredPosForCell(gridX, gridY);
-        item.ui.anchoredPosition = anchored;
+        SnapItemToTopLeft(item, anchored);
 
         // remember placed cell
         item.cell = new Vector2Int(gridX, gridY);
@@ -369,14 +427,6 @@ public class INV_Inventory : MonoBehaviour
         // after creating the instance, force its size to be per item grid size in INV_Item
         inst.size = item.ItemGridSize;
 
-        // cell size (one space) multiplied by item grid size (how many spots its supposed to occupy) for its respective x and y
-        Vector2 spacing = gridLayoutGroup != null ? gridLayoutGroup.spacing : Vector2.zero;
-
-        float w = (inst.size.x * cellSize.x) + Mathf.Max(0, inst.size.x - 1) * spacing.x;
-        float h = (inst.size.y * cellSize.y) + Mathf.Max(0, inst.size.y - 1) * spacing.y;
-
-        rt.sizeDelta = new Vector2(w, h);
-
         // enforce top-left pivot/anchors for consistent snapping
         rt.pivot = new Vector2(0f, 1f);
         rt.anchorMin = new Vector2(0f, 1f);
@@ -388,10 +438,27 @@ public class INV_Inventory : MonoBehaviour
         // init ui handler
         ui.Init(this, inst);
 
+        // apply correct UI size
+        RebuildItemUISize(inst);
+
         items.Add(inst);
         instance = inst;
         return true;
     }
+
+    // recalculates the UI size from instance.size so rotation can update it too
+    private void RebuildItemUISize(ItemInstance inst)
+    {
+        if (inst == null || inst.ui == null) { return; }
+
+        Vector2 spacing = gridLayoutGroup != null ? gridLayoutGroup.spacing : Vector2.zero;
+
+        float w = (inst.size.x * cellSize.x) + Mathf.Max(0, inst.size.x - 1) * spacing.x;
+        float h = (inst.size.y * cellSize.y) + Mathf.Max(0, inst.size.y - 1) * spacing.y;
+
+        inst.ui.sizeDelta = new Vector2(w, h);
+    }
+
     // drop logic
     private bool TryGetCellFromScreenPoint(Vector2 screenPoint, Camera uiCamera, out Vector2Int cell)
     {
@@ -414,5 +481,124 @@ public class INV_Inventory : MonoBehaviour
 
         cell = new Vector2Int(-1, -1);
         return false;
+    }
+
+    // Hover tracking
+    private void UpdateHoverItem()
+    {
+        // if you're dragging something, hover is not used
+        if (heldItem != null)
+        {
+            hoverItem = null;
+            return;
+        }
+        if (Mouse.current == null)
+        {
+            hoverItem = null;
+            return;
+        }
+
+        // read mouse position
+        Vector2 mouse = Mouse.current.position.ReadValue();
+        Camera uiCam = null;
+
+        INV_ItemUI found = null;
+        int bestSibling = int.MinValue;
+
+        // check every item rect for mouse hit. choose the top-most in hierarchy.
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemInstance inst = items[i];
+            if (inst == null || inst.ui == null || inst.uiHandler == null) { continue; }
+
+            if (RectTransformUtility.RectangleContainsScreenPoint(inst.ui, mouse, uiCam))
+            {
+                int sib = inst.ui.GetSiblingIndex();
+                if (sib >= bestSibling)
+                {
+                    bestSibling = sib;
+                    found = inst.uiHandler;
+                }
+            }
+        }
+
+        hoverItem = found;
+    }
+
+    // Rotate held item
+    public bool RotateItem()
+    {
+        // rotate should work via object being held
+        if (heldItem == null) { return false; }
+
+        ItemInstance inst = heldItem.Instance;
+        if (inst == null || inst.ui == null) { return false; }
+
+        // clear current occupied spaces before trying new size
+        ClearItemOccupancy(inst);
+
+        // swap grid size
+        Vector2Int oldSize = inst.size;
+        inst.size = new Vector2Int(oldSize.y, oldSize.x);
+
+        // toggle rotation state
+        inst.rotation = (inst.rotation == ItemInstance.Rotation.Vertical)
+            ? ItemInstance.Rotation.Horizontal
+            : ItemInstance.Rotation.Vertical;
+
+        // rebuild UI size to match new size
+        RebuildItemUISize(inst);
+
+        if (logPlacement) { Debug.Log($"INV, Rotated held item: {inst.data.Name}, size: {inst.size}"); }
+        return true;
+    }
+
+    public bool DropHoverItem()
+    {
+        if (hoverItem == null) { return false; }
+
+        ItemInstance inst = hoverItem.Instance;
+        if (inst == null) { return false; }
+
+        // remove from grid + list
+        ClearItemOccupancy(inst);
+        items.Remove(inst);
+
+        // destroy UI
+        if (inst.ui != null)
+        {
+            Destroy(inst.ui.gameObject);
+        }
+
+        // spawn world drop
+        bool dropped = DropItem(inst);
+
+        hoverItem = null;
+        return dropped;
+    }
+
+    // item drop logic
+    private bool DropItem(ItemInstance inst)
+    {
+        if (itemPrefab == null || dropItemTransform == null) { return false; }
+
+        Vector3 dropPoint = dropItemTransform.transform.position;
+        GameObject drop = Instantiate(itemPrefab, dropPoint, Quaternion.identity);
+        if (drop == null) { return false; }
+
+        INV_ItemDrop dropHandler = drop.GetComponent<INV_ItemDrop>();
+        if (dropHandler != null)
+        {
+            dropHandler.Init(inst.data);
+        }
+
+        Rigidbody rb = drop.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.AddForce(dropItemTransform.transform.forward, ForceMode.Impulse);
+            rb.AddTorque(Vector3.forward * Random.Range(-5, 5), ForceMode.Impulse);
+        }
+
+        return true;
     }
 }

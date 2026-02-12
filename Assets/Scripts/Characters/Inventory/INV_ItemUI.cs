@@ -15,8 +15,14 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     private RectTransform rt;
     private Canvas rootCanvas;
 
+    // visual rect we rotate (keeps root rect stable for snapping)
+    private RectTransform visualRT;
+
     private Vector2 startAnchoredPos;
     private Vector2Int startCell; // for snapping back to if we dont/cant drop on that grid cell
+
+    public INV_Inventory.ItemInstance Instance => itemInst;
+
     // setup, called by inventory
     public void Init(INV_Inventory inventory, INV_Inventory.ItemInstance instance)
     {
@@ -32,8 +38,50 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             icon.preserveAspect = true;
         }
 
+        // default visual to rotate is the icon rect
+        if (icon != null)
+        {
+            visualRT = icon.rectTransform;
+
+            // make sure the icon uses predictable anchors/pivot
+            visualRT.anchorMin = new Vector2(0f, 1f);
+            visualRT.anchorMax = new Vector2(0f, 1f);
+            visualRT.pivot = new Vector2(0f, 1f);
+        }
+
         // initial cell, will be set when inventory places the item
         startCell = itemInst != null ? itemInst.cell : Vector2Int.zero;
+    }
+
+    // called by inventory after rotation / rebuild
+    public void ApplyUpdatedVisuals()
+    {
+        if (itemInst == null || rt == null) { return; }
+        if (visualRT == null) { return; }
+
+        // reset first so we get consistent results
+        visualRT.localEulerAngles = Vector3.zero;
+        visualRT.anchoredPosition = Vector2.zero;
+
+        if (itemInst.rotation == INV_Inventory.ItemInstance.Rotation.Vertical)
+        {
+            visualRT.pivot = new Vector2(0.5f, 0.5f);
+            visualRT.anchorMin = new Vector2(0.5f, 0.5f);
+            visualRT.anchorMax = new Vector2(0.5f, 0.5f);
+            visualRT.sizeDelta = rt.sizeDelta;
+
+            visualRT.localEulerAngles = Vector3.zero;
+            visualRT.anchoredPosition = Vector2.zero;
+            return;
+        }
+
+        visualRT.pivot = new Vector2(0.5f, 0.5f);
+        visualRT.anchorMin = new Vector2(0.5f, 0.5f);
+        visualRT.anchorMax = new Vector2(0.5f, 0.5f);
+
+        visualRT.localEulerAngles = new Vector3(0f, 0f, -90f);
+
+        visualRT.sizeDelta = new Vector2(rt.sizeDelta.y, rt.sizeDelta.x);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -43,6 +91,11 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         if (rt == null) { rt = GetComponent<RectTransform>(); }
         if (rootCanvas == null) { rootCanvas = GetComponentInParent<Canvas>(); }
+
+        inv.heldItem = this;
+
+        // prevent drop logic from seeing an old hover while dragging
+        inv.hoverItem = null;
 
         startAnchoredPos = rt.anchoredPosition;
         startCell = itemInst.cell;
@@ -76,5 +129,13 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             // restore the logical cell in case something changed
             itemInst.cell = startCell;
         }
+        else
+        {
+            // update snap-back reference now that the item is placed somewhere new
+            startCell = itemInst.cell;
+            startAnchoredPos = rt.anchoredPosition;
+        }
+
+        inv.heldItem = null;
     }
 }

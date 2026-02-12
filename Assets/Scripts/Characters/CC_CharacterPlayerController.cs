@@ -21,17 +21,22 @@ public class CC_CharacterPlayerController : MonoBehaviour
     [Tooltip("True when any menu is open, will stop TickFixed/TickLate and free cursor.")]
     [SerializeField] private bool inMenu;
 
-    [Tooltip("Pause menu root (optional).")]
+    [Tooltip("Pause menu root.")]
     [SerializeField] private GameObject pauseMenuRoot;
 
-    [Tooltip("Inventory menu root (optional).")]
+    [Tooltip("Inventory menu root.")]
     [SerializeField] private GameObject inventoryMenuRoot;
+
+    [Tooltip("Inventory")]
+    [SerializeField] private INV_Inventory inventory;
 
     private bool cursorLocked;
 
     // internal press guards so hold wont spam toggle
     private bool pauseHeld;
     private bool inventoryHeld;
+    private bool rotateHeld;
+    private bool dropHeld;
 
     public bool InMenu => inMenu;
 
@@ -87,6 +92,9 @@ public class CC_CharacterPlayerController : MonoBehaviour
     {
         // open/close menu logic
         HandleMenuInput();
+
+        // one-off rotate/drop while inventory menu is open
+        HandleInventoryActions();
     }
 
     private void FixedUpdate()
@@ -115,6 +123,38 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
         // interaction
         characterBase.TickInteract(input.interact);
+    }
+    private void HandleInventoryActions()
+    {
+        // only allow these when we're in a menu and inventory is actually open
+        if (!inMenu || !IsInventoryOpen() || inventory == null)
+        {
+            rotateHeld = false;
+            dropHeld = false;
+            return;
+        }
+
+        // rotate
+        if (input.rotateItem && !rotateHeld)
+        {
+            rotateHeld = true;
+            inventory.RotateItem();
+        }
+        else if (!input.rotateItem && rotateHeld)
+        {
+            rotateHeld = false;
+        }
+
+        // drop
+        if (input.dropItem && !dropHeld)
+        {
+            dropHeld = true;
+            inventory.DropHoverItem();
+        }
+        else if (!input.dropItem && dropHeld)
+        {
+            dropHeld = false;
+        }
     }
 
     private void HandleMenuInput()

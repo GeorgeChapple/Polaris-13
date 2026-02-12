@@ -111,6 +111,7 @@ Transform:
   m_Children:
   - {fileID: 8236564078002858386}
   - {fileID: 3637123821088872404}
+  - {fileID: 2525829125682972623}
   m_Father: {fileID: 4827758710393173946}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &4328973024714606780
@@ -234,13 +235,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 981abc11e3c265a40aef4aa3bffbc303, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventoryGridMaxHeight: 3
+  inventoryMenuRoot: {fileID: 2437130736283423829}
+  inventoryGridMaxHeight: 4
   inventoryGridMaxWidth: 10
   gridRoot: {fileID: 7416075966039751954}
   itemGridRoot: {fileID: 4833083285757464627}
   gridCellPrefab: {fileID: 7850465892296457764, guid: dc8cb3add5aeedd439f3cbbb65a4d0fa, type: 3}
   itemUIPrefab: {fileID: 7850465892296457764, guid: f9e53926364655248bc50381cd209861, type: 3}
+  itemPrefab: {fileID: 2353747757295221720, guid: 48fe5c44cb91e5c42a109603d853cb1a, type: 3}
+  dropItemTransform: {fileID: 7267066407272589429}
   logPlacement: 1
+  heldItem: {fileID: 0}
+  hoverItem: {fileID: 0}
 --- !u!1 &1015223365284675570
 GameObject:
   m_ObjectHideFlags: 0
@@ -592,7 +598,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &8609366648692967514
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1650,8 +1656,8 @@ MonoBehaviour:
   bobSharpness: 6
   sprintBobMult: 1.15
   crouchBobMult: 0.65
-  lookMultX: 0.2
-  lookMultY: 0.1
+  lookMultX: 0.4
+  lookMultY: 0.2
   mouseBaseX: 0.1
   mouseBaseY: 0.1
   stickBaseX: 180
@@ -1673,6 +1679,7 @@ MonoBehaviour:
   inMenu: 0
   pauseMenuRoot: {fileID: 8102134890253006248}
   inventoryMenuRoot: {fileID: 2437130736283423829}
+  inventory: {fileID: 8502438742356004698}
 --- !u!114 &8578470881332336096
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1694,6 +1701,9 @@ MonoBehaviour:
   roll: 0
   pause: 0
   inventory: 0
+  rotateItem: 0
+  dropItem: 0
+  dropHeldItem: 0
   hotBar: 0
 --- !u!114 &6283488651506963492
 MonoBehaviour:
@@ -2092,6 +2102,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7240365082250534246}
   m_CullTransparentMesh: 1
+--- !u!1 &7267066407272589429
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2525829125682972623}
+  m_Layer: 0
+  m_Name: DropItemTransform
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2525829125682972623
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7267066407272589429}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.23, z: 1.25}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 139902970584455969}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8034056740522765330
 GameObject:
   m_ObjectHideFlags: 0
@@ -2121,7 +2162,7 @@ Transform:
   m_GameObject: {fileID: 8034056740522765330}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 70, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

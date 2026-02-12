@@ -10,6 +10,9 @@ public class INV_Item : ScriptableObject
     [SerializeField] private string m_name;
     [SerializeField] private string description;
 
+    [Header("Specs")]
+    [SerializeField] private float durability;
+
     [Header("Visuals")]
     [SerializeField] private Sprite icon;
     [SerializeField] private Mesh mesh;

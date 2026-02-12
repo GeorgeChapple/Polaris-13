@@ -23,6 +23,9 @@ public class CC_PlayerInputManager : MonoBehaviour
     [Header("Menu Values")]
     public bool pause;
     public bool inventory;
+    public bool rotateItem;
+    public bool dropItem;
+    public bool dropHeldItem;
     public float hotBar;
 
 #if ENABLE_INPUT_SYSTEM
@@ -32,6 +35,9 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void OnSprint(InputValue value) { SprintInput(value.isPressed); }
     public void OnCrouch(InputValue value) { CrouchInput(value.isPressed); }
     public void OnInteract(InputValue value) { InteractInput(value.isPressed); }
+    public void OnRotateItem(InputValue value) { RotateItemInput(value.isPressed); }
+    public void OnDropItem(InputValue value) { DropItemInput(value.isPressed); }
+    public void OnDropHeldItem(InputValue value) { DropHeldItemInput(value.isPressed); }
     public void OnPause(InputValue value) { PauseInput(value.isPressed); }
     public void OnInventory(InputValue value) { InventoryInput(value.isPressed); }
     public void OnHotbar(InputValue value) { HotbarInput(value.Get<float>()); }
@@ -45,6 +51,9 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void SprintInput(bool newSprint) { sprint = newSprint; }
     public void CrouchInput(bool newCrouch) { crouch = newCrouch; }
     public void InteractInput(bool newInteractState) { interact = newInteractState; }
+    public void RotateItemInput(bool newRotateItemState) { rotateItem = newRotateItemState; }
+    public void DropItemInput(bool newDropItemState) {  dropItem = newDropItemState; }
+    public void DropHeldItemInput(bool newDropHeldItemState) {  dropItem = newDropHeldItemState; }
     public void PauseInput(bool newPauseState) { pause = newPauseState; }
     public void InventoryInput(bool newInventoryState) { inventory = newInventoryState; }
     public void HotbarInput(float newHotBarState) { hotBar = newHotBarState; }
