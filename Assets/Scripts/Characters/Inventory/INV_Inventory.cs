@@ -17,13 +17,13 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private GameObject inventoryMenuRoot;
 
     [Header("Grid")]
-    [Tooltip("Max amount of spaces in inventory height wise")]
+    [Tooltip("Max amount of spaces in inventory height wise.")]
     [SerializeField] private int inventoryGridMaxHeight = 4;
-    [Tooltip("Max amount of spaces in inventory width wise")]
+    [Tooltip("Max amount of spaces in inventory width wise.")]
     [SerializeField] private int inventoryGridMaxWidth = 10;
 
-    [Tooltip("Amount of spaces in hot bar.")]
-    [SerializeField] private int hotbarSpaces;
+    [Tooltip("Spacing between grid slots")]
+    [SerializeField] private Vector2 inventoryGridSpacing = new Vector2(2, 2);
 
     [Tooltip("Grid parent with GridLayoutGroup.")]
     [SerializeField] private RectTransform gridRoot;
@@ -33,12 +33,6 @@ public class INV_Inventory : MonoBehaviour
 
     [Tooltip("Single grid cell prefab.")]
     [SerializeField] private GameObject gridCellPrefab;
-
-    [Tooltip("Hotbar parent with HorizontalLayoutGroup")]
-    private RectTransform hotBarRoot;
-
-    [Tooltip("Parent all item instances in hotbar will be under")]
-    private RectTransform itemHotBarRoot;
 
     [Header("Items")]
     [Tooltip("Item UI prefab (needs to have INV_ItemUI).")]
@@ -68,7 +62,7 @@ public class INV_Inventory : MonoBehaviour
     private InventoryGridSpace[,] spaces;
 
     // item instances
-    [SerializeField] private readonly List<ItemInstance> items = new List<ItemInstance>();
+    [SerializeField] private List<ItemInstance> items = new List<ItemInstance>();
 
     [System.Serializable]
     public class InventoryGridSpace
@@ -77,7 +71,7 @@ public class INV_Inventory : MonoBehaviour
         public bool isOccupied;
         public ItemInstance occupyingItem;
     }
-
+    [System.Serializable]
     public class ItemInstance // used for saving items and inventory
     {
         public INV_Item data;
@@ -142,7 +136,14 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        float cellSizeX = gridRoot.sizeDelta.x / inventoryGridMaxWidth;
+        // apply spacing first so cell size calc is correct
+        gridLayoutGroup.spacing = inventoryGridSpacing;
+
+        // account for spacing when calculating cell size
+        float totalSpacingX = inventoryGridSpacing.x * Mathf.Max(0, inventoryGridMaxWidth - 1);
+        float usableWidth = gridRoot.sizeDelta.x - totalSpacingX;
+
+        float cellSizeX = usableWidth / inventoryGridMaxWidth;
 
         // cell size should be an equal square
         cellSize = new Vector2(cellSizeX, cellSizeX);
