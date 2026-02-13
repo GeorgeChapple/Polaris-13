@@ -511,7 +511,7 @@ public class INV_Inventory : MonoBehaviour
 
         // read mouse position
         Vector2 mouse = Mouse.current.position.ReadValue();
-        Camera uiCam = null;
+        Camera uiCam = Camera.main;
 
         INV_ItemUI found = null;
         int bestSibling = int.MinValue;
