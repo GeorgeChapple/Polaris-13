@@ -4,18 +4,26 @@ using UnityEngine.InputSystem;
 
 public class CC_ClientPlayerControl : NetworkBehaviour
 {
+    [SerializeField] private GameObject cam;
+    private CustomGravityRigidbody m_CustomGravityRigidbody;
+    private CC_CharacterBase m_CharacterBase;
     private CC_CharacterPlayerController m_CharacterPlayerController;
     private CC_PlayerInputManager m_PlayerInputManager;
     private PlayerInput m_PlayerInput;
 
     private void Awake()
     {
+        m_CustomGravityRigidbody = GetComponent<CustomGravityRigidbody>();
+        m_CharacterBase = GetComponent<CC_CharacterBase>();
         m_CharacterPlayerController = GetComponent<CC_CharacterPlayerController>();
         m_PlayerInputManager = GetComponent<CC_PlayerInputManager>();
         m_PlayerInput = GetComponent<PlayerInput>();
+        m_CustomGravityRigidbody.enabled = false;
+        m_CharacterBase.enabled = false;
         m_CharacterPlayerController.enabled = false;
         m_PlayerInputManager.enabled = false;
         m_PlayerInput.enabled = false;
+        cam.SetActive(false);
     }
 
     public override void OnNetworkSpawn()
@@ -24,12 +32,15 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
         if (IsOwner)
         {
+            cam.SetActive(true);
             m_PlayerInputManager.enabled = true;
             m_PlayerInput.enabled = true;
         }
 
         if (IsServer)
         {
+            m_CustomGravityRigidbody.enabled = true;
+            m_CharacterBase.enabled = true;
             m_CharacterPlayerController.enabled = true;
         }
     }
