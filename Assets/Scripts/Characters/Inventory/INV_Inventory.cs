@@ -17,13 +17,13 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private GameObject inventoryMenuRoot;
 
     [Header("Grid")]
-    [Tooltip("Max amount of spaces in inventory height wise")]
+    [Tooltip("Max amount of spaces in inventory height wise.")]
     [SerializeField] private int inventoryGridMaxHeight = 4;
-    [Tooltip("Max amount of spaces in inventory width wise")]
+    [Tooltip("Max amount of spaces in inventory width wise.")]
     [SerializeField] private int inventoryGridMaxWidth = 10;
 
-    [Tooltip("Amount of spaces in hot bar.")]
-    [SerializeField] private int hotbarSpaces;
+    [Tooltip("Spacing between grid slots")]
+    [SerializeField] private Vector2 inventoryGridSpacing = new Vector2(2, 2);
 
     [Tooltip("Grid parent with GridLayoutGroup.")]
     [SerializeField] private RectTransform gridRoot;
@@ -33,12 +33,6 @@ public class INV_Inventory : MonoBehaviour
 
     [Tooltip("Single grid cell prefab.")]
     [SerializeField] private GameObject gridCellPrefab;
-
-    [Tooltip("Hotbar parent with HorizontalLayoutGroup")]
-    private RectTransform hotBarRoot;
-
-    [Tooltip("Parent all item instances in hotbar will be under")]
-    private RectTransform itemHotBarRoot;
 
     [Header("Items")]
     [Tooltip("Item UI prefab (needs to have INV_ItemUI).")]
@@ -68,7 +62,7 @@ public class INV_Inventory : MonoBehaviour
     private InventoryGridSpace[,] spaces;
 
     // item instances
-    [SerializeField] private readonly List<ItemInstance> items = new List<ItemInstance>();
+    [SerializeField] private List<ItemInstance> items = new List<ItemInstance>();
 
     [System.Serializable]
     public class InventoryGridSpace
@@ -78,11 +72,12 @@ public class INV_Inventory : MonoBehaviour
         public ItemInstance occupyingItem;
     }
 
+    [System.Serializable]
     public class ItemInstance // used for saving items and inventory
     {
         public INV_Item data;
 
-        // size in cells
+        // rectangular size in cells for UI and bounds
         public Vector2Int size;
 
         public enum Rotation { Vertical, Horizontal };
@@ -90,6 +85,12 @@ public class INV_Inventory : MonoBehaviour
 
         // where the item is placed
         public Vector2Int cell;
+
+        // occupancy, offsets relative from cell
+        public List<Vector2Int> occupiedOffsets = new List<Vector2Int>();
+
+        // original shape size before rotation
+        public Vector2Int shapeSize;
 
         // item specifics
         public float maxDurability;
@@ -142,7 +143,14 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        float cellSizeX = gridRoot.sizeDelta.x / inventoryGridMaxWidth;
+        // apply spacing first so cell size calc is correct
+        gridLayoutGroup.spacing = inventoryGridSpacing;
+
+        // account for spacing when calculating cell size
+        float totalSpacingX = inventoryGridSpacing.x * Mathf.Max(0, inventoryGridMaxWidth - 1);
+        float usableWidth = gridRoot.sizeDelta.x - totalSpacingX;
+
+        float cellSizeX = usableWidth / inventoryGridMaxWidth;
 
         // cell size should be an equal square
         cellSize = new Vector2(cellSizeX, cellSizeX);
@@ -206,19 +214,23 @@ public class INV_Inventory : MonoBehaviour
         EnsureGrid();
         if (item == null) { return false; }
 
-        // try find a spot that can fit it
-        Vector2Int size = item.ItemGridSize;
-        Vector2Int cell;
-        if (!LookForOccupyableSpace(size, out cell))
-        {
-            if (logPlacement) { Debug.Log($"INV, No space for: {item.Name}"); }
-            return false;
-        }
-
-        // create + place
+        // create instance first so we can use its shape
         ItemInstance inst;
         if (!CreateItemInstance(item, out inst)) { return false; }
 
+        // try find a spot that can fit it
+        Vector2Int cell;
+        if (!LookForOccupyableSpace(inst, out cell))
+        {
+            if (logPlacement) { Debug.Log($"INV, No space for: {item.Name}"); }
+
+            // cleanup if we failed
+            if (inst.ui != null) { Destroy(inst.ui.gameObject); }
+            items.Remove(inst);
+            return false;
+        }
+
+        // place
         if (!TryPlaceItemAtCell(cell.x, cell.y, inst, false))
         {
             // shouldnt happen since we already searched, but just in case
@@ -262,7 +274,7 @@ public class INV_Inventory : MonoBehaviour
         Vector3 world = cell.TransformPoint(cell.rect.center);
         Vector3 local = itemGridRoot.InverseTransformPoint(world);
 
-        // because item pivots are top-left, need the cell's top-left corner, not the center
+        // because item pivots are top left, need the cell's top left corner, not the center
         Vector3[] corners = new Vector3[4];
         cell.GetWorldCorners(corners);
         Vector3 topLeftWorld = corners[1];
@@ -297,14 +309,14 @@ public class INV_Inventory : MonoBehaviour
     {
         if (item == null) { return false; }
 
-        // bounds + occupancy check
-        if (!CheckSpaceOccupyable(gridX, gridY, item.size, item))
+        // bounds and occupancy check
+        if (!CheckSpaceOccupyable(gridX, gridY, item, item))
         {
             if (logPlacement) { Debug.Log($"INV, Blocked placement at ({gridX},{gridY}) for {item.data.Name}"); }
             return false;
         }
 
-        // clear old occupied spaces (so moving works)
+        // clear old occupied spaces so moving works
         if (clearOld)
         {
             ClearItemOccupancy(item);
@@ -325,17 +337,17 @@ public class INV_Inventory : MonoBehaviour
 
     private void OccupySpaces(int gridX, int gridY, ItemInstance item)
     {
-        for (int oy = 0; oy < item.size.y; oy++)
+        // only occupy offsets that are marked + in the shape
+        for (int i = 0; i < item.occupiedOffsets.Count; i++)
         {
-            for (int ox = 0; ox < item.size.x; ox++)
-            {
-                int x = gridX + ox;
-                int y = gridY + oy;
+            Vector2Int off = item.occupiedOffsets[i];
 
-                InventoryGridSpace s = spaces[x, y];
-                s.isOccupied = true;
-                s.occupyingItem = item;
-            }
+            int x = gridX + off.x;
+            int y = gridY + off.y;
+
+            InventoryGridSpace s = spaces[x, y];
+            s.isOccupied = true;
+            s.occupyingItem = item;
         }
     }
 
@@ -356,14 +368,14 @@ public class INV_Inventory : MonoBehaviour
     }
 
     // checks if item can occupy space, called by dropped item using interact
-    private bool LookForOccupyableSpace(Vector2Int size, out Vector2Int foundCell)
+    private bool LookForOccupyableSpace(ItemInstance item, out Vector2Int foundCell)
     {
-        // scan top-left to bottom-right
+        // scan top left to bottom right
         for (int y = 0; y < inventoryGridMaxHeight; y++)
         {
             for (int x = 0; x < inventoryGridMaxWidth; x++)
             {
-                if (CheckSpaceOccupyable(x, y, size, null))
+                if (CheckSpaceOccupyable(x, y, item, null))
                 {
                     foundCell = new Vector2Int(x, y);
                     return true;
@@ -375,32 +387,33 @@ public class INV_Inventory : MonoBehaviour
         return false;
     }
 
-    private bool CheckSpaceOccupyable(int gridX, int gridY, Vector2Int size, ItemInstance ignoreItem)
+    private bool CheckSpaceOccupyable(int gridX, int gridY, ItemInstance itemToPlace, ItemInstance ignoreItem)
     {
-        if (size.x <= 0 || size.y <= 0) { return false; }
+        if (itemToPlace == null) { return false; }
+        if (itemToPlace.size.x <= 0 || itemToPlace.size.y <= 0) { return false; }
 
-        // bounds first
+        // bounds first use bounding box size so we don't set outside grid
         if (gridX < 0 || gridY < 0) { return false; }
-        if (gridX + size.x > inventoryGridMaxWidth) { return false; }
-        if (gridY + size.y > inventoryGridMaxHeight) { return false; }
+        if (gridX + itemToPlace.size.x > inventoryGridMaxWidth) { return false; }
+        if (gridY + itemToPlace.size.y > inventoryGridMaxHeight) { return false; }
 
         // occupancy check
-        for (int oy = 0; oy < size.y; oy++)
+        // only check occupied offsets
+        for (int i = 0; i < itemToPlace.occupiedOffsets.Count; i++)
         {
-            for (int ox = 0; ox < size.x; ox++)
-            {
-                int x = gridX + ox;
-                int y = gridY + oy;
+            Vector2Int off = itemToPlace.occupiedOffsets[i];
 
-                InventoryGridSpace s = spaces[x, y];
+            int x = gridX + off.x;
+            int y = gridY + off.y;
 
-                if (!s.isOccupied) { continue; }
+            InventoryGridSpace s = spaces[x, y];
 
-                // allow overlap with itself when moving
-                if (ignoreItem != null && s.occupyingItem == ignoreItem) { continue; }
+            if (!s.isOccupied) { continue; }
 
-                return false;
-            }
+            // allow overlap with itself when moving
+            if (ignoreItem != null && s.occupyingItem == ignoreItem) { continue; }
+
+            return false;
         }
 
         return true;
@@ -432,12 +445,12 @@ public class INV_Inventory : MonoBehaviour
 
         ItemInstance inst = new ItemInstance();
         inst.data = item;
-        inst.rotation = ItemInstance.Rotation.Vertical; // default it for now, sort out rotation later
+        inst.rotation = ItemInstance.Rotation.Vertical;
 
-        // after creating the instance, force its size to be per item grid size in INV_Item
-        inst.size = item.ItemGridSize;
+        // build occupancy offsets from the item shape
+        BuildShapeForInstance(inst, ItemInstance.Rotation.Vertical);
 
-        // enforce top-left pivot/anchors for consistent snapping
+        // enforce top left pivot/anchors for consistent snapping
         rt.pivot = new Vector2(0f, 1f);
         rt.anchorMin = new Vector2(0f, 1f);
         rt.anchorMax = new Vector2(0f, 1f);
@@ -454,6 +467,84 @@ public class INV_Inventory : MonoBehaviour
         items.Add(inst);
         instance = inst;
         return true;
+    }
+
+    // builds occupied offsets and bounding size based on item shape and rotation
+    private void BuildShapeForInstance(ItemInstance inst, ItemInstance.Rotation rot)
+    {
+        inst.occupiedOffsets.Clear();
+
+        List<string> shape = inst.data != null ? inst.data.InventorySpaceShape : null;
+
+        // if no shape then treat as filled rectangle
+        if (shape == null || shape.Count == 0)
+        {
+            Vector2Int s = inst.data != null ? inst.data.ItemGridSize : Vector2Int.one;
+            inst.shapeSize = s;
+            inst.size = s;
+
+            for (int y = 0; y < s.y; y++)
+            {
+                for (int x = 0; x < s.x; x++)
+                {
+                    inst.occupiedOffsets.Add(new Vector2Int(x, y));
+                }
+            }
+
+            return;
+        }
+
+        // normalize width/height
+        int h = shape.Count;
+        int w = 0;
+        for (int i = 0; i < shape.Count; i++)
+        {
+            if (string.IsNullOrEmpty(shape[i])) { continue; }
+            w = Mathf.Max(w, shape[i].Length);
+        }
+
+        // save original shape size
+        inst.shapeSize = new Vector2Int(Mathf.Max(1, w), Mathf.Max(1, h));
+
+        // collect + cells in vertical orientation first
+        List<Vector2Int> raw = new List<Vector2Int>();
+        for (int y = 0; y < h; y++)
+        {
+            string row = shape[y];
+            if (string.IsNullOrEmpty(row)) { row = ""; }
+
+            for (int x = 0; x < w; x++)
+            {
+                char c = (x < row.Length) ? row[x] : '-';
+                if (c == '+')
+                {
+                    raw.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        // rotate offsets if needed
+        if (rot == ItemInstance.Rotation.Vertical)
+        {
+            inst.size = inst.shapeSize;
+            inst.occupiedOffsets.AddRange(raw);
+            return;
+        }
+
+        // horizontal is 90deg clockwise from the vertical shape
+        // so swap old width and height, this should also work for
+        // when i fix the rotation to have 4 orientations rather than 2
+        int oldW = inst.shapeSize.x;
+        int oldH = inst.shapeSize.y;
+
+        inst.size = new Vector2Int(oldH, oldW);
+
+        for (int i = 0; i < raw.Count; i++)
+        {
+            Vector2Int p = raw[i];
+            Vector2Int r = new Vector2Int(p.y, oldW - 1 - p.x);
+            inst.occupiedOffsets.Add(r);
+        }
     }
 
     // recalculates the UI size from instance.size so rotation can update it too
@@ -510,7 +601,7 @@ public class INV_Inventory : MonoBehaviour
 
         // read mouse position
         Vector2 mouse = Mouse.current.position.ReadValue();
-        Camera uiCam = null;
+        Camera uiCam = Camera.main;
 
         INV_ItemUI found = null;
         int bestSibling = int.MinValue;
@@ -544,17 +635,16 @@ public class INV_Inventory : MonoBehaviour
         ItemInstance inst = heldItem.Instance;
         if (inst == null || inst.ui == null) { return false; }
 
-        // clear current occupied spaces before trying new size
+        // clear current occupied spaces before trying new shape
         ClearItemOccupancy(inst);
-
-        // swap grid size
-        Vector2Int oldSize = inst.size;
-        inst.size = new Vector2Int(oldSize.y, oldSize.x);
 
         // toggle rotation state
         inst.rotation = (inst.rotation == ItemInstance.Rotation.Vertical)
             ? ItemInstance.Rotation.Horizontal
             : ItemInstance.Rotation.Vertical;
+
+        // rebuild offsets and bounding size from shape for that rotation
+        BuildShapeForInstance(inst, inst.rotation);
 
         // rebuild UI size to match new size
         RebuildItemUISize(inst);
@@ -570,7 +660,7 @@ public class INV_Inventory : MonoBehaviour
         ItemInstance inst = hoverItem.Instance;
         if (inst == null) { return false; }
 
-        // remove from grid + list
+        // remove from grid and list
         ClearItemOccupancy(inst);
         items.Remove(inst);
 
@@ -606,7 +696,7 @@ public class INV_Inventory : MonoBehaviour
         if (rb != null)
         {
             rb.AddForce(dropItemTransform.transform.forward, ForceMode.Impulse);
-            rb.AddTorque(Vector3.forward * Random.Range(-5, 5), ForceMode.Impulse);
+            rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
         }
 
         return true;
