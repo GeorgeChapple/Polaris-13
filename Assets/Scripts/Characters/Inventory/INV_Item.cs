@@ -75,4 +75,82 @@ public class INV_Item : ScriptableObject
 
         return new Vector2Int(w, h);
     }
+
+    // called by editor button, we dont want this in onvalidate as it would run after every character we type
+    public void NormalizeInventoryShape()
+    {
+        if (inventorySpaceShape == null)
+        {
+            inventorySpaceShape = new List<string>();
+        }
+
+        // if empty, do nothing
+        if (inventorySpaceShape.Count == 0) { return; }
+
+        // find max width
+        int maxW = 0;
+        for (int i = 0; i < inventorySpaceShape.Count; i++)
+        {
+            string row = inventorySpaceShape[i];
+            if (string.IsNullOrEmpty(row)) { row = ""; }
+            maxW = Mathf.Max(maxW, row.Length);
+        }
+
+        maxW = Mathf.Max(1, maxW);
+
+        // validate each row
+        // pad shorter rows with - and replace each invalid char with -
+        for (int i = 0; i < inventorySpaceShape.Count; i++)
+        {
+            string row = inventorySpaceShape[i];
+            if (string.IsNullOrEmpty(row)) { row = ""; }
+
+            char[] chars = row.ToCharArray();
+            for (int c = 0; c < chars.Length; c++)
+            {
+                if (chars[c] != '+' && chars[c] != '-')
+                {
+                    chars[c] = '-';
+                }
+            }
+
+            row = new string(chars);
+
+            // pad to max width
+            if (row.Length < maxW)
+            {
+                row = row.PadRight(maxW, '-');
+            }
+
+            inventorySpaceShape[i] = row;
+        }
+    }
 }
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(INV_Item))]
+public class INV_ItemEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        INV_Item item = (INV_Item)target;
+        if (item == null) { return; }
+
+        EditorGUILayout.Space(8);
+
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField("Inventory Shape Tool", EditorStyles.boldLabel);
+
+        EditorGUILayout.HelpBox("Normalize will: \nConvert invalid chars to a -\nPads rows to equal width using -", MessageType.Info);
+
+        if (GUILayout.Button("Normalize Inventory Shape"))
+        {
+            item.NormalizeInventoryShape();
+        }
+
+        EditorGUILayout.EndVertical();
+    }
+}
+#endif
