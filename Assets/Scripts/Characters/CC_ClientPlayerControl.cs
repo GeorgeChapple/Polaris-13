@@ -6,16 +6,16 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 {
     [SerializeField] private GameObject cam;
     private CustomGravityRigidbody m_CustomGravityRigidbody;
-    private CC_CharacterBase m_CharacterBase;
-    private CC_CharacterPlayerController m_CharacterPlayerController;
+    private CC_Movement m_CharacterBase;
+    private CC_PlayerController m_CharacterPlayerController;
     private CC_PlayerInputManager m_PlayerInputManager;
     private PlayerInput m_PlayerInput;
 
     private void Awake()
     {
         m_CustomGravityRigidbody = GetComponent<CustomGravityRigidbody>();
-        m_CharacterBase = GetComponent<CC_CharacterBase>();
-        m_CharacterPlayerController = GetComponent<CC_CharacterPlayerController>();
+        m_CharacterBase = GetComponent<CC_Movement>();
+        m_CharacterPlayerController = GetComponent<CC_PlayerController>();
         m_PlayerInputManager = GetComponent<CC_PlayerInputManager>();
         m_PlayerInput = GetComponent<PlayerInput>();
         m_CustomGravityRigidbody.enabled = false;

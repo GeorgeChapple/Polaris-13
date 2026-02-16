@@ -2,17 +2,18 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Made by: Jason Lodge
-// Summary: Player controller, drives all the locomotion code in the character base and things like interaction.
-// This is separated as the character base will be used by AI too to be modular.
-[RequireComponent(typeof(CC_CharacterBase))]
-public class CC_CharacterPlayerController : MonoBehaviour
+// Summary: Player controller, drives movement/body/camera/interaction.
+// This is separated as the movement script will be used by AI for modularity.
+
+public class CC_PlayerController : MonoBehaviour
 {
 #if ENABLE_INPUT_SYSTEM
     private PlayerInput playerInput;
 #endif
-
-    private CC_PlayerInputManager input;
-    private CC_CharacterBase characterBase;
+    [SerializeField] private CC_PlayerInputManager input;
+    [SerializeField] private CC_Movement movement;
+    [SerializeField] private CC_BodyAndCamera bodyAndCamera;
+    [SerializeField] private CC_Interaction interaction;
 
     [Header("Cursor")]
     public bool lockCursorOnStart = true;
@@ -27,7 +28,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
     [Tooltip("Inventory menu root.")]
     [SerializeField] private GameObject inventoryMenuRoot;
 
-    [Tooltip("Inventory")]
+    [Tooltip("Inventory (optional for this refactor).")]
     [SerializeField] private INV_Inventory inventory;
 
     private bool cursorLocked;
@@ -57,8 +58,16 @@ public class CC_CharacterPlayerController : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
         playerInput = GetComponent<PlayerInput>();
 #endif
-        input = GetComponent<CC_PlayerInputManager>();
-        characterBase = GetComponent<CC_CharacterBase>();
+        // feed shared view ref if needed
+        if (movement != null && movement.viewTransform == null && bodyAndCamera != null)
+        {
+            movement.viewTransform = bodyAndCamera.cinemachineCameraTarget;
+        }
+
+        if (interaction != null && interaction.viewTransform == null && bodyAndCamera != null)
+        {
+            interaction.viewTransform = bodyAndCamera.cinemachineCameraTarget;
+        }
     }
 
     private void Start()
@@ -101,29 +110,53 @@ public class CC_CharacterPlayerController : MonoBehaviour
     {
         if (inMenu)
         {
-            characterBase.TickFixed(new Vector2(0, 0), false, 0, false, false);
+            if (movement != null) { movement.TickFixed(Vector2.zero, false, false, false); }
+            if (bodyAndCamera != null) { bodyAndCamera.TickFixed(0f); }
             return;
         }
 
         // movement / physics
-        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
+        if (movement != null)
+        {
+            movement.TickFixed(input.move, input.jump, input.sprint, input.crouch);
+        }
+
+        // body rotation (space roll etc)
+        if (bodyAndCamera != null)
+        {
+            bodyAndCamera.TickFixed(input.roll);
+        }
     }
 
     private void LateUpdate()
     {
         if (inMenu)
         {
-            characterBase.TickLate(new Vector2(0, 0), IsCurrentDeviceMouse);
-            characterBase.TickInteract(false);
+            if (bodyAndCamera != null) { bodyAndCamera.TickLate(Vector2.zero, IsCurrentDeviceMouse); }
+            if (movement != null) { movement.TickLate(); }
+            if (interaction != null) { interaction.TickInteract(false); }
             return;
         }
 
         // camera / rotation
-        characterBase.TickLate(input.look, IsCurrentDeviceMouse);
+        if (bodyAndCamera != null)
+        {
+            bodyAndCamera.TickLate(input.look, IsCurrentDeviceMouse);
+        }
+
+        // stamina
+        if (movement != null)
+        {
+            movement.TickLate();
+        }
 
         // interaction
-        characterBase.TickInteract(input.interact);
+        if (interaction != null)
+        {
+            interaction.TickInteract(input.interact);
+        }
     }
+
     private void HandleInventoryActions()
     {
         // only allow these when we're in a menu and inventory is actually open
