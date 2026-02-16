@@ -7,8 +7,11 @@ using UnityEngine.UI;
 
 public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    [SerializeField] private Image icon;
+    [Header("Mesh Visual")]
+    [Tooltip("Child object containing MeshFilter + MeshRenderer.")]
+    [SerializeField] private Transform meshVisualRoot;
 
+    [Header("UI")]
     [SerializeField] private Image durabilityBar;
 
     [SerializeField] private float durabilityBarMaxHeight;
@@ -21,8 +24,8 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     private RectTransform rt;
     private Canvas rootCanvas;
 
-    // visual rect we rotate (keeps root rect stable for snapping)
-    private RectTransform visualRT;
+    private MeshFilter mf;
+    private MeshRenderer mr;
 
     private Vector2 startAnchoredPos;
     private Vector2Int startCell; // for snapping back to if we dont/cant drop on that grid cell
@@ -38,22 +41,15 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         rt = GetComponent<RectTransform>();
         rootCanvas = GetComponentInParent<Canvas>();
 
-        if (icon != null && itemInst != null && itemInst.data != null)
+        // cache mesh components
+        if (meshVisualRoot != null)
         {
-            icon.sprite = itemInst.data.Icon;
-            icon.preserveAspect = true;
+            mf = meshVisualRoot.GetComponent<MeshFilter>();
+            mr = meshVisualRoot.GetComponent<MeshRenderer>();
         }
 
-        // default visual to rotate is the icon rect
-        if (icon != null)
-        {
-            visualRT = icon.rectTransform;
-
-            // make sure the icon uses predictable anchors/pivot
-            visualRT.anchorMin = new Vector2(0f, 1f);
-            visualRT.anchorMax = new Vector2(0f, 1f);
-            visualRT.pivot = new Vector2(0f, 1f);
-        }
+        // apply initial visuals
+        ApplyUpdatedVisuals();
 
         // initial cell, will be set when inventory places the item
         startCell = itemInst != null ? itemInst.cell : Vector2Int.zero;
@@ -63,34 +59,63 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     public void ApplyUpdatedVisuals()
     {
         if (itemInst == null || rt == null) { return; }
-        if (visualRT == null) { return; }
 
-        durabilityBar.rectTransform.anchoredPosition = new Vector2(0f, durabilityBarYOffset);
-        durabilityBar.rectTransform.sizeDelta = new Vector2(rt.sizeDelta.x - durabilityBarWidthFromEdge, durabilityBarMaxHeight);
+        // durability bar stays as UI for now
+        if (durabilityBar != null)
+        {
+            durabilityBar.rectTransform.anchoredPosition = new Vector2(0f, durabilityBarYOffset);
+            durabilityBar.rectTransform.sizeDelta = new Vector2(rt.sizeDelta.x - durabilityBarWidthFromEdge, durabilityBarMaxHeight);
+        }
 
-        // reset first so we get consistent results
-        visualRT.localEulerAngles = Vector3.zero;
-        visualRT.anchoredPosition = Vector2.zero;
+        // mesh visuals
+        ApplyMeshVisuals();
+    }
 
+    private void ApplyMeshVisuals()
+    {
+        if (meshVisualRoot == null) { return; }
+        if (itemInst == null || itemInst.data == null) { return; }
+
+        if (mf == null) { mf = meshVisualRoot.GetComponent<MeshFilter>(); }
+        if (mr == null) { mr = meshVisualRoot.GetComponent<MeshRenderer>(); }
+
+        if (mf == null || mr == null) { return; }
+
+        // assign mesh/material
+        if (itemInst.data.Mesh != null)
+        {
+            mf.sharedMesh = itemInst.data.Mesh;
+        }
+
+        if (itemInst.data.Material != null)
+        {
+            mr.sharedMaterial = itemInst.data.Material;
+        }
+
+        // position and scale
+        // item root is top left pivot so get center
+        Vector2 rectSize = rt.rect.size;
+        Vector3 rectCenterLocal = new Vector3(rectSize.x * 0.5f, -rectSize.y * 0.5f, 0f);
+
+        Vector3 itemOffset = itemInst.data.InventoryMeshOffset;
+        float itemScale = itemInst.data.InventoryMeshScale;
+
+        // make sure we dont put a negative scale on it
+        if (itemScale <= 0f) { itemScale = 0; }
+
+        // center placement
+        meshVisualRoot.localPosition = rectCenterLocal + itemOffset;
+        meshVisualRoot.localScale = Vector3.one * itemScale;
+
+        // rotation handling
         if (itemInst.rotation == INV_Inventory.ItemInstance.Rotation.Vertical)
         {
-            visualRT.pivot = new Vector2(0.5f, 0.5f);
-            visualRT.anchorMin = new Vector2(0.5f, 0.5f);
-            visualRT.anchorMax = new Vector2(0.5f, 0.5f);
-            visualRT.sizeDelta = rt.sizeDelta;
-
-            visualRT.localEulerAngles = Vector3.zero;
-            visualRT.anchoredPosition = Vector2.zero;
+            meshVisualRoot.localEulerAngles = Vector3.zero;
             return;
         }
 
-        visualRT.pivot = new Vector2(0.5f, 0.5f);
-        visualRT.anchorMin = new Vector2(0.5f, 0.5f);
-        visualRT.anchorMax = new Vector2(0.5f, 0.5f);
-
-        visualRT.localEulerAngles = new Vector3(0f, 0f, -90f);
-
-        visualRT.sizeDelta = new Vector2(rt.sizeDelta.y, rt.sizeDelta.x);
+        // horizontal rotate
+        meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -90f);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -140,7 +165,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         }
         else
         {
-            // update snap-back reference now that the item is placed somewhere new
+            // update snap back reference now that the item is placed somewhere new
             startCell = itemInst.cell;
             startAnchoredPos = rt.anchoredPosition;
         }
