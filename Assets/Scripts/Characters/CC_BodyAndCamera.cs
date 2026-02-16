@@ -237,7 +237,7 @@ public class CC_BodyAndCamera : MonoBehaviour
         bodyCapsule = spawnedRefs.bodyCapsule;
         cinemachineCameraTarget = spawnedRefs.cameraRoot;
         cCam = spawnedRefs.cCam;
-        cameraPass = spawnedRefs.cameraPass;
+        cameraPass = spawnedRefs.mainCamera.gameObject;
 
         // wire movement references
         if (movement != null)

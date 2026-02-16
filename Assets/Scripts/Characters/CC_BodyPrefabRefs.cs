@@ -13,7 +13,6 @@ public class CC_BodyPrefabRefs : MonoBehaviour
 
     [Header("Transforms")]
     public Transform cameraRoot;
-    public GameObject cameraPass;
     public Transform groundedCheck;
     public Transform dropItemTransform;
 
