@@ -4,14 +4,22 @@ using UnityEngine.InputSystem;
 
 public class CC_ClientPlayerControl : NetworkBehaviour
 {
-    [SerializeField] private GameObject cam;
+    [SerializeField] private CC_BodyAndCamera bodyAndCamera;
+    private GameObject cam;
     private CustomGravityRigidbody m_CustomGravityRigidbody;
     private CC_Movement m_CharacterBase;
     private CC_PlayerController m_CharacterPlayerController;
     private CC_PlayerInputManager m_PlayerInputManager;
     private PlayerInput m_PlayerInput;
 
-    private void Awake()
+    public bool WireCameraIn(GameObject c)
+    {
+        cam = c;
+        if (cam != null) { return true; }
+        return false;
+    }
+
+    public void Init()
     {
         m_CustomGravityRigidbody = GetComponent<CustomGravityRigidbody>();
         m_CharacterBase = GetComponent<CC_Movement>();

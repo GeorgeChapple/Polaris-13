@@ -11,6 +11,9 @@ public class CC_BodyAndCamera : MonoBehaviour
     [Header("References")]
     public CC_Movement movement;
 
+    [Tooltip("Wires Camera to multiplayer client handler.")]
+    [SerializeField] private CC_ClientPlayerControl clientPlayerControl;
+
     [Tooltip("Just to wire the camera in.")]
     public CC_Interaction interaction;
 
@@ -177,6 +180,7 @@ public class CC_BodyAndCamera : MonoBehaviour
     // spawned body state
     CC_BodyPrefabRefs spawnedRefs;
     Transform spawnedBodyRoot;
+    GameObject cameraPass;
 
     void Awake()
     {
@@ -233,6 +237,7 @@ public class CC_BodyAndCamera : MonoBehaviour
         bodyCapsule = spawnedRefs.bodyCapsule;
         cinemachineCameraTarget = spawnedRefs.cameraRoot;
         cCam = spawnedRefs.cCam;
+        cameraPass = spawnedRefs.cameraPass;
 
         // wire movement references
         if (movement != null)
@@ -267,6 +272,12 @@ public class CC_BodyAndCamera : MonoBehaviour
         if (inventory != null)
         {
             inventory.dropItemTransform = spawnedRefs.dropItemTransform;
+        }
+
+        if (clientPlayerControl != null)
+        {
+            clientPlayerControl.WireCameraIn(cameraPass);
+            clientPlayerControl.Init();
         }
 
         // cache defaults now that we have valid refs
