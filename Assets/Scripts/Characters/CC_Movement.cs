@@ -54,6 +54,11 @@ public class CC_Movement : MonoBehaviour
     public bool Sprinting => sprinting;
     public bool Crouching => crouching;
 
+    // runtime binding (body is spawned after awake)
+    public void BindValues(CC_CharacterValues v) { values = v; }
+    public void BindGroundedCheck(Transform t) { groundedCheckObj = t; }
+    public void BindViewTransform(Transform t) { viewTransform = t; }
+
     // internals
     Rigidbody rb;
 
@@ -69,7 +74,7 @@ public class CC_Movement : MonoBehaviour
 
     protected virtual void Awake()
     {
-        if (values == null) { values = GetComponentInChildren<CC_CharacterValues>(); }
+        if (values == null) { values = GetComponent<CC_CharacterValues>(); }
 
         rb = GetComponent<Rigidbody>();
         rb.interpolation = RigidbodyInterpolation.Interpolate;

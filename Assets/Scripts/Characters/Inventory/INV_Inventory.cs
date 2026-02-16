@@ -42,7 +42,7 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private GameObject itemPrefab;
 
     [Tooltip("Transform we will spawn dropped items from.")]
-    [SerializeField] private GameObject dropItemTransform;
+    public Transform dropItemTransform;
 
     [Header("Debug")]
     [SerializeField] private bool logPlacement;
@@ -682,7 +682,7 @@ public class INV_Inventory : MonoBehaviour
     {
         if (itemPrefab == null || dropItemTransform == null) { return false; }
 
-        Vector3 dropPoint = dropItemTransform.transform.position;
+        Vector3 dropPoint = dropItemTransform.position;
         GameObject drop = Instantiate(itemPrefab, dropPoint, Quaternion.identity);
         if (drop == null) { return false; }
 
@@ -695,7 +695,7 @@ public class INV_Inventory : MonoBehaviour
         Rigidbody rb = drop.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.AddForce(dropItemTransform.transform.forward, ForceMode.Impulse);
+            rb.AddForce(dropItemTransform.forward, ForceMode.Impulse);
             rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
         }
 

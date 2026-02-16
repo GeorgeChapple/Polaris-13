@@ -11,8 +11,31 @@ public class CC_BodyAndCamera : MonoBehaviour
     [Header("References")]
     public CC_Movement movement;
 
+    [Tooltip("Just to wire the camera in.")]
+    public CC_Interaction interaction;
+
+    [Tooltip("Just to wire in the drop point.")]
+    public INV_Inventory inventory;
+
+    [Header("Body Spawn")]
+    [Tooltip("BodyCapsule prefab root (must have CC_BodyPrefabRefs).")]
+    public GameObject bodyPrefab;
+
+    [Tooltip("If true, will destroy spawned body on destroy.")]
+    public bool destroyBodyOnDestroy = true;
+
+    [Tooltip("If true, body will be spawned even if bodyTransform is already set.")]
+    public bool forceRespawn = false;
+
     [Tooltip("Camera (Cinemachine)")]
     public CinemachineCamera cCam;
+
+    [Header("UI (Screen Space Camera)")]
+    [Tooltip("Player UI canvas (Screen Space Camera).")]
+    public Canvas playerCanvas;
+
+    [Tooltip("Optional plane distance to apply to the canvas.")]
+    public float uiPlaneDistance = 1f;
 
     [Header("Body")]
     [Tooltip("Visual body object.")]
@@ -44,6 +67,10 @@ public class CC_BodyAndCamera : MonoBehaviour
 
     [Header("Ground Mask (for stabilise ray)")]
     public LayerMask groundLayers;
+
+    [Header("Stabilise Smoothing")]
+    [Tooltip("How quickly the up axis used for stabilisation follows gravity direction.")]
+    public float stabiliseUpSharpness = 50f;
 
     [Header("Cinemachine")]
     [Tooltip("The follow target set in the Cinemachine camera that the camera will follow")]
@@ -144,10 +171,110 @@ public class CC_BodyAndCamera : MonoBehaviour
     // body orientation state
     Quaternion bodyRotation = Quaternion.identity;
 
+    // stabilise axis state (smoothed)
+    Vector3 stabiliseUpAxis = Vector3.up;
+
+    // spawned body state
+    CC_BodyPrefabRefs spawnedRefs;
+    Transform spawnedBodyRoot;
+
     void Awake()
     {
         if (movement == null) { movement = GetComponent<CC_Movement>(); }
+        if (interaction == null) { interaction = GetComponent<CC_Interaction>(); }
+    }
 
+    void Start()
+    {
+        EnsureBodySpawnedAndWired();
+    }
+
+    void OnDestroy()
+    {
+        if (!destroyBodyOnDestroy) { return; }
+        if (spawnedBodyRoot == null) { return; }
+
+        Destroy(spawnedBodyRoot.gameObject);
+        spawnedBodyRoot = null;
+        spawnedRefs = null;
+    }
+
+    void EnsureBodySpawnedAndWired()
+    {
+        // if we already have bodyTransform and dont want to force respawn, just cache as normal
+        if (bodyTransform != null && !forceRespawn)
+        {
+            CacheRuntimeDefaults();
+            return;
+        }
+
+        // need prefab to spawn
+        if (bodyPrefab == null)
+        {
+            Debug.LogWarning("CC_BodyAndCamera: bodyPrefab is null, cant spawn body.", gameObject);
+            return;
+        }
+
+        // spawn body above ball
+        GameObject go = Instantiate(bodyPrefab, transform.position + Vector3.up, Quaternion.identity);
+
+        spawnedBodyRoot = go.transform;
+
+        // grab refs
+        spawnedRefs = go.GetComponent<CC_BodyPrefabRefs>();
+        if (spawnedRefs == null)
+        {
+            Debug.LogError("CC_BodyAndCamera: spawned body prefab is missing CC_BodyPrefabRefs.", go);
+            return;
+        }
+
+        // wire core references from prefab
+        bodyTransform = spawnedRefs.transform;
+        bodyCapsule = spawnedRefs.bodyCapsule;
+        cinemachineCameraTarget = spawnedRefs.cameraRoot;
+        cCam = spawnedRefs.cCam;
+
+        // wire movement references
+        if (movement != null)
+        {
+            movement.groundedCheckObj = spawnedRefs.groundedCheck;
+            movement.viewTransform = cinemachineCameraTarget;
+        }
+
+        // wire interaction references (view transform should be the actual camera)
+        if (interaction != null)
+        {
+            Transform camT =
+                spawnedRefs.mainCamera != null ? spawnedRefs.mainCamera.transform :
+                cinemachineCameraTarget != null ? cinemachineCameraTarget :
+                bodyTransform;
+
+            interaction.viewTransform = camT;
+        }
+
+        // wire UI canvas to spawned camera
+        if (playerCanvas != null && spawnedRefs.mainCamera != null)
+        {
+            playerCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            playerCanvas.worldCamera = spawnedRefs.mainCamera;
+
+            if (uiPlaneDistance > 0f)
+            {
+                playerCanvas.planeDistance = uiPlaneDistance;
+            }
+        }
+
+        if (inventory != null)
+        {
+            inventory.dropItemTransform = spawnedRefs.dropItemTransform;
+        }
+
+        // cache defaults now that we have valid refs
+        CacheRuntimeDefaults();
+    }
+
+    void CacheRuntimeDefaults()
+    {
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
 
@@ -173,6 +300,16 @@ public class CC_BodyAndCamera : MonoBehaviour
         {
             bodyRotation = transform.rotation;
         }
+
+        // init stabilise axis from gravity so it starts correct
+        if (movement != null)
+        {
+            Vector3 up = movement.UpAxis;
+            if (up.sqrMagnitude > 0.0001f)
+            {
+                stabiliseUpAxis = up.normalized;
+            }
+        }
     }
 
     // Call in FixedUpdate.
@@ -181,6 +318,7 @@ public class CC_BodyAndCamera : MonoBehaviour
         pendingRoll = -rollInput;
 
         if (movement == null) { return; }
+        if (bodyTransform == null) { return; }
 
         // body rotation only applied to the body
         if (movement.locomotionType == CC_Movement.LocomotionType.SpaceMode)
@@ -201,11 +339,31 @@ public class CC_BodyAndCamera : MonoBehaviour
     {
         if (movement == null) { return; }
 
+        // if we havent spawned yet (or got cleared), try now
+        if (bodyTransform == null || cinemachineCameraTarget == null)
+        {
+            EnsureBodySpawnedAndWired();
+            if (bodyTransform == null || cinemachineCameraTarget == null) { return; }
+        }
+
+        // smooth the up axis we use for stabilisation on entry
+        UpdateStabiliseUpAxis();
+
         CameraRotation(lookInput, isMouse);
         UpdateBodyFollow();
         UpdateCrouch();
         UpdateSprintFov();
         UpdateCameraBobbing();
+    }
+
+    void UpdateStabiliseUpAxis()
+    {
+        // use gravity at the movement rigidbody position, but smooth it for body alignment
+        Vector3 up = movement.UpAxis;
+        if (up.sqrMagnitude < 0.0001f) { return; }
+
+        float t = 1f - Mathf.Exp(-stabiliseUpSharpness * Time.deltaTime);
+        stabiliseUpAxis = Vector3.Slerp(stabiliseUpAxis, up.normalized, t);
     }
 
     void CameraRotation(Vector2 look, bool isMouse)
@@ -240,7 +398,9 @@ public class CC_BodyAndCamera : MonoBehaviour
         if (bodyTransform == null || movement == null) { return; }
 
         Rigidbody rb = movement.RB;
-        Vector3 upAxis = movement.UpAxis;
+
+        // use stabilised up axis
+        Vector3 upAxis = stabiliseUpAxis;
 
         // body sits above the ball along up axis, and follows smoothly
         Vector3 targetPos = rb.position + (upAxis * bodyUpOffset);
@@ -256,7 +416,9 @@ public class CC_BodyAndCamera : MonoBehaviour
     {
         if (movement == null) { return; }
 
+        // if we're in space mode, do nothing
         bool canCrouch = movement.locomotionType == CC_Movement.LocomotionType.GroundMode && movement.grounded && !movement.JumpedThisTick;
+
         if (!canCrouch) { return; }
 
         // change cam height and lower collider size
@@ -306,7 +468,9 @@ public class CC_BodyAndCamera : MonoBehaviour
         bool allowBob = movement.locomotionType == CC_Movement.LocomotionType.GroundMode && movement.grounded;
 
         Rigidbody rb = movement.RB;
-        Vector3 upAxis = movement.UpAxis;
+
+        // use stabilised up axis for bob projection too
+        Vector3 upAxis = stabiliseUpAxis;
 
         // use planar speed for intensity
         Vector3 planarVel = Vector3.ProjectOnPlane(rb.linearVelocity, upAxis);
@@ -348,7 +512,8 @@ public class CC_BodyAndCamera : MonoBehaviour
     {
         if (bodyTransform == null || movement == null) { return; }
 
-        Vector3 upAxis = movement.UpAxis;
+        // use stabilised up axis for rotation alignment
+        Vector3 upAxis = stabiliseUpAxis;
 
         // align body up to gravity up axis with curve ramp
         float strength = GetStabiliseStrength();
@@ -377,8 +542,7 @@ public class CC_BodyAndCamera : MonoBehaviour
         if (movement == null) { return 0f; }
         if (movement.locomotionType == CC_Movement.LocomotionType.SpaceMode) { return 0f; }
 
-        Rigidbody rb = movement.RB;
-        Vector3 upAxis = movement.UpAxis;
+        Vector3 upAxis = stabiliseUpAxis;
 
         float proximity01 = 0f;
 
@@ -391,8 +555,11 @@ public class CC_BodyAndCamera : MonoBehaviour
             float range = Mathf.Max(0.01f, stabiliseRange);
             float castDist = range + stabilisePadding;
 
-            Ray ray = new Ray(rb.position, -upAxis);
-            Debug.DrawRay(rb.position, -upAxis * castDist, Color.red);
+            // use body position for cast origin
+            Vector3 origin = bodyTransform != null ? bodyTransform.position : movement.RB.position;
+
+            Ray ray = new Ray(origin, -upAxis);
+            Debug.DrawRay(origin, -upAxis * castDist, Color.red);
 
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, castDist, groundLayers, QueryTriggerInteraction.Ignore))

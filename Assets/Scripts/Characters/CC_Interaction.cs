@@ -14,15 +14,15 @@ public class CC_Interaction : MonoBehaviour
     [Tooltip("Layers that contain interactables.")]
     public LayerMask interactLayers;
 
-    [Tooltip("Origin used for interaction ray.")]
-    public Transform interactOrigin;
-
     // interact
     InteractableObject currentInteractable;
     float holdTimer;
     bool holding;
     bool interactWasHeld;
     bool interactUsedUntilRelease;
+
+    // runtime binding (body is spawned after awake)
+    public void BindViewTransform(Transform t) { viewTransform = t; }
 
     public virtual void TickInteract(bool interactHeld)
     {
@@ -144,10 +144,7 @@ public class CC_Interaction : MonoBehaviour
 
     protected virtual InteractableObject GetLookInteractable()
     {
-        Transform origin =
-            interactOrigin != null ? interactOrigin :
-            viewTransform != null ? viewTransform :
-            transform;
+        Transform origin = viewTransform != null ? viewTransform : transform;
 
         Ray ray = new Ray(origin.position, origin.forward);
         Debug.DrawRay(origin.position, origin.forward * interactRange, Color.cyan);

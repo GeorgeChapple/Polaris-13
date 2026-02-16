@@ -349,7 +349,7 @@ MonoBehaviour:
   gridCellPrefab: {fileID: 7850465892296457764, guid: dc8cb3add5aeedd439f3cbbb65a4d0fa, type: 3}
   itemUIPrefab: {fileID: 7850465892296457764, guid: f9e53926364655248bc50381cd209861, type: 3}
   itemPrefab: {fileID: 2353747757295221720, guid: 48fe5c44cb91e5c42a109603d853cb1a, type: 3}
-  dropItemTransform: {fileID: 7267066407272589429}
+  dropItemTransform: {fileID: 2525829125682972623}
   logPlacement: 1
   heldItem: {fileID: 0}
   hoverItem: {fileID: 0}
@@ -1763,51 +1763,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   locomotionType: 0
   values: {fileID: 824611021907388697}
+  viewTransform: {fileID: 0}
   moveSpeed: 6
   accelerationRate: 15
   sprintSpeedMult: 1.5
-  sprintFovMult: 1.15
-  fovSharpness: 8
-  cCam: {fileID: 9125957477683939406}
   crouchSpeedMult: 0.5
-  crouchCameraYOffset: -0.5
-  crouchSharpness: 14
-  bodyCapsule: {fileID: 574529689200235230}
-  crouchCapsuleHeightMult: 0.6
   jumpPower: 5
-  torqueStrength: 10
-  stabiliseRange: 20
-  stabilisePadding: 0.25
-  stabiliseCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  stabiliseMaxMult: 5
   thrusterAccel: 4
-  spaceTurnSpeed: 30
-  rollMaxSpeed: 100
-  rollAccel: 0.5
-  rollDamping: 0.00001
   zeroGravityThreshold: 0.25
   grounded: 1
   groundedCheckObj: {fileID: 3637123821088872404}
@@ -1817,32 +1779,6 @@ MonoBehaviour:
     m_Bits: 64
   jumpTimeout: 0.1
   fallTimeout: 0.15
-  interactRange: 2.5
-  interactLayers:
-    serializedVersion: 2
-    m_Bits: 256
-  interactOrigin: {fileID: 9120988383163063865}
-  bodyTransform: {fileID: 139902970584455969}
-  bodyUpOffset: 1
-  bodyFollowPosSharpness: 50
-  bodyFollowRotSharpness: 50
-  cinemachineCameraTarget: {fileID: 8236564078002858386}
-  topClamp: 90
-  bottomClamp: -90
-  enableCameraBobbing: 1
-  bobFrequency: 1.8
-  bobAmplitude: 0.01
-  bobSideAmplitude: 0.005
-  bobSharpness: 6
-  sprintBobMult: 1.15
-  crouchBobMult: 0.65
-  lookMultX: 0.4
-  lookMultY: 0.2
-  mouseBaseX: 0.1
-  mouseBaseY: 0.1
-  stickBaseX: 180
-  stickBaseY: 180
-  invertY: 0
 --- !u!114 &1757037690442055534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1855,6 +1791,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ce1d3534fb6db34ebf0df9993a93c9b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  input: {fileID: 0}
+  movement: {fileID: 0}
+  bodyAndCamera: {fileID: 0}
+  interaction: {fileID: 0}
   lockCursorOnStart: 1
   inMenu: 0
   pauseMenuRoot: {fileID: 8102134890253006248}
@@ -1925,7 +1865,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4827758710393173946}
   m_Layer: 0
-  m_Name: Player
+  m_Name: PlayerOld
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2521,7 +2461,7 @@ Transform:
   m_GameObject: {fileID: 8034056740522765330}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 5, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
