@@ -232,6 +232,8 @@ public class CC_BodyAndCamera : MonoBehaviour
             return;
         }
 
+        DontDestroyOnLoad(go);
+
         // wire core references from prefab
         bodyTransform = spawnedRefs.transform;
         bodyCapsule = spawnedRefs.bodyCapsule;
@@ -276,7 +278,8 @@ public class CC_BodyAndCamera : MonoBehaviour
 
         if (clientPlayerControl != null)
         {
-            clientPlayerControl.WireCameraIn(cameraPass);
+            if (clientPlayerControl.WireCameraIn(cameraPass)) { Debug.Log("Camera wired in."); }
+            else { Debug.Log("camera not wired in"); }
             clientPlayerControl.Init();
         }
 

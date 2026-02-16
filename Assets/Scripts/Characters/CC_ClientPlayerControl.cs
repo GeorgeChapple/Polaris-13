@@ -5,12 +5,12 @@ using UnityEngine.InputSystem;
 public class CC_ClientPlayerControl : NetworkBehaviour
 {
     [SerializeField] private CC_BodyAndCamera bodyAndCamera;
-    private GameObject cam;
-    private CustomGravityRigidbody m_CustomGravityRigidbody;
-    private CC_Movement m_CharacterBase;
-    private CC_PlayerController m_CharacterPlayerController;
-    private CC_PlayerInputManager m_PlayerInputManager;
-    private PlayerInput m_PlayerInput;
+    [SerializeField] private GameObject cam;
+    [SerializeField] private CustomGravityRigidbody m_CustomGravityRigidbody;
+    [SerializeField] private CC_Movement m_CharacterBase;
+    [SerializeField] private CC_PlayerController m_CharacterPlayerController;
+    [SerializeField] private CC_PlayerInputManager m_PlayerInputManager;
+    [SerializeField] private PlayerInput m_PlayerInput;
 
     public bool WireCameraIn(GameObject c)
     {
@@ -26,12 +26,11 @@ public class CC_ClientPlayerControl : NetworkBehaviour
         m_CharacterPlayerController = GetComponent<CC_PlayerController>();
         m_PlayerInputManager = GetComponent<CC_PlayerInputManager>();
         m_PlayerInput = GetComponent<PlayerInput>();
-        m_CustomGravityRigidbody.enabled = false;
-        m_CharacterBase.enabled = false;
-        m_CharacterPlayerController.enabled = false;
-        m_PlayerInputManager.enabled = false;
-        m_PlayerInput.enabled = false;
-        cam.SetActive(false);
+        //m_CustomGravityRigidbody.enabled = false;
+        //m_CharacterBase.enabled = false;
+        //m_CharacterPlayerController.enabled = false;
+        //m_PlayerInputManager.enabled = false;
+        //m_PlayerInput.enabled = false;
     }
 
     public override void OnNetworkSpawn()
@@ -40,7 +39,6 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
         if (IsOwner)
         {
-            cam.SetActive(true);
             m_PlayerInputManager.enabled = true;
             m_PlayerInput.enabled = true;
         }

@@ -100,7 +100,7 @@ public class CC_PlayerController : MonoBehaviour
     private void Update()
     {
         // open/close menu logic
-        // HandleMenuInput();
+        HandleMenuInput();
 
         // one-off rotate/drop while inventory menu is open
         HandleInventoryActions();
