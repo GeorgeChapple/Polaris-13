@@ -43,7 +43,7 @@ public class GravitySphere : GravitySource {
 		outerFalloffFactor = 1f / (outerFalloffRadius - outerRadius);
 	}
 
-	void OnDrawGizmos () {
+	void OnDrawGizmosSelected () {
 		Vector3 p = transform.position;
 		if (innerFalloffRadius > 0f && innerFalloffRadius < innerRadius) {
 			Gizmos.color = Color.cyan;

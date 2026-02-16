@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.VisualScripting;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 public class CustomGravityRigidbody : MonoBehaviour {
@@ -12,6 +13,10 @@ public class CustomGravityRigidbody : MonoBehaviour {
 
 	void Awake () {
 		body = GetComponent<Rigidbody>();
+		if (body == null )
+		{
+			body = this.AddComponent<Rigidbody>();
+		}
 		body.useGravity = false;
 	}
 

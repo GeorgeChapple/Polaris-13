@@ -8,7 +8,7 @@ public class SP_SpaceJunk : MonoBehaviour
     [SerializeField] private Vector2 spawnTimeRange = new Vector2(3, 6);
     private float spawnTimeLimit;
     private float spawnTimer;
-    private RS_Move rocket;
+    [HideInInspector] public RS_Move rocket;
     public List<GameObject> debrisPrefabs = new List<GameObject>(); 
     public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
@@ -28,7 +28,7 @@ public class SP_SpaceJunk : MonoBehaviour
         {
             SpawnDebris();
         }
-        MoveDebris();
+        RotateDebrisVelocity();
         Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
         foundObjects.Clear();
         foreach (Collider col in colliders)
@@ -47,14 +47,24 @@ public class SP_SpaceJunk : MonoBehaviour
             }
             else
             {
-                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)]);
+                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)], new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2), transform.rotation);
                 //newDebris.transform.SetParent(this.transform);
-                newDebris.transform.localPosition = new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2);
                 newDebris.transform.eulerAngles = Vector3.back;
                 debris.Add(newDebris, rocket.worldDirection);
                 spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
                 spawnTimer = 0;
+                newDebris.GetComponent<SP_Junk>().objDirection = (Vector3.back + debris[newDebris] - rocket.worldDirection).normalized * rocket.speed;
+                newDebris.GetComponent<Rigidbody>().AddForce(newDebris.GetComponent<SP_Junk>().objDirection * 100);
             }
+        }
+    }
+
+    private void RotateDebrisVelocity()
+    {
+        foreach (GameObject obj in debris.Keys)
+        {
+            Rigidbody rb = obj.GetComponent<Rigidbody>();
+            rb.linearVelocity = rb.linearVelocity.magnitude * obj.GetComponent<SP_Junk>().objDirection.normalized;
         }
     }
 
@@ -62,11 +72,12 @@ public class SP_SpaceJunk : MonoBehaviour
     {
         foreach (GameObject obj in debris.Keys)
         {
-            SP_DestroyJunk junkComponent = obj.GetComponent<SP_DestroyJunk>();
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
+            SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
+            junkComponent.objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
             junkComponent.junkRotation.eulerAngles = Vector3.Lerp(junkComponent.junkRotation.eulerAngles, junkComponent.junkRotation.eulerAngles + junkComponent.junkRotationRate, Time.deltaTime);
-            obj.transform.eulerAngles = Quaternion.LookRotation(objDirection).eulerAngles + junkComponent.junkRotation.eulerAngles;
-            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + objDirection, Time.deltaTime);
+            obj.transform.eulerAngles = Quaternion.LookRotation(junkComponent.objDirection).eulerAngles;
+            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + junkComponent.objDirection, Time.deltaTime);
+            obj.GetComponent<Rigidbody>().AddForce(junkComponent.objDirection * 0.001f, ForceMode.Impulse);
         }
     }
 
