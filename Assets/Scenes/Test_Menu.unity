@@ -1124,22 +1124,22 @@ MonoBehaviour:
   WidgetConfiguration: {fileID: 11400000, guid: 53898ddd837172a4b825df5f4f8dffb0, type: 2}
   JoiningSession:
     m_PersistentCalls:
+      m_Calls: []
+  JoinedSession:
+    m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 127790021}
         m_TargetAssemblyTypeName: MS_SceneSwitcher, Assembly-CSharp
         m_MethodName: ChangeScene
-        m_Mode: 5
+        m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
+          m_IntArgument: 1
           m_FloatArgument: 0
-          m_StringArgument: Test_Multiplayer
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  JoinedSession:
-    m_PersistentCalls:
-      m_Calls: []
   FailedToJoinSession:
     m_PersistentCalls:
       m_Calls: []
