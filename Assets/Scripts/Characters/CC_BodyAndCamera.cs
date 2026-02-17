@@ -232,8 +232,6 @@ public class CC_BodyAndCamera : MonoBehaviour
             return;
         }
 
-        DontDestroyOnLoad(go);
-
         // wire core references from prefab
         bodyTransform = spawnedRefs.transform;
         bodyCapsule = spawnedRefs.bodyCapsule;
@@ -285,6 +283,8 @@ public class CC_BodyAndCamera : MonoBehaviour
 
         // cache defaults now that we have valid refs
         CacheRuntimeDefaults();
+
+        clientPlayerControl.ready = true;
     }
 
     void CacheRuntimeDefaults()

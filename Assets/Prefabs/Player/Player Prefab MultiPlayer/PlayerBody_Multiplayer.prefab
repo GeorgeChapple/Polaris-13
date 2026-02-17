@@ -403,6 +403,7 @@ GameObject:
   - component: {fileID: 1842395402420328082}
   - component: {fileID: 2152234126898581168}
   - component: {fileID: 1927963797596873239}
+  - component: {fileID: 5117107931159731221}
   m_Layer: 0
   m_Name: PlayerBody_Multiplayer
   m_TagString: Player
@@ -518,11 +519,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bodyCapsule: {fileID: 2152234126898581168}
   cameraRoot: {fileID: 251257341134617818}
-  cameraPass: {fileID: 0}
   groundedCheck: {fileID: 2419364105657295350}
   dropItemTransform: {fileID: 2418799373764218850}
   mainCamera: {fileID: 3882035543710282257}
   cCam: {fileID: 6506316616283303895}
+--- !u!114 &5117107931159731221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3688278627356634717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d598f9dcf680aea4b84ecf677eb59f90, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &9115199144739540254
 GameObject:
   m_ObjectHideFlags: 0
