@@ -40,28 +40,33 @@ public class CC_ClientPlayerControl : NetworkBehaviour
         StartCoroutine(FixWiring());
     }
     private IEnumerator FixWiring()
-    {
+    { 
+        m_PlayerInput.enabled = false;
+        m_PlayerInputManager.enabled = false;
+        m_CharacterPlayerController.enabled = false;
+
         if (!ready) 
         { 
             Debug.Log($"{name} not ready yet.", this);
 
-            yield return null; 
         }
         
-        if (IsOwner) 
+        if (!IsOwner) 
         {
-            Debug.Log($"{name} is owner.", this); 
+            Destroy(cam.transform.parent.gameObject);
 
-            StopAllCoroutines();
-            yield return null;
         }
-        Debug.Log($"{name} is not owner.", this);
-        m_PlayerInput.enabled = false;
-        m_PlayerInputManager.enabled = false;
-        m_CharacterPlayerController.enabled = false;
-        Destroy(cam.transform.parent.gameObject);
 
-        StopAllCoroutines();
+        if (IsOwner)
+        {
+            m_PlayerInput.enabled = true;
+        }
+
+        if (IsServer)
+        {
+            m_PlayerInputManager.enabled = true;
+            m_CharacterPlayerController.enabled = true;
+        }
 
         yield return null;
     }

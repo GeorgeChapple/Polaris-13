@@ -24,13 +24,4 @@ public class CC_BodyPrefabRefs : NetworkBehaviour
     public CinemachineCamera cCam;
 
     [HideInInspector] public bool ready = false;
-
-    private void Awake()
-    {
-        if (!IsOwner)
-        {
-            Destroy(this);
-        }
-        ready = true;
-    }
 }
