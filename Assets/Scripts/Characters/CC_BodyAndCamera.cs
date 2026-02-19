@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
@@ -193,8 +194,17 @@ public class CC_BodyAndCamera : NetworkBehaviour
     {
         if (IsOwner)
         { 
-            EnsureBodySpawnedAndWired();
+            StartCoroutine(StartLoop());    
         }
+    }
+
+    private IEnumerator StartLoop()
+    {
+        while (!spawnedRefs.ready)
+        {
+            yield return null;
+        }
+        EnsureBodySpawnedAndWired();
     }
 
     void OnDestroy()
