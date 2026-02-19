@@ -21,4 +21,16 @@ public class CC_BodyPrefabRefs : MonoBehaviour
 
     [Tooltip("Cinemachine camera component (the one you tweak lens etc on).")]
     public CinemachineCamera cCam;
+
+    private void Awake()
+    {
+        bodyCapsule = GetComponent<CapsuleCollider>();
+
+        cameraRoot = transform.Find("Camera Root");
+        groundedCheck = transform.Find("GroundedCheck");
+        dropItemTransform = transform.Find("DropItemTransform");
+
+        mainCamera = cameraRoot.Find("Main Camera").GetComponent<Camera>();
+        cCam = cameraRoot.Find("PlayerFollowCamera").GetComponent<CinemachineCamera>();
+    }
 }
