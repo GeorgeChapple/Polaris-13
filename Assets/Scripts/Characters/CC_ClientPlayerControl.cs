@@ -51,7 +51,12 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
         }
         
-        if (!IsOwner) 
+        while (cam.transform.parent.gameObject == null)
+        {
+            yield return null;
+        }
+
+        if (!IsOwner)
         {
             Destroy(cam.transform.parent.gameObject);
 
