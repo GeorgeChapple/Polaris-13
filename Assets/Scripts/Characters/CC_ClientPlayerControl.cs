@@ -66,11 +66,12 @@ public class CC_ClientPlayerControl : NetworkBehaviour
         {
             m_PlayerInput.enabled = true;
             m_PlayerInputManager.enabled = true;
+            m_CharacterPlayerController.enabled = true;
         }
 
         if (IsServer)
         {
-            m_CharacterPlayerController.enabled = true;
+            //blah
         }
 
         yield return null;
