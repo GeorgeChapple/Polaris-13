@@ -59,7 +59,7 @@ public class CC_ClientPlayerControl : NetworkBehaviour
         m_PlayerInput.enabled = false;
         m_PlayerInputManager.enabled = false;
         m_CharacterPlayerController.enabled = false;
-        Destroy(cam.transform.parent);
+        Destroy(cam.transform.parent.gameObject);
 
         StopAllCoroutines();
 
