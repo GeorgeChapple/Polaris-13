@@ -51,7 +51,7 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
         }
         
-        while (cam.transform.parent.gameObject == null)
+        while (cam.transform == null)
         {
             yield return null;
         }
