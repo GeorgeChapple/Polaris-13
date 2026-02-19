@@ -192,10 +192,7 @@ public class CC_BodyAndCamera : NetworkBehaviour
 
     void Start()
     {
-        if (IsOwner)
-        { 
-            EnsureBodySpawnedAndWired();
-        }
+        EnsureBodySpawnedAndWired();
     }
 
     void OnDestroy()
