@@ -1,4 +1,5 @@
 using Unity.Cinemachine;
+using Unity.Netcode;
 using UnityEngine;
 
 // Made by: Jason Lodge
@@ -6,7 +7,7 @@ using UnityEngine;
 // Notes:
 // - This handles Body Capsule position/rotation in world space so it doesn't inherit ball rolling.
 
-public class CC_BodyAndCamera : MonoBehaviour
+public class CC_BodyAndCamera : NetworkBehaviour
 {
     [Header("References")]
     public CC_Movement movement;
@@ -190,7 +191,10 @@ public class CC_BodyAndCamera : MonoBehaviour
 
     void Start()
     {
-        EnsureBodySpawnedAndWired();
+        if (IsOwner)
+        { 
+            EnsureBodySpawnedAndWired();
+        }
     }
 
     void OnDestroy()
