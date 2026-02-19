@@ -1,4 +1,5 @@
 using Unity.Cinemachine;
+using Unity.Netcode;
 using UnityEngine;
 
 // Made by: Jason Lodge
@@ -6,7 +7,7 @@ using UnityEngine;
 // Notes:
 // - Put this on the BodyCapsule prefab root and wire the fields in inspector.
 
-public class CC_BodyPrefabRefs : MonoBehaviour
+public class CC_BodyPrefabRefs : NetworkBehaviour
 {
     [Header("Core")]
     public CapsuleCollider bodyCapsule;
@@ -26,15 +27,10 @@ public class CC_BodyPrefabRefs : MonoBehaviour
 
     private void Awake()
     {
-        bodyCapsule = GetComponent<CapsuleCollider>();
-
-        cameraRoot = transform.Find("Camera Root");
-        groundedCheck = transform.Find("GroundedCheck");
-        dropItemTransform = transform.Find("DropItemTransform");
-
-        mainCamera = cameraRoot.Find("Main Camera").GetComponent<Camera>();
-        cCam = cameraRoot.Find("PlayerFollowCamera").GetComponent<CinemachineCamera>();
-
+        if (!IsOwner)
+        {
+            Destroy(this);
+        }
         ready = true;
     }
 }
