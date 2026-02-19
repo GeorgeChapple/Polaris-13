@@ -51,7 +51,7 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
         }
         
-        while (cam.transform == null)
+        while (cam == null)
         {
             yield return null;
         }
