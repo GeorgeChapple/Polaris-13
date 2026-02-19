@@ -65,11 +65,11 @@ public class CC_ClientPlayerControl : NetworkBehaviour
         if (IsOwner)
         {
             m_PlayerInput.enabled = true;
+            m_PlayerInputManager.enabled = true;
         }
 
         if (IsServer)
         {
-            m_PlayerInputManager.enabled = true;
             m_CharacterPlayerController.enabled = true;
         }
 
