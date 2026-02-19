@@ -194,17 +194,8 @@ public class CC_BodyAndCamera : NetworkBehaviour
     {
         if (IsOwner)
         { 
-            StartCoroutine(StartLoop());    
+            EnsureBodySpawnedAndWired();
         }
-    }
-
-    private IEnumerator StartLoop()
-    {
-        while (!spawnedRefs.ready)
-        {
-            yield return null;
-        }
-        EnsureBodySpawnedAndWired();
     }
 
     void OnDestroy()
