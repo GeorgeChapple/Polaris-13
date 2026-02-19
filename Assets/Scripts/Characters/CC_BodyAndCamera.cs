@@ -274,17 +274,16 @@ public class CC_BodyAndCamera : MonoBehaviour
             inventory.dropItemTransform = spawnedRefs.dropItemTransform;
         }
 
+        // cache defaults now that we have valid refs
+        CacheRuntimeDefaults();
+
         if (clientPlayerControl != null)
         {
             if (clientPlayerControl.WireCameraIn(cameraPass)) { Debug.Log("Camera wired in."); }
             else { Debug.Log("camera not wired in"); }
             clientPlayerControl.Init();
+            clientPlayerControl.ready = true;
         }
-
-        // cache defaults now that we have valid refs
-        CacheRuntimeDefaults();
-
-        clientPlayerControl.ready = true;
     }
 
     void CacheRuntimeDefaults()

@@ -1471,6 +1471,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   movement: {fileID: 4982087419475134920}
+  clientPlayerControl: {fileID: 0}
   interaction: {fileID: 2039823137600650846}
   inventory: {fileID: 569009411112105063}
   bodyPrefab: {fileID: 3688278627356634717, guid: 9faa11753805ef243892c776053d31d5, type: 3}
@@ -1592,12 +1593,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 981abc11e3c265a40aef4aa3bffbc303, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventoryMenuRoot: {fileID: 6792156666995774804}
-  inventoryGridMaxHeight: 4
-  inventoryGridMaxWidth: 10
-  inventoryGridSpacing: {x: 4, y: 4}
+  inventoryMenuRoot: {fileID: 4682973573395518326}
   gridRoot: {fileID: 4099699398082019179}
   itemGridRoot: {fileID: 281574083517452526}
+  inventoryGridMaxHeight: 4
+  inventoryGridMaxWidth: 10
+  inventoryGridSpaceSize: 80
+  inventoryGridSpacing: {x: 4, y: 4}
   gridCellPrefab: {fileID: 7850465892296457764, guid: dc8cb3add5aeedd439f3cbbb65a4d0fa, type: 3}
   itemUIPrefab: {fileID: 7850465892296457764, guid: f9e53926364655248bc50381cd209861, type: 3}
   itemPrefab: {fileID: 2353747757295221720, guid: 48fe5c44cb91e5c42a109603d853cb1a, type: 3}
