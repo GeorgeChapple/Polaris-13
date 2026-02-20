@@ -1,21 +1,12 @@
 using Unity.Cinemachine;
 using UnityEngine;
+using Unity.Netcode;
 
 // Made by: Jason Lodge
 // Summary: Holds all shared logic between all characters, player included.
 
-//TODO:
-// Movement --
-// Camera --
-// Follow Gravity --
-// Translate all movement and rotation into local space --
-// Split Movement and body into two, should allow for locomotion to scrape and roll on floor as much as it likes without messing with camera. --
-// Crouch --
-// Sprint --
-// Camera Bobbing --
-
 [RequireComponent(typeof(Rigidbody))]
-public class CC_CharacterBase : MonoBehaviour
+public class CC_CharacterBase : NetworkBehaviour
 {
     public enum LocomotionType { GroundMode, SpaceMode }
 
@@ -39,6 +30,13 @@ public class CC_CharacterBase : MonoBehaviour
 
     [Tooltip("Camera (Cinemachine)")]
     public CinemachineCamera cCam;
+
+    [Header("Camera Ownership")]
+    [Tooltip("Camera Root GameObject that contains the Unity Camera + CinemachineBrain in It's Children.")]
+    public GameObject cameraRoot;
+
+    [Tooltip("If true, non owners will destroy their cameraRoot. If false, does nothing for now.")]
+    public bool destroyNonOwnerCameraRoot = true;
 
     [Header("Crouch")]
     public float crouchSpeedMult = 0.5f;
@@ -210,8 +208,12 @@ public class CC_CharacterBase : MonoBehaviour
     bool interactWasHeld;
     bool interactUsedUntilRelease;
 
-    protected virtual void Awake()
+    bool cameraOwnershipApplied;
+
+    public override void OnNetworkSpawn()
     {
+        base.OnNetworkSpawn();
+
         if (values == null) { values = GetComponent<CC_CharacterValues>(); }
 
         rb = GetComponent<Rigidbody>();
@@ -228,6 +230,9 @@ public class CC_CharacterBase : MonoBehaviour
         {
             bodyRotation = transform.rotation;
         }
+
+        // camera ownership (nuke cameras + disable brain)
+        ApplyCameraOwnership(IsOwner);
 
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
@@ -246,9 +251,38 @@ public class CC_CharacterBase : MonoBehaviour
         }
     }
 
+    void ApplyCameraOwnership(bool isOwnerNow)
+    {
+        if (cameraRoot == null)
+        {
+            Debug.LogError("Camera Root not set in editor!", this);
+            cameraOwnershipApplied = true;
+            return;
+        }
+
+        if (isOwnerNow)
+        {
+            // make sure it's enabled for the local owner
+            if (!cameraRoot) { cameraOwnershipApplied = true; return; }
+
+            if (!cameraRoot.activeSelf) { cameraRoot.SetActive(true); }
+        }
+        else
+        {
+            // nuke cam for non owners only
+            if (destroyNonOwnerCameraRoot)
+            {
+                Destroy(cameraRoot);
+            }
+        }
+
+        cameraOwnershipApplied = true;
+    }
+
     // Call in FixedUpdate.
     public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput)
     {
+        if (!IsOwner) { return; }
         // keep our up axis updated from gravity
         currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
 
@@ -304,6 +338,7 @@ public class CC_CharacterBase : MonoBehaviour
     // Call in LateUpdate.
     public virtual void TickLate(Vector2 lookInput, bool isMouse)
     {
+        if (!IsOwner) { return; }
         CameraRotation(lookInput, isMouse);
         UpdateBodyFollow();
         UpdateCrouch();
