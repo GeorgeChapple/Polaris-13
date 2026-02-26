@@ -1,6 +1,7 @@
 using Unity.Cinemachine;
 using UnityEngine;
 using Unity.Netcode;
+using TMPro;
 
 // Made by: Jason Lodge
 // Summary: Holds all shared logic between all characters, player included.
@@ -31,9 +32,10 @@ public class CC_CharacterBase : NetworkBehaviour
     [Tooltip("Camera (Cinemachine)")]
     public CinemachineCamera cCam;
 
-    [Header("Camera Ownership")]
+    [Header("Network Ownership")]
     [Tooltip("Camera Root GameObject that contains the Unity Camera + CinemachineBrain in It's Children.")]
     public GameObject cameraRoot;
+    [SerializeField] private TextMeshProUGUI playerText;
 
     [Tooltip("If true, non owners will destroy their cameraRoot. If false, does nothing for now.")]
     public bool destroyNonOwnerCameraRoot = true;
@@ -233,6 +235,7 @@ public class CC_CharacterBase : NetworkBehaviour
 
         // camera ownership (nuke cameras + disable brain)
         ApplyCameraOwnership(IsOwner);
+        playerText.text = NetworkManager.Singleton.ConnectedClients.Count.ToString();
 
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
