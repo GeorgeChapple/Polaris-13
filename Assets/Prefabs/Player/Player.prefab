@@ -194,7 +194,7 @@ GameObject:
   - component: {fileID: 574529689200235230}
   - component: {fileID: 824611021907388697}
   - component: {fileID: 8502438742356004698}
-  - component: {fileID: 3066846069052783652}
+  - component: {fileID: 7361869532980925041}
   m_Layer: 0
   m_Name: BodyCapsule
   m_TagString: Untagged
@@ -341,21 +341,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 981abc11e3c265a40aef4aa3bffbc303, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inventoryMenuRoot: {fileID: 2437130736283423829}
-  inventoryGridMaxHeight: 4
-  inventoryGridMaxWidth: 10
-  inventoryGridSpacing: {x: 4, y: 4}
+  inventoryMenuRoot: {fileID: 8609366648692967514}
   gridRoot: {fileID: 7416075966039751954}
   itemGridRoot: {fileID: 4833083285757464627}
+  inventoryGridMaxHeight: 4
+  inventoryGridMaxWidth: 10
+  inventoryGridSpaceSize: 40
+  inventoryGridSpacing: {x: 4, y: 4}
   gridCellPrefab: {fileID: 7850465892296457764, guid: dc8cb3add5aeedd439f3cbbb65a4d0fa, type: 3}
   itemUIPrefab: {fileID: 7850465892296457764, guid: f9e53926364655248bc50381cd209861, type: 3}
   itemPrefab: {fileID: 2353747757295221720, guid: 48fe5c44cb91e5c42a109603d853cb1a, type: 3}
-  dropItemTransform: {fileID: 7267066407272589429}
+  dropItemTransform: {fileID: 2525829125682972623}
   logPlacement: 1
   heldItem: {fileID: 0}
   hoverItem: {fileID: 0}
   items: []
---- !u!114 &3066846069052783652
+--- !u!114 &7361869532980925041
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -364,7 +365,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 864714552109357627}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da52bf8bbc1de48cfb221a6ff30f7972, type: 3}
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -379,7 +380,7 @@ MonoBehaviour:
   RotationMaxInterpolationTime: 0.1
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
@@ -737,7 +738,7 @@ MonoBehaviour:
   m_StreamingVersion: 20241001
   m_LegacyPriority: 0
   Target:
-    TrackingTarget: {fileID: 0}
+    TrackingTarget: {fileID: 8236564078002858386}
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
@@ -1980,11 +1981,11 @@ GameObject:
   - component: {fileID: 8705669755033584411}
   - component: {fileID: 398033112926452635}
   - component: {fileID: 2195737798883876970}
-  - component: {fileID: 4009469419932435581}
   - component: {fileID: 1757037690442055534}
   - component: {fileID: 8578470881332336096}
   - component: {fileID: 6283488651506963492}
-  - component: {fileID: 7370919057638720934}
+  - component: {fileID: 8327737449442137960}
+  - component: {fileID: 3955387293732492650}
   m_Layer: 7
   m_Name: Locomotion Ball
   m_TagString: Untagged
@@ -2068,103 +2069,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   floatToSleep: 0
---- !u!114 &4009469419932435581
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5054708247881435090}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8515d0498df71394aae5fa3dc69fc40b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  locomotionType: 0
-  values: {fileID: 824611021907388697}
-  moveSpeed: 6
-  accelerationRate: 15
-  sprintSpeedMult: 1.5
-  sprintFovMult: 1.15
-  fovSharpness: 8
-  cCam: {fileID: 9125957477683939406}
-  cameraRoot: {fileID: 3495666267059313118}
-  destroyNonOwnerCameraRoot: 1
-  crouchSpeedMult: 0.5
-  crouchCameraYOffset: -0.5
-  crouchSharpness: 14
-  bodyCapsule: {fileID: 574529689200235230}
-  crouchCapsuleHeightMult: 0.6
-  jumpPower: 5
-  torqueStrength: 10
-  stabiliseRange: 20
-  stabilisePadding: 0.25
-  stabiliseCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  stabiliseMaxMult: 5
-  thrusterAccel: 4
-  spaceTurnSpeed: 30
-  rollMaxSpeed: 100
-  rollAccel: 0.5
-  rollDamping: 0.00001
-  zeroGravityThreshold: 0.25
-  grounded: 1
-  groundedCheckObj: {fileID: 3637123821088872404}
-  groundedRadius: 0.5
-  groundLayers:
-    serializedVersion: 2
-    m_Bits: 64
-  jumpTimeout: 0.1
-  fallTimeout: 0.15
-  interactRange: 2.5
-  interactLayers:
-    serializedVersion: 2
-    m_Bits: 256
-  interactOrigin: {fileID: 9120988383163063865}
-  bodyTransform: {fileID: 139902970584455969}
-  bodyUpOffset: 1
-  bodyFollowPosSharpness: 50
-  bodyFollowRotSharpness: 50
-  cinemachineCameraTarget: {fileID: 8236564078002858386}
-  topClamp: 90
-  bottomClamp: -90
-  enableCameraBobbing: 1
-  bobFrequency: 1.8
-  bobAmplitude: 0.01
-  bobSideAmplitude: 0.005
-  bobSharpness: 6
-  sprintBobMult: 1.15
-  crouchBobMult: 0.65
-  lookMultX: 0.4
-  lookMultY: 0.2
-  mouseBaseX: 0.1
-  mouseBaseY: 0.1
-  stickBaseX: 180
-  stickBaseY: 180
-  invertY: 0
 --- !u!114 &1757037690442055534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2237,7 +2141,7 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &7370919057638720934
+--- !u!114 &8327737449442137960
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2246,7 +2150,104 @@ MonoBehaviour:
   m_GameObject: {fileID: 5054708247881435090}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da52bf8bbc1de48cfb221a6ff30f7972, type: 3}
+  m_Script: {fileID: 11500000, guid: 180a77d9757456648a38b03848477905, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  locomotionType: 0
+  values: {fileID: 824611021907388697}
+  moveSpeed: 5
+  accelerationRate: 12
+  sprintSpeedMult: 1.5
+  sprintFovMult: 1.15
+  fovSharpness: 8
+  cCam: {fileID: 9125957477683939406}
+  cameraRoot: {fileID: 3495666267059313118}
+  destroyNonOwnerCameraRoot: 1
+  crouchSpeedMult: 0.5
+  crouchCameraYOffset: -0.5
+  crouchSharpness: 14
+  bodyCapsule: {fileID: 574529689200235230}
+  crouchCapsuleHeightMult: 0.6
+  jumpPower: 10
+  torqueStrength: 5
+  stabiliseRange: 10
+  stabilisePadding: 0.25
+  stabiliseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  stabiliseMaxMult: 1
+  thrusterAccel: 4
+  spaceTurnSpeed: 30
+  rollMaxSpeed: 30
+  rollAccel: 4
+  rollDamping: 2
+  zeroGravityThreshold: 0.25
+  grounded: 1
+  groundedCheckObj: {fileID: 3637123821088872404}
+  groundedRadius: 0.5
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 320
+  jumpTimeout: 0.1
+  fallTimeout: 0.15
+  interactRange: 2.5
+  interactLayers:
+    serializedVersion: 2
+    m_Bits: 256
+  interactOrigin: {fileID: 8236564078002858386}
+  bodyTransform: {fileID: 139902970584455969}
+  bodyUpOffset: 1
+  bodyFollowPosSharpness: 50
+  bodyFollowRotSharpness: 50
+  cinemachineCameraTarget: {fileID: 8236564078002858386}
+  topClamp: 90
+  bottomClamp: -90
+  enableCameraBobbing: 1
+  bobFrequency: 1.8
+  bobAmplitude: 0.01
+  bobSideAmplitude: 0.005
+  bobSharpness: 6
+  sprintBobMult: 1.25
+  crouchBobMult: 0.5
+  lookMultX: 1
+  lookMultY: 1
+  mouseBaseX: 0.1
+  mouseBaseY: 0.1
+  stickBaseX: 180
+  stickBaseY: 180
+  invertY: 0
+--- !u!114 &3955387293732492650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5054708247881435090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -2261,7 +2262,7 @@ MonoBehaviour:
   RotationMaxInterpolationTime: 0.1
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
@@ -2345,7 +2346,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4827758710393173946}
-  - component: {fileID: 4320378714285178058}
+  - component: {fileID: 5220674530921121714}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -2371,7 +2372,7 @@ Transform:
   - {fileID: 6627632656998436838}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4320378714285178058
+--- !u!114 &5220674530921121714
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2383,7 +2384,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3857614158
+  GlobalObjectIdHash: 1438628229
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
