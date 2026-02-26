@@ -235,7 +235,7 @@ public class CC_CharacterBase : NetworkBehaviour
 
         // camera ownership (nuke cameras + disable brain)
         ApplyCameraOwnership(IsOwner);
-        playerText.text = NetworkManager.Singleton.ConnectedClients.Count.ToString();
+        playerText.text = NetworkObjectId.ToString();
 
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
