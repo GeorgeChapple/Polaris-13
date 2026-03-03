@@ -194,7 +194,7 @@ GameObject:
   - component: {fileID: 574529689200235230}
   - component: {fileID: 824611021907388697}
   - component: {fileID: 8502438742356004698}
-  - component: {fileID: 3066846069052783652}
+  - component: {fileID: 7085652305783003616}
   m_Layer: 0
   m_Name: BodyCapsule
   m_TagString: Untagged
@@ -355,7 +355,7 @@ MonoBehaviour:
   heldItem: {fileID: 0}
   hoverItem: {fileID: 0}
   items: []
---- !u!114 &3066846069052783652
+--- !u!114 &7085652305783003616
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -364,7 +364,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 864714552109357627}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da52bf8bbc1de48cfb221a6ff30f7972, type: 3}
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -379,7 +379,7 @@ MonoBehaviour:
   RotationMaxInterpolationTime: 0.1
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
@@ -449,7 +449,7 @@ Canvas:
   m_GameObject: {fileID: 1015223365284675570}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 126646995658284371}
   m_PlaneDistance: 0.2
   m_PixelPerfect: 0
@@ -1984,7 +1984,7 @@ GameObject:
   - component: {fileID: 1757037690442055534}
   - component: {fileID: 8578470881332336096}
   - component: {fileID: 6283488651506963492}
-  - component: {fileID: 7370919057638720934}
+  - component: {fileID: 2925247199622401950}
   m_Layer: 7
   m_Name: Locomotion Ball
   m_TagString: Untagged
@@ -2090,6 +2090,8 @@ MonoBehaviour:
   fovSharpness: 8
   cCam: {fileID: 9125957477683939406}
   cameraRoot: {fileID: 3495666267059313118}
+  canvasObj: {fileID: 1015223365284675570}
+  canvas: {fileID: 6225965359429988371}
   destroyNonOwnerCameraRoot: 1
   crouchSpeedMult: 0.5
   crouchCameraYOffset: -0.5
@@ -2237,7 +2239,7 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &7370919057638720934
+--- !u!114 &2925247199622401950
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2246,7 +2248,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5054708247881435090}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da52bf8bbc1de48cfb221a6ff30f7972, type: 3}
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -2261,7 +2263,7 @@ MonoBehaviour:
   RotationMaxInterpolationTime: 0.1
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1

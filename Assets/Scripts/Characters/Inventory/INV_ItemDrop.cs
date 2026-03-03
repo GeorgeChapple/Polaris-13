@@ -1,7 +1,8 @@
+using Unity.Netcode;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class INV_ItemDrop : MonoBehaviour
+public class INV_ItemDrop : NetworkBehaviour
 {
     [Header("Item Data")]
     [SerializeField] private INV_Item item;
@@ -82,10 +83,11 @@ public class INV_ItemDrop : MonoBehaviour
     }
 
     // called by player interact script
-    public void TryAddToInventory()
+    public void TryAddToInventory(GameObject player)
     {
         // placeholder, need a per player ver
-        INV_Inventory inv = FindAnyObjectByType<INV_Inventory>();
+        if (player == null) { return; }
+        INV_Inventory inv = player.GetComponentInChildren<INV_Inventory>();
         if (inv == null) { return; }
 
         bool added = inv.TryAddItem(item);

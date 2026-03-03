@@ -31,9 +31,15 @@ public class CC_CharacterBase : NetworkBehaviour
     [Tooltip("Camera (Cinemachine)")]
     public CinemachineCamera cCam;
 
-    [Header("Camera Ownership")]
+    [Header("Ownership")]
     [Tooltip("Camera Root GameObject that contains the Unity Camera + CinemachineBrain in It's Children.")]
     public GameObject cameraRoot;
+
+    [Tooltip("Canvas Object")]
+    public GameObject canvasObj;
+
+    [Tooltip("Canvas Component")]
+    public Canvas canvas;
 
     [Tooltip("If true, non owners will destroy their cameraRoot. If false, does nothing for now.")]
     public bool destroyNonOwnerCameraRoot = true;
@@ -208,7 +214,7 @@ public class CC_CharacterBase : NetworkBehaviour
     bool interactWasHeld;
     bool interactUsedUntilRelease;
 
-    bool cameraOwnershipApplied;
+    bool ownershipApplied;
 
     public override void OnNetworkSpawn()
     {
@@ -231,8 +237,8 @@ public class CC_CharacterBase : NetworkBehaviour
             bodyRotation = transform.rotation;
         }
 
-        // camera ownership (nuke cameras + disable brain)
-        ApplyCameraOwnership(IsOwner);
+        // ownership (nuke cameras, set refereneces)
+        ApplyOwnership(IsOwner);
 
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
@@ -249,23 +255,30 @@ public class CC_CharacterBase : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+
+
     }
 
-    void ApplyCameraOwnership(bool isOwnerNow)
+    void ApplyOwnership(bool isOwnerNow)
     {
         if (cameraRoot == null)
         {
             Debug.LogError("Camera Root not set in editor!", this);
-            cameraOwnershipApplied = true;
+            ownershipApplied = true;
             return;
         }
 
         if (isOwnerNow)
         {
             // make sure it's enabled for the local owner
-            if (!cameraRoot) { cameraOwnershipApplied = true; return; }
+            if (!cameraRoot) { ownershipApplied = true; return; }
 
             if (!cameraRoot.activeSelf) { cameraRoot.SetActive(true); }
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            if (cameraRoot != null)
+            {
+                canvas.worldCamera = cameraRoot.GetComponentInChildren<Camera>();
+            }
         }
         else
         {
@@ -274,9 +287,13 @@ public class CC_CharacterBase : NetworkBehaviour
             {
                 Destroy(cameraRoot);
             }
+            
+            canvasObj.SetActive(false);
         }
 
-        cameraOwnershipApplied = true;
+        
+
+        ownershipApplied = true;
     }
 
     // Call in FixedUpdate.
