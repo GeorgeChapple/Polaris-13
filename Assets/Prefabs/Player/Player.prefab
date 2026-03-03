@@ -194,9 +194,7 @@ GameObject:
   - component: {fileID: 574529689200235230}
   - component: {fileID: 824611021907388697}
   - component: {fileID: 8502438742356004698}
-  - component: {fileID: 6576262812545999661}
   - component: {fileID: 7085652305783003616}
-  - component: {fileID: 234181026475212642}
   m_Layer: 0
   m_Name: BodyCapsule
   m_TagString: Untagged
@@ -359,57 +357,6 @@ MonoBehaviour:
   heldItem: {fileID: 0}
   hoverItem: {fileID: 0}
   items: []
---- !u!114 &6576262812545999661
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 864714552109357627}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 83707eb072c3b204980841846bc9f737, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  movement: {fileID: 2390482858698046718}
-  values: {fileID: 824611021907388697}
-  cameraRoot: {fileID: 3495666267059313118}
-  canvasObj: {fileID: 1015223365284675570}
-  canvas: {fileID: 6225965359429988371}
-  playerText: {fileID: 1492453699653431851}
-  destroyNonOwnerCameraRoot: 1
-  sprintFovMult: 1.15
-  fovSharpness: 8
-  cCam: {fileID: 9125957477683939406}
-  crouchCameraYOffset: -0.5
-  crouchSharpness: 14
-  bodyCapsule: {fileID: 574529689200235230}
-  crouchCapsuleHeightMult: 0.6
-  bodyUpOffset: 1
-  bodyFollowPosSharpness: 50
-  bodyFollowRotSharpness: 50
-  cinemachineCameraTarget: {fileID: 9120988383163063865}
-  topClamp: 90
-  bottomClamp: -90
-  enableCameraBobbing: 1
-  bobFrequency: 1.8
-  bobAmplitude: 0.01
-  bobSideAmplitude: 0.005
-  bobSharpness: 6
-  sprintBobMult: 1.25
-  crouchBobMult: 0.5
-  lookMultX: 1
-  lookMultY: 1
-  mouseBaseX: 0.1
-  mouseBaseY: 0.1
-  stickBaseX: 180
-  stickBaseY: 180
-  invertY: 0
-  spaceTurnSpeed: 30
-  rollMaxSpeed: 30
-  rollAccel: 4
-  rollDamping: 2
 --- !u!114 &7085652305783003616
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -456,25 +403,6 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
---- !u!114 &234181026475212642
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 864714552109357627}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 577c9fd837ac6e34bb75ed467bb2fe69, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  bodyAndCamera: {fileID: 6576262812545999661}
-  interactRange: 2.5
-  interactLayers:
-    serializedVersion: 2
-    m_Bits: 256
-  interactOrigin: {fileID: 9120988383163063865}
 --- !u!1 &1015223365284675570
 GameObject:
   m_ObjectHideFlags: 0
@@ -2156,9 +2084,8 @@ GameObject:
   - component: {fileID: 8705669755033584411}
   - component: {fileID: 398033112926452635}
   - component: {fileID: 2195737798883876970}
-  - component: {fileID: 2390482858698046718}
+  - component: {fileID: 8327737449442137960}
   - component: {fileID: 1757037690442055534}
-  - component: {fileID: 5886650155275937587}
   - component: {fileID: 8578470881332336096}
   - component: {fileID: 6283488651506963492}
   - component: {fileID: 2925247199622401950}
@@ -2245,7 +2172,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   floatToSleep: 0
---- !u!114 &2390482858698046718
+--- !u!114 &8327737449442137960
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2254,17 +2181,28 @@ MonoBehaviour:
   m_GameObject: {fileID: 5054708247881435090}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 08c9c6eedffe0c04ea84325effebd567, type: 3}
+  m_Script: {fileID: 11500000, guid: 180a77d9757456648a38b03848477905, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   locomotionType: 0
   values: {fileID: 824611021907388697}
-  bodyAndCamera: {fileID: 6576262812545999661}
   moveSpeed: 5
   accelerationRate: 12
   sprintSpeedMult: 1.5
+  sprintFovMult: 1.15
+  fovSharpness: 8
+  cCam: {fileID: 9125957477683939406}
+  cameraRoot: {fileID: 3495666267059313118}
+  canvasObj: {fileID: 1015223365284675570}
+  canvas: {fileID: 6225965359429988371}
+  playerText: {fileID: 1492453699653431851}
+  destroyNonOwnerCameraRoot: 1
   crouchSpeedMult: 0.5
+  crouchCameraYOffset: -0.5
+  crouchSharpness: 14
+  bodyCapsule: {fileID: 574529689200235230}
+  crouchCapsuleHeightMult: 0.6
   jumpPower: 10
   torqueStrength: 5
   stabiliseRange: 10
@@ -2295,6 +2233,10 @@ MonoBehaviour:
     m_RotationOrder: 4
   stabiliseMaxMult: 1
   thrusterAccel: 4
+  spaceTurnSpeed: 30
+  rollMaxSpeed: 30
+  rollAccel: 4
+  rollDamping: 2
   zeroGravityThreshold: 0.25
   grounded: 1
   groundedCheckObj: {fileID: 3637123821088872404}
@@ -2304,6 +2246,32 @@ MonoBehaviour:
     m_Bits: 320
   jumpTimeout: 0.1
   fallTimeout: 0.15
+  interactRange: 2.5
+  interactLayers:
+    serializedVersion: 2
+    m_Bits: 256
+  interactOrigin: {fileID: 1100962743059859787}
+  bodyTransform: {fileID: 139902970584455969}
+  bodyUpOffset: 1
+  bodyFollowPosSharpness: 50
+  bodyFollowRotSharpness: 50
+  cinemachineCameraTarget: {fileID: 9120988383163063865}
+  topClamp: 90
+  bottomClamp: -90
+  enableCameraBobbing: 1
+  bobFrequency: 1.8
+  bobAmplitude: 0.01
+  bobSideAmplitude: 0.005
+  bobSharpness: 6
+  sprintBobMult: 1.25
+  crouchBobMult: 0.5
+  lookMultX: 1
+  lookMultY: 1
+  mouseBaseX: 0.1
+  mouseBaseY: 0.1
+  stickBaseX: 180
+  stickBaseY: 180
+  invertY: 0
 --- !u!114 &1757037690442055534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2321,27 +2289,6 @@ MonoBehaviour:
   pauseMenuRoot: {fileID: 8102134890253006248}
   inventoryMenuRoot: {fileID: 2437130736283423829}
   inventory: {fileID: 8502438742356004698}
---- !u!114 &5886650155275937587
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5054708247881435090}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ec2122020a12f948ac43859f967c3e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  m_Movement: {fileID: 2390482858698046718}
-  m_BodyAndCamera: {fileID: 6576262812545999661}
-  m_PlayerInputManager: {fileID: 8578470881332336096}
-  m_PlayerInput: {fileID: 6283488651506963492}
-  m_CustomGravityRigidbody: {fileID: 2195737798883876970}
-  m_Interaction: {fileID: 234181026475212642}
-  m_CharacterPlayerController: {fileID: 1757037690442055534}
-  m_Rigidbody: {fileID: 398033112926452635}
 --- !u!114 &8578470881332336096
 MonoBehaviour:
   m_ObjectHideFlags: 0

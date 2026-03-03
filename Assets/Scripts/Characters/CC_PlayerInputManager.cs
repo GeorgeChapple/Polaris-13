@@ -53,7 +53,7 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void InteractInput(bool newInteractState) { interact = newInteractState; }
     public void RotateItemInput(bool newRotateItemState) { rotateItem = newRotateItemState; }
     public void DropItemInput(bool newDropItemState) {  dropItem = newDropItemState; }
-    public void DropHeldItemInput(bool newDropHeldItemState) {  dropHeldItem = newDropHeldItemState; }
+    public void DropHeldItemInput(bool newDropHeldItemState) {  dropItem = newDropHeldItemState; }
     public void PauseInput(bool newPauseState) { pause = newPauseState; }
     public void InventoryInput(bool newInventoryState) { inventory = newInventoryState; }
     public void HotbarInput(float newHotBarState) { hotBar = newHotBarState; }
