@@ -776,7 +776,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (holding)
             {
-                currentInteractable.CancelHold(gameObject);
+                currentInteractable.CancelHold(transform.parent.gameObject);
             }
 
             currentInteractable = null;
@@ -807,7 +807,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (pressed)
             {
-                currentInteractable.Interact(gameObject);
+                currentInteractable.Interact(transform.parent.gameObject);
 
                 // stop interacting until released
                 interactUsedUntilRelease = true;
@@ -827,12 +827,12 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (holding)
             {
-                currentInteractable.CancelHold(gameObject);
+                currentInteractable.CancelHold(transform.parent.gameObject);
             }
 
             holdTimer = 0f;
             holding = false;
-            currentInteractable.HoldProgress(gameObject, 0f);
+            currentInteractable.HoldProgress(transform.parent.gameObject, 0f);
             return;
         }
 
@@ -841,7 +841,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             holding = true;
             holdTimer = 0f;
-            currentInteractable.BeginHold(gameObject);
+            currentInteractable.BeginHold(transform.parent.gameObject);
         }
 
         // if we're holding, progress it
@@ -851,11 +851,11 @@ public class CC_CharacterBase : NetworkBehaviour
             holdTimer += Time.deltaTime;
 
             float progress01 = Mathf.Clamp01(holdTimer / required);
-            currentInteractable.HoldProgress(gameObject, progress01);
+            currentInteractable.HoldProgress(transform.parent.gameObject, progress01);
 
             if (holdTimer >= required)
             {
-                currentInteractable.Interact(gameObject);
+                currentInteractable.Interact(transform.parent.gameObject);
 
                 // stop interacting until release
                 interactUsedUntilRelease = true;

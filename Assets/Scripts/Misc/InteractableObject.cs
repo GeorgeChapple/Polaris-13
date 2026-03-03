@@ -108,7 +108,7 @@ public class InteractableObject : NetworkBehaviour
         onInteractWithInteractor?.Invoke(interactor);
     }
 
-    void RewireInteractListeners()
+    public void RewireInteractListeners()
     {
         onInteractWithInteractor.RemoveAllListeners();
         runtimeInteractBindings.Clear();

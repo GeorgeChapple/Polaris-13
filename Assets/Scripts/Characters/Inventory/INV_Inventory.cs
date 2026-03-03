@@ -690,6 +690,7 @@ public class INV_Inventory : MonoBehaviour
         if (dropHandler != null)
         {
             dropHandler.Init(inst.data);
+            dropHandler.GetComponent<InteractableObject>().RewireInteractListeners();
         }
 
         Rigidbody rb = drop.GetComponent<Rigidbody>();

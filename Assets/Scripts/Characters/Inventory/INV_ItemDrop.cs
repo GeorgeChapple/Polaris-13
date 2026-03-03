@@ -17,6 +17,8 @@ public class INV_ItemDrop : NetworkBehaviour
     private MeshFilter mf;
     private MeshRenderer mr;
 
+    private GameObject player;
+
     // called by inventory when spawning a drop
     public void Init(INV_Item newItem)
     {
@@ -83,17 +85,26 @@ public class INV_ItemDrop : NetworkBehaviour
     }
 
     // called by player interact script
-    public void TryAddToInventory(GameObject player)
+    public void TryAddToInventory()
     {
         // placeholder, need a per player ver
-        if (player == null) { return; }
+        if (player == null) { Debug.LogError("No Player ref in TryAddToInventory!", this); return; }
+        Debug.Log($"{player.name} is player that interacted!");
         INV_Inventory inv = player.GetComponentInChildren<INV_Inventory>();
-        if (inv == null) { return; }
+        if (inv == null) { Debug.LogError("Couldnt find inventory on Player!"); return; }
 
         bool added = inv.TryAddItem(item);
         if (added)
         {
             Destroy(gameObject);
         }
+    }
+
+    public void TryAddToInventory(Object interactor)
+    {
+        Debug.Log("Try Add To Inventory Test rewire method");
+        if (interactor == null) { Debug.LogError("Interactor is Null!", this); return; }
+        player = interactor as GameObject;
+        TryAddToInventory();
     }
 }
