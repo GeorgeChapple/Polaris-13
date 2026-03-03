@@ -15,6 +15,10 @@ public class INV_Item : ScriptableObject
     [Header("Specs")]
     [SerializeField] private float durability;
 
+    [Header("Stack")]
+    [SerializeField] private bool stackable;
+    [SerializeField] private int maxStack;
+
     [Header("Visuals")]
     [SerializeField] private Sprite icon;
     [SerializeField] private Mesh mesh;
@@ -34,7 +38,7 @@ public class INV_Item : ScriptableObject
     [Tooltip("Fallback size (only used if inventorySpaceShape is empty). Grid size in cells (X = width, Y = height).")]
     [SerializeField] private Vector2 inventorySpace = new Vector2(1, 1);
 
-    public enum ObjectType { Item, Consumable, Weapon, Tool, Placeable };
+    public enum ObjectType { Item, Consumable, Weapon, Tool, Resource, Placeable };
     public ObjectType objectType = ObjectType.Item;
 
     // getters

@@ -5,25 +5,31 @@ using UnityEngine.InputSystem;
 public class CC_ClientPlayerControl : NetworkBehaviour
 {
     [SerializeField] private GameObject cam;
-    private CustomGravityRigidbody m_CustomGravityRigidbody;
-    private CC_CharacterBase m_CharacterBase;
-    private CC_CharacterPlayerController m_CharacterPlayerController;
-    private CC_PlayerInputManager m_PlayerInputManager;
-    private PlayerInput m_PlayerInput;
+    [SerializeField] private CustomGravityRigidbody m_CustomGravityRigidbody;
+    [SerializeField] private CC_CharacterBase m_CharacterBase;
+    [SerializeField] private CC_CharacterPlayerController m_CharacterPlayerController;
+    [SerializeField] private CC_PlayerInputManager m_PlayerInputManager;
+    [SerializeField] private PlayerInput m_PlayerInput;
 
-    private void Awake()
+    public bool WireCameraIn(GameObject c)
+    {
+        cam = c;
+        if (cam != null) { return true; }
+        return false;
+    }
+
+    public void Init()
     {
         m_CustomGravityRigidbody = GetComponent<CustomGravityRigidbody>();
         m_CharacterBase = GetComponent<CC_CharacterBase>();
         m_CharacterPlayerController = GetComponent<CC_CharacterPlayerController>();
         m_PlayerInputManager = GetComponent<CC_PlayerInputManager>();
         m_PlayerInput = GetComponent<PlayerInput>();
-        m_CustomGravityRigidbody.enabled = false;
-        m_CharacterBase.enabled = false;
-        m_CharacterPlayerController.enabled = false;
-        m_PlayerInputManager.enabled = false;
-        m_PlayerInput.enabled = false;
-        cam.SetActive(false);
+        //m_CustomGravityRigidbody.enabled = false;
+        //m_CharacterBase.enabled = false;
+        //m_CharacterPlayerController.enabled = false;
+        //m_PlayerInputManager.enabled = false;
+        //m_PlayerInput.enabled = false;
     }
 
     public override void OnNetworkSpawn()
@@ -32,7 +38,6 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
         if (IsOwner)
         {
-            cam.SetActive(true);
             m_PlayerInputManager.enabled = true;
             m_PlayerInput.enabled = true;
         }

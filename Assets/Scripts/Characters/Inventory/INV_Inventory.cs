@@ -10,11 +10,20 @@ using UnityEngine.UI;
 // grid is its own object and uses grid layout group to align grid spaces
 // then items are instantiated into another object using the grid space top left corner world positions into local
 // grid doesnt get generated again, as we can just keep it there toggled off using set active for gameobject in player controller
+
+// TODO:
+// redo grid generation to be set up in here via cell space size --
+// hotbar works like item stays in inventory but is hotkeyed, makes inventory management more of a challenge
+// 
 public class INV_Inventory : MonoBehaviour
 {
     [Header("Inventory Menu")]
     [Tooltip("Make sure the inventory menu root is active, so we can set up the grid then close the menu after.")]
-    [SerializeField] private GameObject inventoryMenuRoot;
+    [SerializeField] private RectTransform inventoryMenuRoot;
+    [Tooltip("Grid parent with GridLayoutGroup.")]
+    [SerializeField] private RectTransform gridRoot;
+    [Tooltip("Parent all item instances will be under.")]
+    [SerializeField] private RectTransform itemGridRoot;
 
     [Header("Grid")]
     [Tooltip("Max amount of spaces in inventory height wise.")]
@@ -22,14 +31,11 @@ public class INV_Inventory : MonoBehaviour
     [Tooltip("Max amount of spaces in inventory width wise.")]
     [SerializeField] private int inventoryGridMaxWidth = 10;
 
+    [Tooltip("Size of the grid space we will use to set the size of the grid holding object.")]
+    [SerializeField] private int inventoryGridSpaceSize = 40;
     [Tooltip("Spacing between grid slots")]
     [SerializeField] private Vector2 inventoryGridSpacing = new Vector2(2, 2);
-
-    [Tooltip("Grid parent with GridLayoutGroup.")]
-    [SerializeField] private RectTransform gridRoot;
-
-    [Tooltip("Parent all item instances will be under.")]
-    [SerializeField] private RectTransform itemGridRoot;
+    
 
     [Tooltip("Single grid cell prefab.")]
     [SerializeField] private GameObject gridCellPrefab;
@@ -42,7 +48,7 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private GameObject itemPrefab;
 
     [Tooltip("Transform we will spawn dropped items from.")]
-    [SerializeField] private GameObject dropItemTransform;
+    public Transform dropItemTransform;
 
     [Header("Debug")]
     [SerializeField] private bool logPlacement;
@@ -104,18 +110,18 @@ public class INV_Inventory : MonoBehaviour
     private void Start()
     {
         GenerateGrid();
-        if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+        if (inventoryMenuRoot != null) { inventoryMenuRoot.gameObject.SetActive(false); }
     }
 
     private void Update()
     {
         // if menu is closed, don't do UI hover checks.
-        if (inventoryMenuRoot != null && !inventoryMenuRoot.activeInHierarchy)
+        if (inventoryMenuRoot != null && !inventoryMenuRoot.gameObject.activeInHierarchy)
         {
             hoverItem = null;
             return;
         }
-        if (inventoryMenuRoot.activeInHierarchy)
+        if (inventoryMenuRoot.gameObject.activeInHierarchy)
         { // update all items when inventory menu open
             foreach (ItemInstance item in items)
             {
@@ -143,21 +149,25 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        // apply spacing first so cell size calc is correct
+        // apply spacing and cell size
         gridLayoutGroup.spacing = inventoryGridSpacing;
-
-        // account for spacing when calculating cell size
-        float totalSpacingX = inventoryGridSpacing.x * Mathf.Max(0, inventoryGridMaxWidth - 1);
-        float usableWidth = gridRoot.sizeDelta.x - totalSpacingX;
-
-        float cellSizeX = usableWidth / inventoryGridMaxWidth;
-
-        // cell size should be an equal square
-        cellSize = new Vector2(cellSizeX, cellSizeX);
-
-        // may change later but all ui should likely be scaled depending on screen size
-        // will need more logic making sure inventory height doesnt exceed inventory grid y size
+        cellSize = new Vector2(inventoryGridSpaceSize, inventoryGridSpaceSize);
         gridLayoutGroup.cellSize = cellSize;
+
+        // set grid size based on our grid size and spacing as one space multiplied by out height and width respectively
+        gridRoot.sizeDelta = new Vector2
+            ((inventoryGridSpaceSize + inventoryGridSpacing.x) * inventoryGridMaxWidth,
+            (inventoryGridSpaceSize + inventoryGridSpacing.y) * inventoryGridMaxHeight);
+
+        // remove last spacing added height and width so it sits flush with the edge
+        gridRoot.sizeDelta -= inventoryGridSpacing;
+
+        // vice versa
+        itemGridRoot.sizeDelta = new Vector2
+            ((inventoryGridSpaceSize + inventoryGridSpacing.x) * inventoryGridMaxWidth,
+            (inventoryGridSpaceSize + inventoryGridSpacing.y) * inventoryGridMaxHeight);
+
+        itemGridRoot.sizeDelta -= inventoryGridSpacing;
 
         spaces = new InventoryGridSpace[inventoryGridMaxWidth, inventoryGridMaxHeight];
         cellRects = new RectTransform[inventoryGridMaxWidth, inventoryGridMaxHeight];
@@ -682,7 +692,7 @@ public class INV_Inventory : MonoBehaviour
     {
         if (itemPrefab == null || dropItemTransform == null) { return false; }
 
-        Vector3 dropPoint = dropItemTransform.transform.position;
+        Vector3 dropPoint = dropItemTransform.position;
         GameObject drop = Instantiate(itemPrefab, dropPoint, Quaternion.identity);
         if (drop == null) { return false; }
 
@@ -696,7 +706,7 @@ public class INV_Inventory : MonoBehaviour
         Rigidbody rb = drop.GetComponent<Rigidbody>();
         if (rb != null)
         {
-            rb.AddForce(dropItemTransform.transform.forward, ForceMode.Impulse);
+            rb.AddForce(dropItemTransform.forward, ForceMode.Impulse);
             rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
         }
 
