@@ -2,9 +2,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Made by: Jason Lodge
-// Summary: Player controller, drives all the locomotion code in the character base and things like interaction.
-// This is separated as the character base will be used by AI too to be modular.
-[RequireComponent(typeof(CC_CharacterBase))]
+// Summary: Player controller for local menu / cursor / inventory UI logic.
+// Notes:
+// - This no longer drives movement directly.
+// - Host authority movement is handled by CC_ClientPlayerController.
+[RequireComponent(typeof(CC_PlayerInputManager))]
 public class CC_CharacterPlayerController : MonoBehaviour
 {
 #if ENABLE_INPUT_SYSTEM
@@ -12,13 +14,12 @@ public class CC_CharacterPlayerController : MonoBehaviour
 #endif
 
     private CC_PlayerInputManager input;
-    private CC_CharacterBase characterBase;
 
     [Header("Cursor")]
     public bool lockCursorOnStart = true;
 
     [Header("Menus")]
-    [Tooltip("True when any menu is open, will stop TickFixed/TickLate and free cursor.")]
+    [Tooltip("True when any menu is open, will free cursor.")]
     [SerializeField] private bool inMenu;
 
     [Tooltip("Pause menu root.")]
@@ -40,25 +41,17 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
     public bool InMenu => inMenu;
 
-    private bool IsCurrentDeviceMouse
-    {
-        get
-        {
-#if ENABLE_INPUT_SYSTEM
-            return playerInput != null && playerInput.currentControlScheme == "KeyboardMouse";
-#else
-            return false;
-#endif
-        }
-    }
-
     private void Awake()
     {
 #if ENABLE_INPUT_SYSTEM
         playerInput = GetComponent<PlayerInput>();
 #endif
         input = GetComponent<CC_PlayerInputManager>();
-        characterBase = GetComponent<CC_CharacterBase>();
+
+        if (inventory == null)
+        {
+            inventory = GetComponentInParent<INV_Inventory>();
+        }
     }
 
     private void Start()
@@ -95,35 +88,14 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
         // one-off rotate/drop while inventory menu is open
         HandleInventoryActions();
-    }
 
-    private void FixedUpdate()
-    {
-        if (inMenu)
+        // while in menu, do not keep feeding look
+        if (inMenu && input != null)
         {
-            characterBase.TickFixed(new Vector2(0, 0), false, 0, false, false);
-            return;
+            input.look = Vector2.zero;
         }
-
-        // movement / physics
-        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
     }
 
-    private void LateUpdate()
-    {
-        if (inMenu)
-        {
-            characterBase.TickLate(new Vector2(0, 0), IsCurrentDeviceMouse);
-            characterBase.TickInteract(false);
-            return;
-        }
-
-        // camera / rotation
-        characterBase.TickLate(input.look, IsCurrentDeviceMouse);
-
-        // interaction
-        characterBase.TickInteract(input.interact);
-    }
     private void HandleInventoryActions()
     {
         // only allow these when we're in a menu and inventory is actually open
@@ -222,7 +194,10 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         // clear look when entering/leaving menu
-        input.look = Vector2.zero;
+        if (input != null)
+        {
+            input.look = Vector2.zero;
+        }
     }
 
     public void SetPauseMenu(bool state)
@@ -279,7 +254,8 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
         Cursor.lockState = shouldLock ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !shouldLock;
-        if (!cursorLocked)
+
+        if (!cursorLocked && input != null)
         {
             input.look = Vector2.zero;
         }
