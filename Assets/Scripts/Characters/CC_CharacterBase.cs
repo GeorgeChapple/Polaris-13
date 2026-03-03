@@ -35,6 +35,13 @@ public class CC_CharacterBase : NetworkBehaviour
     [Header("Network Ownership")]
     [Tooltip("Camera Root GameObject that contains the Unity Camera + CinemachineBrain in It's Children.")]
     public GameObject cameraRoot;
+
+    [Tooltip("Canvas Object")]
+    public GameObject canvasObj;
+
+    [Tooltip("Canvas Component")]
+    public Canvas canvas;
+
     [SerializeField] private TextMeshProUGUI playerText;
 
     [Tooltip("If true, non owners will destroy their cameraRoot. If false, does nothing for now.")]
@@ -210,7 +217,7 @@ public class CC_CharacterBase : NetworkBehaviour
     bool interactWasHeld;
     bool interactUsedUntilRelease;
 
-    bool cameraOwnershipApplied;
+    bool ownershipApplied;
 
     public override void OnNetworkSpawn()
     {
@@ -233,9 +240,9 @@ public class CC_CharacterBase : NetworkBehaviour
             bodyRotation = transform.rotation;
         }
 
-        // camera ownership (nuke cameras + disable brain)
-        ApplyCameraOwnership(IsOwner);
-        playerText.text = NetworkObjectId.ToString();
+        // ownership (nuke cameras, set refereneces)
+        ApplyOwnership(IsOwner);
+        playerText.text = NetworkObjectId.ToString(); // get better way to find name or player id later
 
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
@@ -252,23 +259,30 @@ public class CC_CharacterBase : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+
+
     }
 
-    void ApplyCameraOwnership(bool isOwnerNow)
+    void ApplyOwnership(bool isOwnerNow)
     {
         if (cameraRoot == null)
         {
             Debug.LogError("Camera Root not set in editor!", this);
-            cameraOwnershipApplied = true;
+            ownershipApplied = true;
             return;
         }
 
         if (isOwnerNow)
         {
             // make sure it's enabled for the local owner
-            if (!cameraRoot) { cameraOwnershipApplied = true; return; }
+            if (!cameraRoot) { ownershipApplied = true; return; }
 
             if (!cameraRoot.activeSelf) { cameraRoot.SetActive(true); }
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            if (cameraRoot != null)
+            {
+                canvas.worldCamera = cameraRoot.GetComponentInChildren<Camera>();
+            }
         }
         else
         {
@@ -277,9 +291,13 @@ public class CC_CharacterBase : NetworkBehaviour
             {
                 Destroy(cameraRoot);
             }
+
+            canvasObj.SetActive(false);
         }
 
-        cameraOwnershipApplied = true;
+
+
+        ownershipApplied = true;
     }
 
     // Call in FixedUpdate.
@@ -762,7 +780,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (holding)
             {
-                currentInteractable.CancelHold(gameObject);
+                currentInteractable.CancelHold(transform.parent.gameObject);
             }
 
             currentInteractable = null;
@@ -793,7 +811,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (pressed)
             {
-                currentInteractable.Interact(gameObject);
+                currentInteractable.Interact(transform.parent.gameObject);
 
                 // stop interacting until released
                 interactUsedUntilRelease = true;
@@ -813,12 +831,12 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (holding)
             {
-                currentInteractable.CancelHold(gameObject);
+                currentInteractable.CancelHold(transform.parent.gameObject);
             }
 
             holdTimer = 0f;
             holding = false;
-            currentInteractable.HoldProgress(gameObject, 0f);
+            currentInteractable.HoldProgress(transform.parent.gameObject, 0f);
             return;
         }
 
@@ -827,7 +845,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             holding = true;
             holdTimer = 0f;
-            currentInteractable.BeginHold(gameObject);
+            currentInteractable.BeginHold(transform.parent.gameObject);
         }
 
         // if we're holding, progress it
@@ -837,11 +855,11 @@ public class CC_CharacterBase : NetworkBehaviour
             holdTimer += Time.deltaTime;
 
             float progress01 = Mathf.Clamp01(holdTimer / required);
-            currentInteractable.HoldProgress(gameObject, progress01);
+            currentInteractable.HoldProgress(transform.parent.gameObject, progress01);
 
             if (holdTimer >= required)
             {
-                currentInteractable.Interact(gameObject);
+                currentInteractable.Interact(transform.parent.gameObject);
 
                 // stop interacting until release
                 interactUsedUntilRelease = true;

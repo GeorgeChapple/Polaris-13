@@ -13,8 +13,7 @@ public class InteractableObject : NetworkBehaviour
     [Header("Interact")]
     public UnityEvent onInteract;
 
-    [Tooltip("Runtime event that passes the interactor through as an Object.")]
-    public ObjectEvent onInteractWithInteractor;
+    [HideInInspector] public ObjectEvent onInteractWithInteractor;
 
     [Tooltip("If true, current onInteract listeners will be mirrored into onInteractWithInteractor on network spawn.")]
     public bool rewireInteractListenersOnNetworkSpawn = true;
