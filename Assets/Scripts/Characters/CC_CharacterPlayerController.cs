@@ -2,18 +2,17 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Made by: Jason Lodge
-// Summary: Player controller, drives movement/body/camera/interaction.
-// This is separated as the movement script will be used by AI for modularity.
-
-public class CC_PlayerController : MonoBehaviour
+// Summary: Player controller, drives all the locomotion code in the character base and things like interaction.
+// This is separated as the character base will be used by AI too to be modular.
+[RequireComponent(typeof(CC_CharacterBase))]
+public class CC_CharacterPlayerController : MonoBehaviour
 {
 #if ENABLE_INPUT_SYSTEM
     private PlayerInput playerInput;
 #endif
-    [SerializeField] private CC_PlayerInputManager input;
-    [SerializeField] private CC_Movement movement;
-    [SerializeField] private CC_BodyAndCamera bodyAndCamera;
-    [SerializeField] private CC_Interaction interaction;
+
+    private CC_PlayerInputManager input;
+    private CC_CharacterBase characterBase;
 
     [Header("Cursor")]
     public bool lockCursorOnStart = true;
@@ -28,7 +27,7 @@ public class CC_PlayerController : MonoBehaviour
     [Tooltip("Inventory menu root.")]
     [SerializeField] private GameObject inventoryMenuRoot;
 
-    [Tooltip("Inventory (optional for this refactor).")]
+    [Tooltip("Inventory")]
     [SerializeField] private INV_Inventory inventory;
 
     private bool cursorLocked;
@@ -58,16 +57,8 @@ public class CC_PlayerController : MonoBehaviour
 #if ENABLE_INPUT_SYSTEM
         playerInput = GetComponent<PlayerInput>();
 #endif
-        // feed shared view ref if needed
-        if (movement != null && movement.viewTransform == null && bodyAndCamera != null)
-        {
-            movement.viewTransform = bodyAndCamera.cinemachineCameraTarget;
-        }
-
-        if (interaction != null && interaction.viewTransform == null && bodyAndCamera != null)
-        {
-            interaction.viewTransform = bodyAndCamera.cinemachineCameraTarget;
-        }
+        input = GetComponent<CC_PlayerInputManager>();
+        characterBase = GetComponent<CC_CharacterBase>();
     }
 
     private void Start()
@@ -110,53 +101,29 @@ public class CC_PlayerController : MonoBehaviour
     {
         if (inMenu)
         {
-            if (movement != null) { movement.TickFixed(Vector2.zero, false, false, false); }
-            if (bodyAndCamera != null) { bodyAndCamera.TickFixed(0f); }
+            characterBase.TickFixed(new Vector2(0, 0), false, 0, false, false);
             return;
         }
 
         // movement / physics
-        if (movement != null)
-        {
-            movement.TickFixed(input.move, input.jump, input.sprint, input.crouch);
-        }
-
-        // body rotation (space roll etc)
-        if (bodyAndCamera != null)
-        {
-            bodyAndCamera.TickFixed(input.roll);
-        }
+        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
     }
 
     private void LateUpdate()
     {
         if (inMenu)
         {
-            if (bodyAndCamera != null) { bodyAndCamera.TickLate(Vector2.zero, IsCurrentDeviceMouse); }
-            if (movement != null) { movement.TickLate(); }
-            if (interaction != null) { interaction.TickInteract(false); }
+            characterBase.TickLate(new Vector2(0, 0), IsCurrentDeviceMouse);
+            characterBase.TickInteract(false);
             return;
         }
 
         // camera / rotation
-        if (bodyAndCamera != null)
-        {
-            bodyAndCamera.TickLate(input.look, IsCurrentDeviceMouse);
-        }
-
-        // stamina
-        if (movement != null)
-        {
-            movement.TickLate();
-        }
+        characterBase.TickLate(input.look, IsCurrentDeviceMouse);
 
         // interaction
-        if (interaction != null)
-        {
-            interaction.TickInteract(input.interact);
-        }
+        characterBase.TickInteract(input.interact);
     }
-
     private void HandleInventoryActions()
     {
         // only allow these when we're in a menu and inventory is actually open

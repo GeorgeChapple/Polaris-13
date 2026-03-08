@@ -147,7 +147,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 127790020}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 949fa8b4259f44944b6bbac207afdf8d, type: 3}
+  m_Script: {fileID: 11500000, guid: abb784de49c4d3248b0a1284fa2f1571, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &127790022
@@ -196,7 +196,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 127790022}
-    PlayerPrefab: {fileID: 5283301974700196272, guid: 9ea4b25afb254924ab51212af131116b, type: 3}
+    PlayerPrefab: {fileID: 6189470309648960028, guid: 1786a5c0acfa0764db61a09191cb8ffe, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: b73689accffa8f0448b122e9a67717c8, type: 2}
@@ -1129,15 +1129,15 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 127790021}
-        m_TargetAssemblyTypeName: MS_SceneSwitcher, Assembly-CSharp
+        m_TargetAssemblyTypeName: MS_ScenSwitcherNetwork, Assembly-CSharp
         m_MethodName: ChangeScene
-        m_Mode: 3
+        m_Mode: 5
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 1
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: Test_Multiplayer
           m_BoolArgument: 0
         m_CallState: 2
   FailedToJoinSession:

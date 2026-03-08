@@ -4,11 +4,10 @@ using UnityEngine.InputSystem;
 
 public class CC_ClientPlayerControl : NetworkBehaviour
 {
-    [SerializeField] private CC_BodyAndCamera bodyAndCamera;
     [SerializeField] private GameObject cam;
     [SerializeField] private CustomGravityRigidbody m_CustomGravityRigidbody;
-    [SerializeField] private CC_Movement m_CharacterBase;
-    [SerializeField] private CC_PlayerController m_CharacterPlayerController;
+    [SerializeField] private CC_CharacterBase m_CharacterBase;
+    [SerializeField] private CC_CharacterPlayerController m_CharacterPlayerController;
     [SerializeField] private CC_PlayerInputManager m_PlayerInputManager;
     [SerializeField] private PlayerInput m_PlayerInput;
 
@@ -22,8 +21,8 @@ public class CC_ClientPlayerControl : NetworkBehaviour
     public void Init()
     {
         m_CustomGravityRigidbody = GetComponent<CustomGravityRigidbody>();
-        m_CharacterBase = GetComponent<CC_Movement>();
-        m_CharacterPlayerController = GetComponent<CC_PlayerController>();
+        m_CharacterBase = GetComponent<CC_CharacterBase>();
+        m_CharacterPlayerController = GetComponent<CC_CharacterPlayerController>();
         m_PlayerInputManager = GetComponent<CC_PlayerInputManager>();
         m_PlayerInput = GetComponent<PlayerInput>();
         //m_CustomGravityRigidbody.enabled = false;
