@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 3900855838033875786}
   - component: {fileID: 4043289975837125573}
   - component: {fileID: -5068223315693377172}
+  - component: {fileID: 8125151144193780619}
   m_Layer: 8
   m_Name: Inventory Item
   m_TagString: Untagged
@@ -215,7 +216,7 @@ MonoBehaviour:
       - m_Target: {fileID: 3900855838033875786}
         m_TargetAssemblyTypeName: INV_ItemDrop, Assembly-CSharp
         m_MethodName: TryAddToInventory
-        m_Mode: 1
+        m_Mode: 2
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -287,3 +288,20 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &8125151144193780619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2353747757295221720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkRigidbodyBaseExpanded: 0
+  UseRigidBodyForMotion: 0
+  AutoUpdateKinematicState: 1
+  AutoSetKinematicOnDespawn: 1

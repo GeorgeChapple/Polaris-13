@@ -33,6 +33,9 @@ public class CC_CharacterBase : NetworkBehaviour
     public CinemachineCamera cCam;
 
     [Header("Network Ownership")]
+    [Tooltip("If True, will work without network manager/ownership interference.")]
+    [SerializeField] private bool singlePlayer = false;
+
     [Tooltip("Camera Root GameObject that contains the Unity Camera + CinemachineBrain in It's Children.")]
     public GameObject cameraRoot;
 
@@ -44,7 +47,7 @@ public class CC_CharacterBase : NetworkBehaviour
 
     [SerializeField] private TextMeshProUGUI playerText;
 
-    [Tooltip("If true, non owners will destroy their cameraRoot. If false, does nothing for now.")]
+    [Tooltip("If true, non owners will disable their cameraRoot. If false, does nothing for now.")]
     public bool destroyNonOwnerCameraRoot = true;
 
     [Header("Crouch")]
@@ -207,7 +210,7 @@ public class CC_CharacterBase : NetworkBehaviour
     protected Quaternion bodyRotation = Quaternion.identity;
 
     // gravity
-    Vector3 upAxis;
+    Vector3 upAxis = Vector3.up;
     Vector3 currentGravity;
 
     // interact
@@ -218,10 +221,28 @@ public class CC_CharacterBase : NetworkBehaviour
     bool interactUsedUntilRelease;
 
     bool ownershipApplied;
+    bool initialised;
 
-    public override void OnNetworkSpawn()
+    protected virtual void Awake()
     {
-        base.OnNetworkSpawn();
+        InitialiseComponents();
+
+        // only do ownership immediately in single player mode.
+        if (singlePlayer)
+        {
+            ApplyOwnership(true);
+
+            if (playerText != null)
+            {
+                playerText.text = "Player";
+            }
+        }
+    }
+
+    void InitialiseComponents()
+    {
+        if (initialised) { return; }
+        initialised = true;
 
         if (values == null) { values = GetComponent<CC_CharacterValues>(); }
 
@@ -240,10 +261,6 @@ public class CC_CharacterBase : NetworkBehaviour
             bodyRotation = transform.rotation;
         }
 
-        // ownership (nuke cameras, set refereneces)
-        ApplyOwnership(IsOwner);
-        playerText.text = NetworkObjectId.ToString(); // get better way to find name or player id later
-
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
 
@@ -259,8 +276,44 @@ public class CC_CharacterBase : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+    }
 
+    protected bool IsLocallyControlled()
+    {
+        return singlePlayer || (IsSpawned && IsOwner);
+    }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        InitialiseComponents();
+        ApplyOwnership(IsOwner);
+
+        if (playerText != null)
+        {
+            playerText.text = NetworkObjectId.ToString(); // get better way to find name or player id later
+        }
+    }
+
+    public override void OnGainedOwnership()
+    {
+        base.OnGainedOwnership();
+
+        if (!singlePlayer)
+        {
+            ApplyOwnership(true);
+        }
+    }
+
+    public override void OnLostOwnership()
+    {
+        base.OnLostOwnership();
+
+        if (!singlePlayer)
+        {
+            ApplyOwnership(false);
+        }
     }
 
     void ApplyOwnership(bool isOwnerNow)
@@ -272,30 +325,45 @@ public class CC_CharacterBase : NetworkBehaviour
             return;
         }
 
+        // In single player, always act like a local owner
+        if (singlePlayer)
+        {
+            isOwnerNow = true;
+        }
+
         if (isOwnerNow)
         {
-            // make sure it's enabled for the local owner
-            if (!cameraRoot) { ownershipApplied = true; return; }
-
             if (!cameraRoot.activeSelf) { cameraRoot.SetActive(true); }
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            if (cameraRoot != null)
+
+            if (canvas != null)
             {
-                canvas.worldCamera = cameraRoot.GetComponentInChildren<Camera>();
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+
+                Camera cam = cameraRoot.GetComponentInChildren<Camera>(true);
+                if (cam != null)
+                {
+                    canvas.worldCamera = cam;
+                }
+            }
+
+            if (canvasObj != null)
+            {
+                canvasObj.SetActive(true);
             }
         }
         else
         {
-            // nuke cam for non owners only
-            if (destroyNonOwnerCameraRoot)
+            // disable cam for non owners.
+            if (destroyNonOwnerCameraRoot && cameraRoot != null)
             {
-                Destroy(cameraRoot);
+                cameraRoot.SetActive(false);
             }
 
-            canvasObj.SetActive(false);
+            if (canvasObj != null)
+            {
+                canvasObj.SetActive(false);
+            }
         }
-
-
 
         ownershipApplied = true;
     }
@@ -303,7 +371,9 @@ public class CC_CharacterBase : NetworkBehaviour
     // Call in FixedUpdate.
     public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput)
     {
-        if (!IsOwner) { return; }
+        if (!IsLocallyControlled()) { return; }
+        if (rb == null) { return; }
+
         // keep our up axis updated from gravity
         currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
 
@@ -359,7 +429,9 @@ public class CC_CharacterBase : NetworkBehaviour
     // Call in LateUpdate.
     public virtual void TickLate(Vector2 lookInput, bool isMouse)
     {
-        if (!IsOwner) { return; }
+        if (!IsLocallyControlled()) { return; }
+        if (rb == null) { return; }
+
         CameraRotation(lookInput, isMouse);
         UpdateBodyFollow();
         UpdateCrouch();
@@ -401,6 +473,7 @@ public class CC_CharacterBase : NetworkBehaviour
     {
         // can't ground unless jump time out is over
         if (jumpTimeoutDelta > 0f) { grounded = false; return; }
+        if (groundedCheckObj == null) { grounded = false; return; }
 
         Vector3 spherePosition = groundedCheckObj.position;
         grounded = Physics.CheckSphere(spherePosition, groundedRadius, groundLayers, QueryTriggerInteraction.Ignore);
@@ -435,7 +508,7 @@ public class CC_CharacterBase : NetworkBehaviour
 
     protected virtual void UpdateBodyFollow()
     {
-        if (bodyTransform == null) { return; }
+        if (bodyTransform == null || rb == null) { return; }
 
         // body sits above the ball along up axis, and follows smoothly
         Vector3 targetPos = rb.position + (upAxis * bodyUpOffset);
@@ -466,10 +539,12 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             float targetHeight = capsuleBaseHeight * (crouching ? crouchCapsuleHeightMult : 1f);
 
-            // center.y shifts by half the height delta to only affect top height
-            float heightDelta = targetHeight - bodyCapsule.height;
-            Vector3 targetCenter = bodyCapsule.center;
-            targetCenter.y += heightDelta * 0.5f;
+            // target center is always based from the original capsule values
+            Vector3 targetCenter = capsuleBaseCenter;
+            if (crouching)
+            {
+                targetCenter.y -= (capsuleBaseHeight - targetHeight) * 0.5f;
+            }
 
             float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
 
@@ -493,7 +568,7 @@ public class CC_CharacterBase : NetworkBehaviour
 
     protected virtual void UpdateCameraBobbing()
     {
-        if (!enableCameraBobbing || cinemachineCameraTarget == null) { return; }
+        if (!enableCameraBobbing || cinemachineCameraTarget == null || rb == null) { return; }
 
         // bob only in ground mode and grounded
         bool allowBob = locomotionType == LocomotionType.GroundMode && grounded;
@@ -536,7 +611,7 @@ public class CC_CharacterBase : NetworkBehaviour
 
     protected virtual void GroundMove(Vector2 moveInput)
     {
-        if (cinemachineCameraTarget == null) { return; }
+        if (cinemachineCameraTarget == null || rb == null) { return; }
 
         // current velocity split
         Vector3 vel = rb.linearVelocity;
@@ -577,6 +652,7 @@ public class CC_CharacterBase : NetworkBehaviour
             rb.linearVelocity = planarVel + verticalVel;
             return;
         }
+
         float speedMult = 1f;
         if (sprinting) { speedMult *= sprintSpeedMult; }
         if (crouching) { speedMult *= crouchSpeedMult; }
@@ -590,6 +666,8 @@ public class CC_CharacterBase : NetworkBehaviour
 
     protected virtual void Jump(bool jumpPressed)
     {
+        if (rb == null) { return; }
+
         if (grounded)
         {
             fallTimeoutDelta = fallTimeout;
@@ -649,6 +727,7 @@ public class CC_CharacterBase : NetworkBehaviour
     protected virtual float GetStabiliseStrength()
     {
         if (locomotionType == LocomotionType.SpaceMode) { return 0f; }
+        if (rb == null) { return 0f; }
 
         float proximity01 = 0f;
 
@@ -680,7 +759,7 @@ public class CC_CharacterBase : NetworkBehaviour
     {
         // add force as thrusters would have inertia
 
-        if (cinemachineCameraTarget == null) { return; }
+        if (cinemachineCameraTarget == null || rb == null) { return; }
 
         Vector3 forward = cinemachineCameraTarget.forward;
         Vector3 right = cinemachineCameraTarget.right;
@@ -756,6 +835,8 @@ public class CC_CharacterBase : NetworkBehaviour
 
     public virtual void TickInteract(bool interactHeld)
     {
+        if (!IsLocallyControlled()) { return; }
+
         bool pressed = interactHeld && !interactWasHeld;
         bool released = !interactHeld && interactWasHeld;
         interactWasHeld = interactHeld;

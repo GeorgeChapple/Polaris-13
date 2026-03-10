@@ -6,8 +6,8 @@ using UnityEngine.Events;
 
 // Made By: Jason Lodge
 // Summary: Simple interactable object, can be wired up in editor using Unity Events.
-//          Can also mirror current onInteract listeners into an object-based runtime event,
-//          allowing the interactor to be passed through on network spawn.
+// Can also mirror current onInteract listeners into an object-based runtime event,
+// allowing the interactor to be passed through on network spawn.
 public class InteractableObject : NetworkBehaviour
 {
     [Header("Interact")]

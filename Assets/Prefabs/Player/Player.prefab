@@ -194,6 +194,7 @@ GameObject:
   - component: {fileID: 574529689200235230}
   - component: {fileID: 824611021907388697}
   - component: {fileID: 8502438742356004698}
+  - component: {fileID: 998792446386265571}
   - component: {fileID: 7085652305783003616}
   m_Layer: 0
   m_Name: BodyCapsule
@@ -357,6 +358,20 @@ MonoBehaviour:
   heldItem: {fileID: 0}
   hoverItem: {fileID: 0}
   items: []
+--- !u!114 &998792446386265571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 864714552109357627}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61132742b39f6944b9b69bd86c7c13e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  inventory: {fileID: 8502438742356004698}
 --- !u!114 &7085652305783003616
 MonoBehaviour:
   m_ObjectHideFlags: 0
