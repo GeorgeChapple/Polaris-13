@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -35,7 +36,6 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private int inventoryGridSpaceSize = 40;
     [Tooltip("Spacing between grid slots")]
     [SerializeField] private Vector2 inventoryGridSpacing = new Vector2(2, 2);
-    
 
     [Tooltip("Single grid cell prefab.")]
     [SerializeField] private GameObject gridCellPrefab;
@@ -46,6 +46,7 @@ public class INV_Inventory : MonoBehaviour
 
     [Tooltip("Item prefab we will use to drop an item with (needs to have INV_ItemDrop).")]
     [SerializeField] private GameObject itemPrefab;
+    public GameObject ItemPrefab => itemPrefab;
 
     [Tooltip("Transform we will spawn dropped items from.")]
     public Transform dropItemTransform;
@@ -670,6 +671,14 @@ public class INV_Inventory : MonoBehaviour
         ItemInstance inst = hoverItem.Instance;
         if (inst == null) { return false; }
 
+        // cache item id before we destroy local ui/state
+        string itemId = inst.data != null ? inst.data.ItemID : string.Empty;
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            Debug.LogError("Cannot drop item with empty ItemID.");
+            return false;
+        }
+
         // remove from grid and list
         ClearItemOccupancy(inst);
         items.Remove(inst);
@@ -680,11 +689,19 @@ public class INV_Inventory : MonoBehaviour
             Destroy(inst.ui.gameObject);
         }
 
-        // spawn world drop
-        bool dropped = DropItem(inst);
+        // ask player net bridge to spawn the world drop on server
+        INV_PlayerInventoryNet netInv = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (netInv == null)
+        {
+            Debug.LogError("Could not find INV_PlayerInventoryNet in parent.");
+            hoverItem = null;
+            return false;
+        }
+
+        netInv.RequestDropItem(itemId);
 
         hoverItem = null;
-        return dropped;
+        return true;
     }
 
     // item drop logic
@@ -700,6 +717,7 @@ public class INV_Inventory : MonoBehaviour
         if (dropHandler != null)
         {
             dropHandler.Init(inst.data);
+            dropHandler.GetComponent<InteractableObject>().RewireInteractListeners();
         }
 
         Rigidbody rb = drop.GetComponent<Rigidbody>();
@@ -707,6 +725,16 @@ public class INV_Inventory : MonoBehaviour
         {
             rb.AddForce(dropItemTransform.forward, ForceMode.Impulse);
             rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
+        }
+
+        NetworkObject netObj = drop.GetComponent<NetworkObject>();
+        if (netObj != null)
+        {
+            netObj.Spawn();
+        }
+        else
+        {
+            Debug.LogError("Dropped item prefab is missing NetworkObject!", drop);
         }
 
         return true;
