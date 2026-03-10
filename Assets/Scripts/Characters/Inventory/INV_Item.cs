@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -18,6 +19,19 @@ public class INV_Item : ScriptableObject
     [Header("Stack")]
     [SerializeField] private bool stackable;
     [SerializeField] private int maxStack;
+
+    [Header("Crafting")]
+    [SerializeField] private bool craftable;
+    [SerializeField] private bool canCraftAnywhere;
+    [SerializeField] private List<CraftingStack> craftingRequirements = new List<CraftingStack>();
+
+    [Serializable]
+    public class CraftingStack
+    {
+        public INV_Item item;
+        public int amount;
+    }
+
 
     [Header("Visuals")]
     [SerializeField] private Sprite icon;
@@ -140,7 +154,6 @@ public class INV_Item : ScriptableObject
         }
     }
 }
-
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_Item))]
 public class INV_ItemEditor : Editor
@@ -157,11 +170,14 @@ public class INV_ItemEditor : Editor
         EditorGUILayout.BeginVertical("box");
         EditorGUILayout.LabelField("Inventory Shape Tool", EditorStyles.boldLabel);
 
-        EditorGUILayout.HelpBox("Normalize will: \nConvert invalid chars to a -\nPads rows to equal width using -", MessageType.Info);
+        EditorGUILayout.HelpBox("Normalize will:\nConvert invalid chars to '-'\nPad rows to equal width using '-'", MessageType.Info);
 
         if (GUILayout.Button("Normalize Inventory Shape"))
         {
+            Undo.RecordObject(item, "Normalize Inventory Shape");
             item.NormalizeInventoryShape();
+            EditorUtility.SetDirty(item);
+            AssetDatabase.SaveAssets();
         }
 
         EditorGUILayout.EndVertical();
