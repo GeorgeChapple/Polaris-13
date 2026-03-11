@@ -6,12 +6,55 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Header("Refs")]
     [SerializeField] private INV_Inventory inventory;
 
+    [Header("Equipped Item")]
+    [SerializeField] private GameObject equippedItemPrefab;
+    [SerializeField] private Transform equippedItemRoot;
+
+    [Tooltip("Object root for the replicated equipped item for other players. If null, uses replicated camera direction root, then this objects transform.")]
+    [SerializeField] private Transform replicatedEquippedItemRoot;
+
+    private NetworkObject currentEquippedItem;
+
+    // local owner only equipped visual
+    private GameObject localEquippedVisual;
+    private MeshFilter localEquippedMeshFilter;
+    private MeshRenderer localEquippedMeshRenderer;
+
     private void Awake()
     {
         if (inventory == null)
         {
             inventory = GetComponentInChildren<INV_Inventory>();
         }
+
+        if (replicatedEquippedItemRoot == null)
+        {
+            CC_CharacterBase characterBase = GetComponentInParent<CC_CharacterBase>();
+            if (characterBase != null)
+            {
+                replicatedEquippedItemRoot = characterBase.ReplicatedCameraDirectionRoot;
+            }
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // server drives the replicated equipped item transform
+        if (!IsServer) { return; }
+        if (currentEquippedItem == null) { return; }
+
+        Transform followRoot = GetReplicatedEquippedItemRoot();
+        if (followRoot == null) { return; }
+
+        currentEquippedItem.transform.position = followRoot.position;
+        currentEquippedItem.transform.rotation = followRoot.rotation;
+        currentEquippedItem.transform.localScale = Vector3.one;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        ClearLocalEquippedVisual();
+        base.OnNetworkDespawn();
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
@@ -65,6 +108,45 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestDropItemRpc(itemId);
     }
 
+    public void RequestEquipItem(string itemId)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            RequestClearEquippedItem();
+            return;
+        }
+
+        // owner should always build their local only first person visual immediately
+        if (IsOwner)
+        {
+            ShowLocalEquippedVisual(itemId);
+        }
+
+        if (IsServer)
+        {
+            EquipItem_Server(itemId);
+            return;
+        }
+
+        RequestEquipItemRpc(itemId);
+    }
+
+    public void RequestClearEquippedItem()
+    {
+        if (IsOwner)
+        {
+            ClearLocalEquippedVisual();
+        }
+
+        if (IsServer)
+        {
+            ClearEquippedItem_Server();
+            return;
+        }
+
+        RequestClearEquippedItemRpc();
+    }
+
     [Rpc(SendTo.Server)]
     private void RequestDropItemRpc(string itemId, RpcParams rpcParams = default)
     {
@@ -82,6 +164,237 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         SpawnDroppedItem_Server(itemId);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestEquipItemRpc(string itemId, RpcParams rpcParams = default)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            Debug.LogWarning("RequestEquipItemRpc received empty itemId.", this);
+            return;
+        }
+
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+        if (OwnerClientId != senderClientId)
+        {
+            Debug.LogWarning($"Client {senderClientId} tried to equip from player owned by {OwnerClientId}.", this);
+            return;
+        }
+
+        EquipItem_Server(itemId);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestClearEquippedItemRpc(RpcParams rpcParams = default)
+    {
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+        if (OwnerClientId != senderClientId)
+        {
+            Debug.LogWarning($"Client {senderClientId} tried to clear equip from player owned by {OwnerClientId}.", this);
+            return;
+        }
+
+        ClearEquippedItem_Server();
+    }
+
+    private void EquipItem_Server(string itemId)
+    {
+        if (!IsServer)
+        {
+            Debug.LogWarning("EquipItem_Server called while not on server.", this);
+            return;
+        }
+
+        if (equippedItemPrefab == null)
+        {
+            Debug.LogError("Missing equippedItemPrefab.", this);
+            return;
+        }
+
+        INV_Item item = INV_ItemDatabase.Instance != null
+            ? INV_ItemDatabase.Instance.GetItemById(itemId)
+            : null;
+
+        if (item == null)
+        {
+            Debug.LogError($"Could not resolve equipped item id '{itemId}' from INV_ItemDatabase.", this);
+            return;
+        }
+
+        ClearEquippedItem_Server();
+
+        Transform spawnRoot = GetReplicatedEquippedItemRoot();
+        if (spawnRoot == null)
+        {
+            Debug.LogError("Could not find a replicated equipped item root.", this);
+            return;
+        }
+
+        GameObject equipped = Instantiate(equippedItemPrefab, spawnRoot.position, spawnRoot.rotation);
+        if (equipped == null)
+        {
+            Debug.LogError("Failed to instantiate equipped item prefab.", this);
+            return;
+        }
+
+        CC_INV_EquippedItem equippedItem = equipped.GetComponent<CC_INV_EquippedItem>();
+        NetworkObject netObj = equipped.GetComponent<NetworkObject>();
+        NetworkObject playerNetObj = GetComponentInParent<NetworkObject>();
+
+        if (equippedItem == null)
+        {
+            Debug.LogError("Equipped item prefab is missing CC_INV_EquippedItem!", equipped);
+            Destroy(equipped);
+            return;
+        }
+
+        if (netObj == null)
+        {
+            Debug.LogError("Equipped item prefab is missing NetworkObject!", equipped);
+            Destroy(equipped);
+            return;
+        }
+
+        if (playerNetObj == null)
+        {
+            Debug.LogError("Player is missing NetworkObject!", gameObject);
+            Destroy(equipped);
+            return;
+        }
+
+        // init before spawn so item id is already set
+        equippedItem.Init(itemId);
+
+        netObj.SpawnWithOwnership(OwnerClientId);
+
+        // valid network parenting, because parent is a spawned network object
+        bool parented = netObj.TrySetParent(playerNetObj, false);
+        if (!parented)
+        {
+            Debug.LogWarning("Failed to parent equipped item under player NetworkObject.", equipped);
+        }
+
+        // snap to replicated anchor
+        equippedItem.SnapToAnchor(spawnRoot);
+
+        currentEquippedItem = netObj;
+    }
+
+    private void ClearEquippedItem_Server()
+    {
+        if (!IsServer)
+        {
+            Debug.LogWarning("ClearEquippedItem_Server called while not on server.", this);
+            return;
+        }
+
+        if (currentEquippedItem == null) { return; }
+
+        if (currentEquippedItem.IsSpawned)
+        {
+            currentEquippedItem.Despawn(true);
+        }
+        else
+        {
+            Destroy(currentEquippedItem.gameObject);
+        }
+
+        currentEquippedItem = null;
+    }
+
+    private void ShowLocalEquippedVisual(string itemId)
+    {
+        if (!IsOwner) { return; }
+        if (equippedItemRoot == null)
+        {
+            Debug.LogError("Missing equippedItemRoot for local equipped visual.", this);
+            return;
+        }
+
+        INV_Item item = INV_ItemDatabase.Instance != null
+            ? INV_ItemDatabase.Instance.GetItemById(itemId)
+            : null;
+
+        if (item == null)
+        {
+            Debug.LogError($"Could not resolve equipped item id '{itemId}' from INV_ItemDatabase.", this);
+            return;
+        }
+
+        EnsureLocalEquippedVisual();
+
+        if (localEquippedMeshFilter != null)
+        {
+            localEquippedMeshFilter.sharedMesh = item.Mesh;
+        }
+
+        if (localEquippedMeshRenderer != null)
+        {
+            localEquippedMeshRenderer.sharedMaterial = item.Material;
+        }
+
+        localEquippedVisual.name = $"LocalEquipped_{item.Name}";
+        localEquippedVisual.transform.SetParent(equippedItemRoot, false);
+        localEquippedVisual.transform.localPosition = item.EquippedMeshOffset;
+        localEquippedVisual.transform.localRotation = Quaternion.identity;
+        localEquippedVisual.transform.localScale = Vector3.one * item.EquippedMeshScale;
+        localEquippedVisual.SetActive(true);
+    }
+
+    private void ClearLocalEquippedVisual()
+    {
+        if (localEquippedVisual != null)
+        {
+            localEquippedVisual.SetActive(false);
+        }
+    }
+
+    private void EnsureLocalEquippedVisual()
+    {
+        if (localEquippedVisual == null)
+        {
+            localEquippedVisual = new GameObject("LocalEquippedVisual");
+            localEquippedVisual.transform.SetParent(equippedItemRoot, false);
+
+            localEquippedMeshFilter = localEquippedVisual.AddComponent<MeshFilter>();
+            localEquippedMeshRenderer = localEquippedVisual.AddComponent<MeshRenderer>();
+        }
+
+        if (localEquippedMeshFilter == null)
+        {
+            localEquippedMeshFilter = localEquippedVisual.GetComponent<MeshFilter>();
+            if (localEquippedMeshFilter == null)
+            {
+                localEquippedMeshFilter = localEquippedVisual.AddComponent<MeshFilter>();
+            }
+        }
+
+        if (localEquippedMeshRenderer == null)
+        {
+            localEquippedMeshRenderer = localEquippedVisual.GetComponent<MeshRenderer>();
+            if (localEquippedMeshRenderer == null)
+            {
+                localEquippedMeshRenderer = localEquippedVisual.AddComponent<MeshRenderer>();
+            }
+        }
+    }
+
+    private Transform GetReplicatedEquippedItemRoot()
+    {
+        if (replicatedEquippedItemRoot != null)
+        {
+            return replicatedEquippedItemRoot;
+        }
+
+        CC_CharacterBase characterBase = GetComponentInParent<CC_CharacterBase>();
+        if (characterBase != null && characterBase.ReplicatedCameraDirectionRoot != null)
+        {
+            replicatedEquippedItemRoot = characterBase.ReplicatedCameraDirectionRoot;
+            return replicatedEquippedItemRoot;
+        }
+
+        return transform;
     }
 
     private void SpawnDroppedItem_Server(string itemId)

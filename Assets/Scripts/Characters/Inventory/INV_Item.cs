@@ -24,6 +24,7 @@ public class INV_Item : ScriptableObject
     [SerializeField] private bool craftable;
     [SerializeField] private bool canCraftAnywhere;
     [SerializeField] private List<CraftingStack> craftingRequirements = new List<CraftingStack>();
+    public List<CraftingStack> CraftingRequirements => craftingRequirements;
 
     [Serializable]
     public class CraftingStack
@@ -45,6 +46,13 @@ public class INV_Item : ScriptableObject
     [Tooltip("Scale applied to the mesh visual when shown in inventory.")]
     [SerializeField] private float inventoryMeshScale = 1f;
 
+    [Header("Equipped Mesh Visual")]
+    [Tooltip("Local offset applied to the mesh visual when equipped.")]
+    [SerializeField] private Vector3 equippedMeshOffset = Vector3.zero;
+
+    [Tooltip("Scale applied to the mesh visual when equipped.")]
+    [SerializeField] private float equippedMeshScale = 1f;
+
     [Header("Inventory")]
     [Tooltip("Complex shape per row. '+' = occupies, '-' = empty. Each entry is the next line down.\nExample: '++', '+-'")]
     [SerializeField] private List<string> inventorySpaceShape = new List<string>() { "++", "+-" };
@@ -65,6 +73,8 @@ public class INV_Item : ScriptableObject
 
     public Vector3 InventoryMeshOffset => inventoryMeshOffset;
     public float InventoryMeshScale => inventoryMeshScale;
+    public Vector3 EquippedMeshOffset => equippedMeshOffset;
+    public float EquippedMeshScale => equippedMeshScale;
 
     public List<string> InventorySpaceShape => inventorySpaceShape;
 

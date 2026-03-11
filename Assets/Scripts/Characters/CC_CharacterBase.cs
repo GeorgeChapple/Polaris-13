@@ -50,6 +50,16 @@ public class CC_CharacterBase : NetworkBehaviour
     [Tooltip("If true, non owners will disable their cameraRoot. If false, does nothing for now.")]
     public bool destroyNonOwnerCameraRoot = true;
 
+    [Header("Replicated Camera Direction")]
+    [Tooltip("Always-active transform used as a replicated version of the local camera direction.")]
+    [SerializeField] private Transform replicatedCameraDirectionRoot;
+
+    [Tooltip("Source transform to copy for replicated camera direction. If null, uses cameraRoot transform.")]
+    [SerializeField] private Transform replicatedCameraSource;
+
+    [Tooltip("If true, owner updates the replicated camera direction root from the real camera target.")]
+    [SerializeField] private bool replicateCameraDirection = true;
+
     [Header("Crouch")]
     public float crouchSpeedMult = 0.5f;
 
@@ -223,6 +233,21 @@ public class CC_CharacterBase : NetworkBehaviour
     bool ownershipApplied;
     bool initialised;
 
+    // replicated camera direction
+    private NetworkVariable<Vector3> replicatedCameraLocalPosition = new NetworkVariable<Vector3>(
+        Vector3.zero,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    private NetworkVariable<Quaternion> replicatedCameraLocalRotation = new NetworkVariable<Quaternion>(
+        Quaternion.identity,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    public Transform ReplicatedCameraDirectionRoot => replicatedCameraDirectionRoot;
+
     protected virtual void Awake()
     {
         InitialiseComponents();
@@ -276,6 +301,11 @@ public class CC_CharacterBase : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+
+        if (replicatedCameraSource == null && cameraRoot != null)
+        {
+            replicatedCameraSource = cameraRoot.transform;
+        }
     }
 
     protected bool IsLocallyControlled()
@@ -290,10 +320,23 @@ public class CC_CharacterBase : NetworkBehaviour
         InitialiseComponents();
         ApplyOwnership(IsOwner);
 
+        replicatedCameraLocalPosition.OnValueChanged += OnReplicatedCameraLocalPositionChanged;
+        replicatedCameraLocalRotation.OnValueChanged += OnReplicatedCameraLocalRotationChanged;
+
+        ApplyReplicatedCameraDirection();
+
         if (playerText != null)
         {
             playerText.text = NetworkObjectId.ToString(); // get better way to find name or player id later
         }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        replicatedCameraLocalPosition.OnValueChanged -= OnReplicatedCameraLocalPositionChanged;
+        replicatedCameraLocalRotation.OnValueChanged -= OnReplicatedCameraLocalRotationChanged;
+
+        base.OnNetworkDespawn();
     }
 
     public override void OnGainedOwnership()
@@ -437,6 +480,7 @@ public class CC_CharacterBase : NetworkBehaviour
         UpdateCrouch();
         UpdateSprintFov();
         UpdateCameraBobbing();
+        UpdateReplicatedCameraDirection();
 
         if (values != null)
         {
@@ -607,6 +651,70 @@ public class CC_CharacterBase : NetworkBehaviour
 
         // apply bob on top of base local pos + crouch offset
         cinemachineCameraTarget.localPosition += bobOffset;
+    }
+
+    private void UpdateReplicatedCameraDirection()
+    {
+        if (!replicateCameraDirection) { return; }
+        if (!IsLocallyControlled()) { return; }
+        if (replicatedCameraDirectionRoot == null) { return; }
+
+        Transform source = replicatedCameraSource != null
+            ? replicatedCameraSource
+            : (cameraRoot != null ? cameraRoot.transform : null);
+
+        if (source == null) { return; }
+
+        Transform parent = replicatedCameraDirectionRoot.parent;
+
+        Vector3 localPos;
+        Quaternion localRot;
+
+        // convert source world pose into the replicated roots parent space
+        if (parent != null)
+        {
+            localPos = parent.InverseTransformPoint(source.position);
+            localRot = Quaternion.Inverse(parent.rotation) * source.rotation;
+        }
+        else
+        {
+            localPos = source.position;
+            localRot = source.rotation;
+        }
+
+        replicatedCameraLocalPosition.Value = localPos;
+        replicatedCameraLocalRotation.Value = localRot;
+
+        // also apply locally so owner sees the same replicated transform
+        ApplyReplicatedCameraDirection();
+    }
+
+    private void OnReplicatedCameraLocalPositionChanged(Vector3 oldValue, Vector3 newValue)
+    {
+        ApplyReplicatedCameraDirection();
+    }
+
+    private void OnReplicatedCameraLocalRotationChanged(Quaternion oldValue, Quaternion newValue)
+    {
+        ApplyReplicatedCameraDirection();
+    }
+
+    private void ApplyReplicatedCameraDirection()
+    {
+        if (replicatedCameraDirectionRoot == null) { return; }
+
+        Transform parent = replicatedCameraDirectionRoot.parent;
+
+        if (parent != null)
+        {
+            replicatedCameraDirectionRoot.localPosition = replicatedCameraLocalPosition.Value;
+            replicatedCameraDirectionRoot.localRotation = replicatedCameraLocalRotation.Value;
+        }
+        else
+        {
+            replicatedCameraDirectionRoot.position = replicatedCameraLocalPosition.Value;
+            replicatedCameraDirectionRoot.rotation = replicatedCameraLocalRotation.Value;
+        }
     }
 
     protected virtual void GroundMove(Vector2 moveInput)
