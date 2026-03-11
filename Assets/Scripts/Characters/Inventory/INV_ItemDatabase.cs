@@ -114,7 +114,7 @@ public class INV_ItemDatabase : ScriptableObject
 }
 
 #if UNITY_EDITOR
-[CustomEditor(typeof(INV_Item))]
+[CustomEditor(typeof(INV_ItemDatabase))]
 public class INV_ItemDatabaseEditor : Editor
 {
     private const string DatabaseAssetPath = "Assets/Resources/Inventory/INV_ItemDatabase.asset";

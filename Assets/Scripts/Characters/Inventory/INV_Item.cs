@@ -24,6 +24,7 @@ public class INV_Item : ScriptableObject
     [SerializeField] private bool craftable;
     [SerializeField] private bool canCraftAnywhere;
     [SerializeField] private List<CraftingStack> craftingRequirements = new List<CraftingStack>();
+    public List<CraftingStack> CraftingRequirements => craftingRequirements;
 
     [Serializable]
     public class CraftingStack
