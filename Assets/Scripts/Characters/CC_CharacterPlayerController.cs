@@ -30,6 +30,9 @@ public class CC_CharacterPlayerController : MonoBehaviour
     [Tooltip("Inventory")]
     [SerializeField] private INV_Inventory inventory;
 
+    [Tooltip("Hotbar")]
+    [SerializeField] private INV_HotBar hotBar;
+
     private bool cursorLocked;
 
     // internal press guards so hold wont spam toggle
@@ -37,6 +40,12 @@ public class CC_CharacterPlayerController : MonoBehaviour
     private bool inventoryHeld;
     private bool rotateHeld;
     private bool dropHeld;
+
+    private bool hotbarSlot1Held;
+    private bool hotbarSlot2Held;
+    private bool hotbarSlot3Held;
+    private bool hotbarSlot4Held;
+    private int lastHotbarScrollDirection;
 
     public bool InMenu => inMenu;
 
@@ -59,6 +68,16 @@ public class CC_CharacterPlayerController : MonoBehaviour
 #endif
         input = GetComponent<CC_PlayerInputManager>();
         characterBase = GetComponent<CC_CharacterBase>();
+
+        if (inventory == null)
+        {
+            inventory = GetComponentInChildren<INV_Inventory>();
+        }
+
+        if (hotBar == null)
+        {
+            hotBar = GetComponentInChildren<INV_HotBar>();
+        }
     }
 
     private void Start()
@@ -95,6 +114,9 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
         // one-off rotate/drop while inventory menu is open
         HandleInventoryActions();
+
+        // hotbar assign / selection
+        HandleHotbarInput();
     }
 
     private void FixedUpdate()
@@ -124,6 +146,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
         // interaction
         characterBase.TickInteract(input.interact);
     }
+
     private void HandleInventoryActions()
     {
         // only allow these when we're in a menu and inventory is actually open
@@ -154,6 +177,55 @@ public class CC_CharacterPlayerController : MonoBehaviour
         else if (!input.dropItem && dropHeld)
         {
             dropHeld = false;
+        }
+    }
+
+    private void HandleHotbarInput()
+    {
+        if (hotBar == null)
+        {
+            return;
+        }
+
+        bool inventoryOpen = inMenu && IsInventoryOpen();
+
+        HandleHotbarSlotPress(input.hotbarSlot1, ref hotbarSlot1Held, 0, inventoryOpen);
+        HandleHotbarSlotPress(input.hotbarSlot2, ref hotbarSlot2Held, 1, inventoryOpen);
+        HandleHotbarSlotPress(input.hotbarSlot3, ref hotbarSlot3Held, 2, inventoryOpen);
+        HandleHotbarSlotPress(input.hotbarSlot4, ref hotbarSlot4Held, 3, inventoryOpen);
+
+        int scrollDirection = 0;
+        if (input.hotBar > 0f) { scrollDirection = 1; }
+        else if (input.hotBar < 0f) { scrollDirection = -1; }
+
+        if (scrollDirection != 0 && lastHotbarScrollDirection == 0)
+        {
+            hotBar.CycleSelection(scrollDirection);
+        }
+
+        lastHotbarScrollDirection = scrollDirection;
+    }
+
+    private void HandleHotbarSlotPress(bool pressed, ref bool held, int slotIndex, bool inventoryOpen)
+    {
+        if (pressed && !held)
+        {
+            held = true;
+
+            // if inventory is open and we're hovering an item,
+            // assign that hovered item into the slot.
+            if (inventoryOpen && inventory != null && inventory.hoverItem != null)
+            {
+                hotBar.AssignHoverItemToSlot(slotIndex);
+            }
+            else
+            {
+                hotBar.SelectSlot(slotIndex);
+            }
+        }
+        else if (!pressed && held)
+        {
+            held = false;
         }
     }
 
