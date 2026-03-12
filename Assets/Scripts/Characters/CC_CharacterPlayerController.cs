@@ -123,12 +123,12 @@ public class CC_CharacterPlayerController : MonoBehaviour
     {
         if (inMenu)
         {
-            characterBase.TickFixed(new Vector2(0, 0), false, 0, false, false);
+            characterBase.TickFixed(new Vector2(0, 0), false, 0, false, false, false);
             return;
         }
 
         // movement / physics
-        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
+        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch, input.stabiliseThrusters);
     }
 
     private void LateUpdate()

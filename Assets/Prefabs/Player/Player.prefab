@@ -319,6 +319,11 @@ MonoBehaviour:
   staminaRegenPerSecond: 10
   staminaRegenDelay: 0.5
   staminaDepletedRegenDelay: 1.75
+  maxThruster: 100
+  thruster: 100
+  thrusterRegenPerSecond: 40
+  thrusterRegenDelay: 1
+  thrusterDepletedRegenDelay: 3
   maxOxygen: 100
   oxygen: 100
   level: 1
@@ -329,8 +334,9 @@ MonoBehaviour:
   - img: {fileID: 3429314785782454224}
   staminaUI:
   - img: {fileID: 6308619665212467706}
-  oxygenUI:
+  thrusterUI:
   - img: {fileID: 3931236817065909934}
+  oxygenUI: []
   expUI: []
 --- !u!114 &5649321440518537111
 MonoBehaviour:
@@ -2661,6 +2667,7 @@ MonoBehaviour:
   playerText: {fileID: 1492453699653431851}
   destroyNonOwnerCameraRoot: 1
   replicatedCameraDirectionRoot: {fileID: 4865604785855627939}
+  replicatedCameraSource: {fileID: 8236564078002858386}
   replicateCameraDirection: 1
   crouchSpeedMult: 0.5
   crouchCameraYOffset: -0.5
@@ -2668,6 +2675,9 @@ MonoBehaviour:
   bodyCapsule: {fileID: 574529689200235230}
   crouchCapsuleHeightMult: 0.6
   jumpPower: 10
+  groundThrusterAccel: 4
+  groundThrusterUpSpeedCap: 8
+  groundThrusterDrainPerSecond: 15
   torqueStrength: 5
   stabiliseRange: 10
   stabilisePadding: 0.25
@@ -2697,6 +2707,9 @@ MonoBehaviour:
     m_RotationOrder: 4
   stabiliseMaxMult: 1
   thrusterAccel: 4
+  spaceThrusterDrainPerSecond: 8
+  spaceStabiliseAccel: 8
+  spaceStabiliseDrainPerSecond: 4
   spaceTurnSpeed: 30
   rollMaxSpeed: 30
   rollAccel: 4
@@ -2772,6 +2785,7 @@ MonoBehaviour:
   interact: 0
   sprint: 0
   crouch: 0
+  stabiliseThrusters: 0
   roll: 0
   pause: 0
   inventory: 0
@@ -3694,7 +3708,7 @@ GameObject:
   - component: {fileID: 8775565689426516495}
   - component: {fileID: 3931236817065909934}
   m_Layer: 5
-  m_Name: Oxygen
+  m_Name: Thruster
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
