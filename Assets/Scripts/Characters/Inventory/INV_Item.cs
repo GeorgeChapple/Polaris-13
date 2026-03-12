@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -15,6 +16,24 @@ public class INV_Item : ScriptableObject
     [Header("Specs")]
     [SerializeField] private float durability;
 
+    [Header("Stack")]
+    [SerializeField] private bool stackable;
+    [SerializeField] private int maxStack;
+
+    [Header("Crafting")]
+    [SerializeField] private bool craftable;
+    [SerializeField] private bool canCraftAnywhere;
+    [SerializeField] private List<CraftingStack> craftingRequirements = new List<CraftingStack>();
+    public List<CraftingStack> CraftingRequirements => craftingRequirements;
+
+    [Serializable]
+    public class CraftingStack
+    {
+        public INV_Item item;
+        public int amount;
+    }
+
+
     [Header("Visuals")]
     [SerializeField] private Sprite icon;
     [SerializeField] private Mesh mesh;
@@ -27,6 +46,13 @@ public class INV_Item : ScriptableObject
     [Tooltip("Scale applied to the mesh visual when shown in inventory.")]
     [SerializeField] private float inventoryMeshScale = 1f;
 
+    [Header("Equipped Mesh Visual")]
+    [Tooltip("Local offset applied to the mesh visual when equipped.")]
+    [SerializeField] private Vector3 equippedMeshOffset = Vector3.zero;
+
+    [Tooltip("Scale applied to the mesh visual when equipped.")]
+    [SerializeField] private float equippedMeshScale = 1f;
+
     [Header("Inventory")]
     [Tooltip("Complex shape per row. '+' = occupies, '-' = empty. Each entry is the next line down.\nExample: '++', '+-'")]
     [SerializeField] private List<string> inventorySpaceShape = new List<string>() { "++", "+-" };
@@ -34,7 +60,7 @@ public class INV_Item : ScriptableObject
     [Tooltip("Fallback size (only used if inventorySpaceShape is empty). Grid size in cells (X = width, Y = height).")]
     [SerializeField] private Vector2 inventorySpace = new Vector2(1, 1);
 
-    public enum ObjectType { Item, Consumable, Weapon, Tool, Placeable };
+    public enum ObjectType { Item, Consumable, Weapon, Tool, Resource, Placeable };
     public ObjectType objectType = ObjectType.Item;
 
     // getters
@@ -47,6 +73,8 @@ public class INV_Item : ScriptableObject
 
     public Vector3 InventoryMeshOffset => inventoryMeshOffset;
     public float InventoryMeshScale => inventoryMeshScale;
+    public Vector3 EquippedMeshOffset => equippedMeshOffset;
+    public float EquippedMeshScale => equippedMeshScale;
 
     public List<string> InventorySpaceShape => inventorySpaceShape;
 
@@ -136,7 +164,6 @@ public class INV_Item : ScriptableObject
         }
     }
 }
-
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_Item))]
 public class INV_ItemEditor : Editor
@@ -153,11 +180,14 @@ public class INV_ItemEditor : Editor
         EditorGUILayout.BeginVertical("box");
         EditorGUILayout.LabelField("Inventory Shape Tool", EditorStyles.boldLabel);
 
-        EditorGUILayout.HelpBox("Normalize will: \nConvert invalid chars to a -\nPads rows to equal width using -", MessageType.Info);
+        EditorGUILayout.HelpBox("Normalize will:\nConvert invalid chars to '-'\nPad rows to equal width using '-'", MessageType.Info);
 
         if (GUILayout.Button("Normalize Inventory Shape"))
         {
+            Undo.RecordObject(item, "Normalize Inventory Shape");
             item.NormalizeInventoryShape();
+            EditorUtility.SetDirty(item);
+            AssetDatabase.SaveAssets();
         }
 
         EditorGUILayout.EndVertical();

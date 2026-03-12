@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -10,11 +11,20 @@ using UnityEngine.UI;
 // grid is its own object and uses grid layout group to align grid spaces
 // then items are instantiated into another object using the grid space top left corner world positions into local
 // grid doesnt get generated again, as we can just keep it there toggled off using set active for gameobject in player controller
+
+// TODO:
+// redo grid generation to be set up in here via cell space size --
+// hotbar works like item stays in inventory but is hotkeyed, makes inventory management more of a challenge
+// 
 public class INV_Inventory : MonoBehaviour
 {
     [Header("Inventory Menu")]
     [Tooltip("Make sure the inventory menu root is active, so we can set up the grid then close the menu after.")]
-    [SerializeField] private GameObject inventoryMenuRoot;
+    [SerializeField] private RectTransform inventoryMenuRoot;
+    [Tooltip("Grid parent with GridLayoutGroup.")]
+    [SerializeField] private RectTransform gridRoot;
+    [Tooltip("Parent all item instances will be under.")]
+    [SerializeField] private RectTransform itemGridRoot;
 
     [Header("Grid")]
     [Tooltip("Max amount of spaces in inventory height wise.")]
@@ -22,14 +32,10 @@ public class INV_Inventory : MonoBehaviour
     [Tooltip("Max amount of spaces in inventory width wise.")]
     [SerializeField] private int inventoryGridMaxWidth = 10;
 
+    [Tooltip("Size of the grid space we will use to set the size of the grid holding object.")]
+    [SerializeField] private int inventoryGridSpaceSize = 40;
     [Tooltip("Spacing between grid slots")]
     [SerializeField] private Vector2 inventoryGridSpacing = new Vector2(2, 2);
-
-    [Tooltip("Grid parent with GridLayoutGroup.")]
-    [SerializeField] private RectTransform gridRoot;
-
-    [Tooltip("Parent all item instances will be under.")]
-    [SerializeField] private RectTransform itemGridRoot;
 
     [Tooltip("Single grid cell prefab.")]
     [SerializeField] private GameObject gridCellPrefab;
@@ -40,6 +46,7 @@ public class INV_Inventory : MonoBehaviour
 
     [Tooltip("Item prefab we will use to drop an item with (needs to have INV_ItemDrop).")]
     [SerializeField] private GameObject itemPrefab;
+    public GameObject ItemPrefab => itemPrefab;
 
     [Tooltip("Transform we will spawn dropped items from.")]
     public Transform dropItemTransform;
@@ -63,6 +70,7 @@ public class INV_Inventory : MonoBehaviour
 
     // item instances
     [SerializeField] private List<ItemInstance> items = new List<ItemInstance>();
+    public List<ItemInstance> Items => items;
 
     [System.Serializable]
     public class InventoryGridSpace
@@ -104,18 +112,18 @@ public class INV_Inventory : MonoBehaviour
     private void Start()
     {
         GenerateGrid();
-        if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+        if (inventoryMenuRoot != null) { inventoryMenuRoot.gameObject.SetActive(false); }
     }
 
     private void Update()
     {
         // if menu is closed, don't do UI hover checks.
-        if (inventoryMenuRoot != null && !inventoryMenuRoot.activeInHierarchy)
+        if (inventoryMenuRoot != null && !inventoryMenuRoot.gameObject.activeInHierarchy)
         {
             hoverItem = null;
             return;
         }
-        if (inventoryMenuRoot.activeInHierarchy)
+        if (inventoryMenuRoot.gameObject.activeInHierarchy)
         { // update all items when inventory menu open
             foreach (ItemInstance item in items)
             {
@@ -143,21 +151,25 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        // apply spacing first so cell size calc is correct
+        // apply spacing and cell size
         gridLayoutGroup.spacing = inventoryGridSpacing;
-
-        // account for spacing when calculating cell size
-        float totalSpacingX = inventoryGridSpacing.x * Mathf.Max(0, inventoryGridMaxWidth - 1);
-        float usableWidth = gridRoot.sizeDelta.x - totalSpacingX;
-
-        float cellSizeX = usableWidth / inventoryGridMaxWidth;
-
-        // cell size should be an equal square
-        cellSize = new Vector2(cellSizeX, cellSizeX);
-
-        // may change later but all ui should likely be scaled depending on screen size
-        // will need more logic making sure inventory height doesnt exceed inventory grid y size
+        cellSize = new Vector2(inventoryGridSpaceSize, inventoryGridSpaceSize);
         gridLayoutGroup.cellSize = cellSize;
+
+        // set grid size based on our grid size and spacing as one space multiplied by out height and width respectively
+        gridRoot.sizeDelta = new Vector2
+            ((inventoryGridSpaceSize + inventoryGridSpacing.x) * inventoryGridMaxWidth,
+            (inventoryGridSpaceSize + inventoryGridSpacing.y) * inventoryGridMaxHeight);
+
+        // remove last spacing added height and width so it sits flush with the edge
+        gridRoot.sizeDelta -= inventoryGridSpacing;
+
+        // vice versa
+        itemGridRoot.sizeDelta = new Vector2
+            ((inventoryGridSpaceSize + inventoryGridSpacing.x) * inventoryGridMaxWidth,
+            (inventoryGridSpaceSize + inventoryGridSpacing.y) * inventoryGridMaxHeight);
+
+        itemGridRoot.sizeDelta -= inventoryGridSpacing;
 
         spaces = new InventoryGridSpace[inventoryGridMaxWidth, inventoryGridMaxHeight];
         cellRects = new RectTransform[inventoryGridMaxWidth, inventoryGridMaxHeight];
@@ -240,6 +252,13 @@ public class INV_Inventory : MonoBehaviour
         }
 
         if (logPlacement) { Debug.Log($"INV, Added: {item.Name} at {cell}"); }
+
+        INV_HotBar hotBar = GetComponent<INV_HotBar>();
+        if (hotBar != null)
+        {
+            hotBar.RefreshAllVisuals();
+        }
+
         return true;
     }
 
@@ -660,6 +679,21 @@ public class INV_Inventory : MonoBehaviour
         ItemInstance inst = hoverItem.Instance;
         if (inst == null) { return false; }
 
+        // cache item id before we destroy local ui/state
+        string itemId = inst.data != null ? inst.data.ItemID : string.Empty;
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            Debug.LogError("Cannot drop item with empty ItemID.");
+            return false;
+        }
+
+        // clear hotbar refs before we remove the item
+        INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+        if (hotBar != null)
+        {
+            hotBar.ClearReferencesToItem(inst);
+        }
+
         // remove from grid and list
         ClearItemOccupancy(inst);
         items.Remove(inst);
@@ -670,14 +704,23 @@ public class INV_Inventory : MonoBehaviour
             Destroy(inst.ui.gameObject);
         }
 
-        // spawn world drop
-        bool dropped = DropItem(inst);
+        // ask player net bridge to spawn the world drop on server
+        INV_PlayerInventoryNet netInv = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (netInv == null)
+        {
+            Debug.LogError("Could not find INV_PlayerInventoryNet in parent.");
+            hoverItem = null;
+            return false;
+        }
+
+        netInv.RequestDropItem(itemId);
 
         hoverItem = null;
-        return dropped;
+        return true;
     }
 
-    // item drop logic
+    // item drop logic, we're currently not using on account of networking.
+    // however I might use it for single player if we dont treat single player like a server with only you on it.
     private bool DropItem(ItemInstance inst)
     {
         if (itemPrefab == null || dropItemTransform == null) { return false; }
@@ -690,6 +733,7 @@ public class INV_Inventory : MonoBehaviour
         if (dropHandler != null)
         {
             dropHandler.Init(inst.data);
+            dropHandler.GetComponent<InteractableObject>().RewireInteractListeners();
         }
 
         Rigidbody rb = drop.GetComponent<Rigidbody>();
@@ -697,6 +741,16 @@ public class INV_Inventory : MonoBehaviour
         {
             rb.AddForce(dropItemTransform.forward, ForceMode.Impulse);
             rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
+        }
+
+        NetworkObject netObj = drop.GetComponent<NetworkObject>();
+        if (netObj != null)
+        {
+            netObj.Spawn();
+        }
+        else
+        {
+            Debug.LogError("Dropped item prefab is missing NetworkObject!", drop);
         }
 
         return true;

@@ -1,20 +1,15 @@
-using System.Collections;
-using Unity.Netcode;
 using UnityEngine;
+using Unity.Netcode;
 using UnityEngine.InputSystem;
 
 public class CC_ClientPlayerControl : NetworkBehaviour
 {
-    [SerializeField] private CC_BodyAndCamera bodyAndCamera;
     [SerializeField] private GameObject cam;
     [SerializeField] private CustomGravityRigidbody m_CustomGravityRigidbody;
-    [SerializeField] private CC_Movement m_CharacterMovement;
-    [SerializeField] private CC_BodyAndCamera m_BodyAndCamera;
-    [SerializeField] private CC_PlayerController m_CharacterPlayerController;
+    [SerializeField] private CC_CharacterBase m_CharacterBase;
+    [SerializeField] private CC_CharacterPlayerController m_CharacterPlayerController;
     [SerializeField] private CC_PlayerInputManager m_PlayerInputManager;
     [SerializeField] private PlayerInput m_PlayerInput;
-
-    [HideInInspector] public bool ready = false;
 
     public bool WireCameraIn(GameObject c)
     {
@@ -26,44 +21,33 @@ public class CC_ClientPlayerControl : NetworkBehaviour
     public void Init()
     {
         m_CustomGravityRigidbody = GetComponent<CustomGravityRigidbody>();
-        m_CharacterMovement = GetComponent<CC_Movement>();
-        m_BodyAndCamera = GetComponent<CC_BodyAndCamera>();
-        m_CharacterPlayerController = GetComponent<CC_PlayerController>();
+        m_CharacterBase = GetComponent<CC_CharacterBase>();
+        m_CharacterPlayerController = GetComponent<CC_CharacterPlayerController>();
         m_PlayerInputManager = GetComponent<CC_PlayerInputManager>();
         m_PlayerInput = GetComponent<PlayerInput>();
+        //m_CustomGravityRigidbody.enabled = false;
+        //m_CharacterBase.enabled = false;
+        //m_CharacterPlayerController.enabled = false;
+        //m_PlayerInputManager.enabled = false;
+        //m_PlayerInput.enabled = false;
     }
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        Debug.Log("ON NETWORK SPAWN", this);
-        StartCoroutine(FixWiring());
-    }
-    private IEnumerator FixWiring()
-    {
-        if (!ready) 
-        { 
-            Debug.Log($"{name} not ready yet.", this);
 
-            yield return null; 
-        }
-        
-        if (IsOwner) 
+        if (IsOwner)
         {
-            Debug.Log($"{name} is owner.", this); 
-
-            StopAllCoroutines();
-            yield return null;
+            m_PlayerInputManager.enabled = true;
+            m_PlayerInput.enabled = true;
         }
-        Debug.Log($"{name} is not owner.", this);
-        m_PlayerInput.enabled = false;
-        m_PlayerInputManager.enabled = false;
-        m_CharacterPlayerController.enabled = false;
-        cam.SetActive(false);
 
-        StopAllCoroutines();
-
-        yield return null;
+        if (IsServer)
+        {
+            m_CustomGravityRigidbody.enabled = true;
+            m_CharacterBase.enabled = true;
+            m_CharacterPlayerController.enabled = true;
+        }
     }
 
     private void LateUpdate()
@@ -78,14 +62,13 @@ public class CC_ClientPlayerControl : NetworkBehaviour
         );
     }
 
-    [Rpc(target: SendTo.Server)]
+    [Rpc(target:SendTo.Server)]
     private void UpdateInputRPC(
-        Vector2 move, Vector2 look, bool jump, bool interact,
+        Vector2 move, Vector2 look, bool jump, bool interact, 
         bool sprint, bool crouch,
         float roll,
         bool pause, bool inventory, bool rotateItem, bool dropItem, bool dropHeldItem, float hotbar
-    )
-    {
+    ) {
         // Character Input Values
         m_PlayerInputManager.MoveInput(move);
         m_PlayerInputManager.LookInput(look);
