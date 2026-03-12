@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -20,16 +21,77 @@ public class INV_ItemDrop : NetworkBehaviour
     private MeshFilter mf;
     private MeshRenderer mr;
 
-    // called by inventory when spawning a drop
+    private NetworkVariable<FixedString128Bytes> networkItemId = new NetworkVariable<FixedString128Bytes>(
+        default,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        networkItemId.OnValueChanged += OnNetworkItemIdChanged;
+
+        // when a client spawns this object, the value may already be present.
+        ResolveAndApplyFromNetworkId();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        networkItemId.OnValueChanged -= OnNetworkItemIdChanged;
+        base.OnNetworkDespawn();
+    }
+
+    private void OnNetworkItemIdChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
+    {
+        ResolveAndApplyFromNetworkId();
+    }
+
+    // called by inventory when spawning a drop on the server
     public void Init(INV_Item newItem)
     {
         item = newItem;
+
+        string itemId = GetItemId();
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            Debug.LogError("Tried to init INV_ItemDrop with null or empty item id.", this);
+            return;
+        }
+
+        
+        networkItemId.Value = itemId;
+
+
         ApplyItemVisuals();
     }
 
     private string GetItemId()
     {
         return item != null ? item.ItemID : string.Empty;
+    }
+
+    private void ResolveAndApplyFromNetworkId()
+    {
+        string itemId = networkItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return;
+        }
+
+        INV_Item resolvedItem = INV_ItemDatabase.Instance != null
+            ? INV_ItemDatabase.Instance.GetItemById(itemId)
+            : null;
+
+        if (resolvedItem == null)
+        {
+            Debug.LogError($"Could not resolve item id '{itemId}' from INV_ItemDatabase.", this);
+            return;
+        }
+
+        item = resolvedItem;
+        ApplyItemVisuals();
     }
 
     private void ApplyItemVisuals()
@@ -157,6 +219,12 @@ public class INV_ItemDrop : NetworkBehaviour
         {
             Debug.LogError("No Player ref in TryAddToInventory_Server!", this);
             return;
+        }
+
+        if (item == null)
+        {
+            // fallback resolve from network variable in case this instance wasn't locally assigned
+            ResolveAndApplyFromNetworkId();
         }
 
         if (item == null)

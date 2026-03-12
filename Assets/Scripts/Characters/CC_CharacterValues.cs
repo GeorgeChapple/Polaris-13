@@ -42,6 +42,22 @@ public class CC_CharacterValues : MonoBehaviour
     float staminaRegenDelayTimer;
     bool staminaWasDepleted;
 
+    [Header("Thrusters")]
+    public float maxThruster = 100f;
+    [SerializeField] float thruster = 100f;
+
+    [Header("Thruster Settings")]
+    public float thrusterRegenPerSecond = 40f;
+
+    [Tooltip("Delay before thruster regen starts after draining.")]
+    public float thrusterRegenDelay = 1f;
+
+    [Tooltip("Extra delay applied when thrusters have been depleted (hit 0).")]
+    public float thrusterDepletedRegenDelay = 3f;
+
+    float thrusterRegenDelayTimer;
+    bool thrusterWasDepleted;
+
     [Header("Oxygen")]
     public float maxOxygen = 100f;
     [SerializeField] float oxygen = 100f;
@@ -58,12 +74,14 @@ public class CC_CharacterValues : MonoBehaviour
     [Header("UI")]
     public FillUI[] healthUI;
     public FillUI[] staminaUI;
+    public FillUI[] thrusterUI;
     public FillUI[] oxygenUI;
     public FillUI[] expUI;
 
     // Getters
     public float Health => health;
     public float Stamina => stamina;
+    public float Thruster => thruster;
     public float Oxygen => oxygen;
 
     public int Level => level;
@@ -75,6 +93,7 @@ public class CC_CharacterValues : MonoBehaviour
         // ensures everything is within bounds
         SetMaxHealth(maxHealth, true);
         SetMaxStamina(maxStamina, true);
+        SetMaxThruster(maxThruster, true);
         SetMaxOxygen(maxOxygen, true);
 
         SetLevel(level, false);
@@ -84,6 +103,9 @@ public class CC_CharacterValues : MonoBehaviour
 
         staminaRegenDelayTimer = 0f;
         staminaWasDepleted = (stamina <= 0f);
+
+        thrusterRegenDelayTimer = 0f;
+        thrusterWasDepleted = (thruster <= 0f);
 
         RefreshUI();
     }
@@ -99,10 +121,12 @@ public class CC_CharacterValues : MonoBehaviour
         // update bars when tweaking values
         maxHealth = Mathf.Max(0f, maxHealth);
         maxStamina = Mathf.Max(0f, maxStamina);
+        maxThruster = Mathf.Max(0f, maxThruster);
         maxOxygen = Mathf.Max(0f, maxOxygen);
 
         health = Mathf.Clamp(health, 0f, maxHealth);
         stamina = Mathf.Clamp(stamina, 0f, maxStamina);
+        thruster = Mathf.Clamp(thruster, 0f, maxThruster);
         oxygen = Mathf.Clamp(oxygen, 0f, maxOxygen);
 
         level = Mathf.Max(1, level);
@@ -120,6 +144,7 @@ public class CC_CharacterValues : MonoBehaviour
     {
         float h01 = (maxHealth <= 0f) ? 0f : (health / maxHealth);
         float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
+        float t01 = (maxThruster <= 0f) ? 0f : (thruster / maxThruster);
         float o01 = (maxOxygen <= 0f) ? 0f : (oxygen / maxOxygen);
         float e01 = (expToNextLevel <= 0) ? 0f : Mathf.Clamp01((float)exp / expToNextLevel);
 
@@ -131,6 +156,11 @@ public class CC_CharacterValues : MonoBehaviour
         if (staminaUI != null)
         {
             for (int i = 0; i < staminaUI.Length; i++) { if (staminaUI[i] != null) { staminaUI[i].SetFill(s01); } }
+        }
+
+        if (thrusterUI != null)
+        {
+            for (int i = 0; i < thrusterUI.Length; i++) { if (thrusterUI[i] != null) { thrusterUI[i].SetFill(t01); } }
         }
 
         if (oxygenUI != null)
@@ -293,6 +323,103 @@ public class CC_CharacterValues : MonoBehaviour
         return stamina > min;
     }
 
+    // Thruster
+    public void SetThruster(float value, bool clamp = true)
+    {
+        thruster = clamp ? Mathf.Clamp(value, 0f, maxThruster) : value;
+
+        if (thruster <= 0f) { thrusterWasDepleted = true; }
+
+        RefreshUI();
+    }
+
+    public void AddThruster(float amount)
+    {
+        SetThruster(thruster + amount, true);
+    }
+
+    public void RemoveThruster(float amount)
+    {
+        SetThruster(thruster - Mathf.Abs(amount), true);
+    }
+
+    public void SetMaxThruster(float value, bool refill = false)
+    {
+        maxThruster = Mathf.Max(0f, value);
+        if (refill) { thruster = maxThruster; }
+        else { thruster = Mathf.Clamp(thruster, 0f, maxThruster); }
+
+        thrusterWasDepleted = (thruster <= 0f);
+
+        RefreshUI();
+    }
+
+    // Call once per frame to drain/regenerate thruster.
+    public void TickThruster(bool usingThrusters, bool allowRegen, float drainPerSecond)
+    {
+        if (usingThrusters)
+        {
+            DrainThruster(drainPerSecond * Time.deltaTime);
+
+            if (thrusterWasDepleted)
+            {
+                thrusterRegenDelayTimer = thrusterDepletedRegenDelay;
+            }
+            else
+            {
+                thrusterRegenDelayTimer = thrusterRegenDelay;
+            }
+            return;
+        }
+
+        if (!allowRegen)
+        {
+            return;
+        }
+
+        if (thrusterRegenDelayTimer > 0f)
+        {
+            thrusterRegenDelayTimer -= Time.deltaTime;
+            return;
+        }
+
+        RegenThruster(thrusterRegenPerSecond * Time.deltaTime);
+    }
+
+    public void DrainThruster(float amount)
+    {
+        float prev = thruster;
+
+        SetThruster(thruster - amount, true);
+
+        if (prev > 0f && thruster <= 0f)
+        {
+            thrusterWasDepleted = true;
+        }
+    }
+
+    public void RegenThruster(float amount)
+    {
+        if (amount <= 0f) { return; }
+
+        if (thrusterWasDepleted && thruster <= 0f)
+        {
+            if (thrusterRegenDelayTimer > 0f) { return; }
+        }
+
+        SetThruster(thruster + amount, true);
+
+        if (thruster > 0f)
+        {
+            thrusterWasDepleted = false;
+        }
+    }
+
+    public bool HasThruster(float min = 0.01f)
+    {
+        return thruster > min;
+    }
+
     // Oxygen
     public void SetOxygen(float value, bool clamp = true)
     {
@@ -363,6 +490,7 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetAll(
         float newHealth, float newMaxHealth,
         float newStamina, float newMaxStamina,
+        float newThruster, float newMaxThruster,
         float newOxygen, float newMaxOxygen,
         int newLevel, int newExp
     )
@@ -372,6 +500,9 @@ public class CC_CharacterValues : MonoBehaviour
 
         SetMaxStamina(newMaxStamina, false);
         SetStamina(newStamina, true);
+
+        SetMaxThruster(newMaxThruster, false);
+        SetThruster(newThruster, true);
 
         SetMaxOxygen(newMaxOxygen, false);
         SetOxygen(newOxygen, true);

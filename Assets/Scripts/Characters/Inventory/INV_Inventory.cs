@@ -70,6 +70,7 @@ public class INV_Inventory : MonoBehaviour
 
     // item instances
     [SerializeField] private List<ItemInstance> items = new List<ItemInstance>();
+    public List<ItemInstance> Items => items;
 
     [System.Serializable]
     public class InventoryGridSpace
@@ -251,6 +252,13 @@ public class INV_Inventory : MonoBehaviour
         }
 
         if (logPlacement) { Debug.Log($"INV, Added: {item.Name} at {cell}"); }
+
+        INV_HotBar hotBar = GetComponent<INV_HotBar>();
+        if (hotBar != null)
+        {
+            hotBar.RefreshAllVisuals();
+        }
+
         return true;
     }
 
@@ -679,6 +687,13 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
+        // clear hotbar refs before we remove the item
+        INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+        if (hotBar != null)
+        {
+            hotBar.ClearReferencesToItem(inst);
+        }
+
         // remove from grid and list
         ClearItemOccupancy(inst);
         items.Remove(inst);
@@ -704,7 +719,8 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
-    // item drop logic
+    // item drop logic, we're currently not using on account of networking.
+    // however I might use it for single player if we dont treat single player like a server with only you on it.
     private bool DropItem(ItemInstance inst)
     {
         if (itemPrefab == null || dropItemTransform == null) { return false; }

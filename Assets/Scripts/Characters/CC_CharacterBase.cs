@@ -50,6 +50,16 @@ public class CC_CharacterBase : NetworkBehaviour
     [Tooltip("If true, non owners will disable their cameraRoot. If false, does nothing for now.")]
     public bool destroyNonOwnerCameraRoot = true;
 
+    [Header("Replicated Camera Direction")]
+    [Tooltip("Always-active transform used as a replicated version of the local camera direction.")]
+    [SerializeField] private Transform replicatedCameraDirectionRoot;
+
+    [Tooltip("Source transform to copy for replicated camera direction. If null, uses cameraRoot transform.")]
+    [SerializeField] private Transform replicatedCameraSource;
+
+    [Tooltip("If true, owner updates the replicated camera direction root from the real camera target.")]
+    [SerializeField] private bool replicateCameraDirection = true;
+
     [Header("Crouch")]
     public float crouchSpeedMult = 0.5f;
 
@@ -68,6 +78,16 @@ public class CC_CharacterBase : NetworkBehaviour
     [Header("Jump / Gravity")]
     public float jumpPower = 10f;
 
+    [Header("Ground Thrusters")]
+    [Tooltip("Acceleration applied upward while holding jump in ground mode and airborne.")]
+    public float groundThrusterAccel = 8f;
+
+    [Tooltip("Maximum upward speed the ground thrusters will push towards.")]
+    public float groundThrusterUpSpeedCap = 8f;
+
+    [Tooltip("Thruster drain per second while using airborne ground thrusters.")]
+    public float groundThrusterDrainPerSecond = 15f;
+
     [Header("Surface Stabalisation")]
     public float torqueStrength = 5f;
 
@@ -85,6 +105,16 @@ public class CC_CharacterBase : NetworkBehaviour
 
     [Header("Space Thrusters")]
     public float thrusterAccel = 4f;
+
+    [Tooltip("Thruster drain per second while using space movement thrusters.")]
+    public float spaceThrusterDrainPerSecond = 8f;
+
+    [Header("Space Stabilisation")]
+    [Tooltip("Acceleration applied opposite to current velocity while stabilising in space.")]
+    public float spaceStabiliseAccel = 8f;
+
+    [Tooltip("Thruster drain per second while using space stabilisation.")]
+    public float spaceStabiliseDrainPerSecond = 4f;
 
     [Header("Space Rotation")]
     public float spaceTurnSpeed = 30f;
@@ -223,6 +253,27 @@ public class CC_CharacterBase : NetworkBehaviour
     bool ownershipApplied;
     bool initialised;
 
+    // thrusters
+    bool usingGroundThrusters;
+    bool usingSpaceMoveThrusters;
+    bool usingSpaceStabiliseThrusters;
+    float thrusterDrainPerSecondThisTick;
+
+    // replicated camera direction
+    private NetworkVariable<Vector3> replicatedCameraLocalPosition = new NetworkVariable<Vector3>(
+        Vector3.zero,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    private NetworkVariable<Quaternion> replicatedCameraLocalRotation = new NetworkVariable<Quaternion>(
+        Quaternion.identity,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    public Transform ReplicatedCameraDirectionRoot => replicatedCameraDirectionRoot;
+
     protected virtual void Awake()
     {
         InitialiseComponents();
@@ -276,6 +327,11 @@ public class CC_CharacterBase : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+
+        if (replicatedCameraSource == null && cameraRoot != null)
+        {
+            replicatedCameraSource = cameraRoot.transform;
+        }
     }
 
     protected bool IsLocallyControlled()
@@ -290,10 +346,23 @@ public class CC_CharacterBase : NetworkBehaviour
         InitialiseComponents();
         ApplyOwnership(IsOwner);
 
+        replicatedCameraLocalPosition.OnValueChanged += OnReplicatedCameraLocalPositionChanged;
+        replicatedCameraLocalRotation.OnValueChanged += OnReplicatedCameraLocalRotationChanged;
+
+        ApplyReplicatedCameraDirection();
+
         if (playerText != null)
         {
             playerText.text = NetworkObjectId.ToString(); // get better way to find name or player id later
         }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        replicatedCameraLocalPosition.OnValueChanged -= OnReplicatedCameraLocalPositionChanged;
+        replicatedCameraLocalRotation.OnValueChanged -= OnReplicatedCameraLocalRotationChanged;
+
+        base.OnNetworkDespawn();
     }
 
     public override void OnGainedOwnership()
@@ -369,7 +438,7 @@ public class CC_CharacterBase : NetworkBehaviour
     }
 
     // Call in FixedUpdate.
-    public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput)
+    public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
     {
         if (!IsLocallyControlled()) { return; }
         if (rb == null) { return; }
@@ -387,6 +456,10 @@ public class CC_CharacterBase : NetworkBehaviour
 
         // clear each tick
         jumpedThisTick = false;
+        usingGroundThrusters = false;
+        usingSpaceMoveThrusters = false;
+        usingSpaceStabiliseThrusters = false;
+        thrusterDrainPerSecondThisTick = 0f;
 
         // crouch only in ground mode + grounded
         bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded;
@@ -404,12 +477,13 @@ public class CC_CharacterBase : NetworkBehaviour
         // movement is always applied to the ball
         if (locomotionType == LocomotionType.SpaceMode)
         {
-            SpaceThrusters(moveInput, jumpInput, crouchInput);
+            SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
         }
         else
         {
             GroundMove(moveInput);
             Jump(jumpInput);
+            GroundThrusters(jumpInput);
         }
 
         // body rotation only applied to the body
@@ -437,6 +511,7 @@ public class CC_CharacterBase : NetworkBehaviour
         UpdateCrouch();
         UpdateSprintFov();
         UpdateCameraBobbing();
+        UpdateReplicatedCameraDirection();
 
         if (values != null)
         {
@@ -447,6 +522,10 @@ public class CC_CharacterBase : NetworkBehaviour
             bool allowRegen = locomotionType == LocomotionType.GroundMode && grounded;
 
             values.TickStamina(shouldDrain, allowRegen);
+
+            // thrusters regen when not being used
+            bool usingThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;
+            values.TickThruster(usingThrusters, true, thrusterDrainPerSecondThisTick);
 
             // if we run out of stamina, force sprint off
             if (sprinting && !values.HasStamina())
@@ -497,13 +576,25 @@ public class CC_CharacterBase : NetworkBehaviour
 
         if (invertY) { lookY = -lookY; }
 
-        // store for fixed update
-        pendingLook += new Vector2(lookX, lookY);
-
         // pitch always affects camera target first
         cinemachineTargetPitch -= lookY;
         cinemachineTargetPitch = ClampAngle(cinemachineTargetPitch, bottomClamp, topClamp);
         cinemachineCameraTarget.localRotation = Quaternion.Euler(cinemachineTargetPitch, 0f, 0f);
+
+        // in ground mode, apply yaw immediately
+        if (locomotionType == LocomotionType.GroundMode)
+        {
+            if (Mathf.Abs(lookX) > 0.0001f)
+            {
+                Quaternion yawQ = Quaternion.AngleAxis(lookX, upAxis);
+                bodyRotation = yawQ * bodyRotation;
+            }
+
+            return;
+        }
+
+        // in space mode cache look for fixed update rotation
+        pendingLook = new Vector2(lookX, lookY);
     }
 
     protected virtual void UpdateBodyFollow()
@@ -609,6 +700,70 @@ public class CC_CharacterBase : NetworkBehaviour
         cinemachineCameraTarget.localPosition += bobOffset;
     }
 
+    private void UpdateReplicatedCameraDirection()
+    {
+        if (!replicateCameraDirection) { return; }
+        if (!IsLocallyControlled()) { return; }
+        if (replicatedCameraDirectionRoot == null) { return; }
+
+        Transform source = replicatedCameraSource != null
+            ? replicatedCameraSource
+            : (cameraRoot != null ? cameraRoot.transform : null);
+
+        if (source == null) { return; }
+
+        Transform parent = replicatedCameraDirectionRoot.parent;
+
+        Vector3 localPos;
+        Quaternion localRot;
+
+        // convert source world pose into the replicated roots parent space
+        if (parent != null)
+        {
+            localPos = parent.InverseTransformPoint(source.position);
+            localRot = Quaternion.Inverse(parent.rotation) * source.rotation;
+        }
+        else
+        {
+            localPos = source.position;
+            localRot = source.rotation;
+        }
+
+        replicatedCameraLocalPosition.Value = localPos;
+        replicatedCameraLocalRotation.Value = localRot;
+
+        // also apply locally so owner sees the same replicated transform
+        ApplyReplicatedCameraDirection();
+    }
+
+    private void OnReplicatedCameraLocalPositionChanged(Vector3 oldValue, Vector3 newValue)
+    {
+        ApplyReplicatedCameraDirection();
+    }
+
+    private void OnReplicatedCameraLocalRotationChanged(Quaternion oldValue, Quaternion newValue)
+    {
+        ApplyReplicatedCameraDirection();
+    }
+
+    private void ApplyReplicatedCameraDirection()
+    {
+        if (replicatedCameraDirectionRoot == null) { return; }
+
+        Transform parent = replicatedCameraDirectionRoot.parent;
+
+        if (parent != null)
+        {
+            replicatedCameraDirectionRoot.localPosition = replicatedCameraLocalPosition.Value;
+            replicatedCameraDirectionRoot.localRotation = replicatedCameraLocalRotation.Value;
+        }
+        else
+        {
+            replicatedCameraDirectionRoot.position = replicatedCameraLocalPosition.Value;
+            replicatedCameraDirectionRoot.rotation = replicatedCameraLocalRotation.Value;
+        }
+    }
+
     protected virtual void GroundMove(Vector2 moveInput)
     {
         if (cinemachineCameraTarget == null || rb == null) { return; }
@@ -698,6 +853,23 @@ public class CC_CharacterBase : NetworkBehaviour
         }
     }
 
+    protected virtual void GroundThrusters(bool jumpHeld)
+    {
+        if (rb == null || values == null) { return; }
+        if (locomotionType != LocomotionType.GroundMode) { return; }
+        if (grounded) { return; }
+        if (!jumpHeld) { return; }
+        if (!values.HasThruster()) { return; }
+
+        float upSpeed = Vector3.Dot(rb.linearVelocity, upAxis);
+        if (upSpeed >= groundThrusterUpSpeedCap) { return; }
+
+        rb.AddForce(upAxis * groundThrusterAccel, ForceMode.Acceleration);
+
+        usingGroundThrusters = true;
+        thrusterDrainPerSecondThisTick += groundThrusterDrainPerSecond;
+    }
+
     protected virtual void GroundBodyRotation()
     {
         if (bodyTransform == null) { return; }
@@ -713,14 +885,6 @@ public class CC_CharacterBase : NetworkBehaviour
 
             float t = 1f - Mathf.Exp(-strength * Time.fixedDeltaTime);
             bodyRotation = Quaternion.Slerp(current, target, t);
-        }
-
-        // rotate body around gravity up axis
-        float yawDelta = pendingLook.x;
-        if (Mathf.Abs(yawDelta) > 0.0001f)
-        {
-            Quaternion yawQ = Quaternion.AngleAxis(yawDelta, upAxis);
-            bodyRotation = yawQ * bodyRotation;
         }
     }
 
@@ -755,11 +919,11 @@ public class CC_CharacterBase : NetworkBehaviour
         return torqueStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
     }
 
-    protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed, bool crouchPressed)
+    protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed, bool crouchPressed, bool stabilisePressed)
     {
         // add force as thrusters would have inertia
 
-        if (cinemachineCameraTarget == null || rb == null) { return; }
+        if (cinemachineCameraTarget == null || rb == null || values == null) { return; }
 
         Vector3 forward = cinemachineCameraTarget.forward;
         Vector3 right = cinemachineCameraTarget.right;
@@ -775,7 +939,45 @@ public class CC_CharacterBase : NetworkBehaviour
         float speedMult = 1f;
         if (sprinting) { speedMult *= sprintSpeedMult; }
 
-        rb.AddForce(accel * (thrusterAccel * speedMult), ForceMode.Acceleration);
+        if (accel.sqrMagnitude > 0.0001f && values.HasThruster())
+        {
+            rb.AddForce(accel * (thrusterAccel * speedMult), ForceMode.Acceleration);
+
+            usingSpaceMoveThrusters = true;
+            thrusterDrainPerSecondThisTick += spaceThrusterDrainPerSecond;
+        }
+
+        if (stabilisePressed)
+        {
+            SpaceStabilisation();
+        }
+    }
+
+    protected virtual void SpaceStabilisation()
+    {
+        if (rb == null || values == null) { return; }
+        if (!values.HasThruster()) { return; }
+
+        Vector3 velocity = rb.linearVelocity;
+        float speed = velocity.magnitude;
+        if (speed <= 0.01f) { return; }
+
+        Vector3 accel = -velocity.normalized * spaceStabiliseAccel;
+
+        // stop overshooting when nearly stopped
+        float maxDeltaV = spaceStabiliseAccel * Time.fixedDeltaTime;
+        if (speed < maxDeltaV)
+        {
+            accel = -velocity / Mathf.Max(Time.fixedDeltaTime, 0.0001f);
+        }
+
+        rb.AddForce(accel, ForceMode.Acceleration);
+
+        // stabilising should also settle roll faster
+        rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * Time.fixedDeltaTime);
+
+        usingSpaceStabiliseThrusters = true;
+        thrusterDrainPerSecondThisTick += spaceStabiliseDrainPerSecond;
     }
 
     protected virtual void SpaceBodyRotation()
@@ -785,6 +987,8 @@ public class CC_CharacterBase : NetworkBehaviour
         Quaternion current = bodyRotation;
         float dt = Time.fixedDeltaTime;
 
+        Vector2 look = pendingLook;
+
         Vector3 camUp = cinemachineCameraTarget.up;
         Vector3 camRight = cinemachineCameraTarget.right;
         Vector3 camForward = cinemachineCameraTarget.forward;
@@ -793,8 +997,8 @@ public class CC_CharacterBase : NetworkBehaviour
         camForward.Normalize();
 
         // yaw/pitch
-        float yawDelta = pendingLook.x * (spaceTurnSpeed / 180f) * dt * 180f;
-        float pitchDelta = -pendingLook.y * (spaceTurnSpeed / 180f) * dt * 180f;
+        float yawDelta = look.x * spaceTurnSpeed * dt;
+        float pitchDelta = -look.y * spaceTurnSpeed * dt;
 
         Quaternion yawQ = Quaternion.AngleAxis(yawDelta, camUp);
         Quaternion pitchQ = Quaternion.AngleAxis(pitchDelta, camRight);

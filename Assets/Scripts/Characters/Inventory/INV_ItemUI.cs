@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 // Made By: Jason Lodge
 // Summary: UI dragging handler for inventory items.
@@ -17,6 +18,10 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     [SerializeField] private float durabilityBarMaxHeight;
     [SerializeField] private float durabilityBarWidthFromEdge;
     [SerializeField] private float durabilityBarYOffset;
+
+    [Header("Hotbar")]
+    [Tooltip("TMP label used to show hotbar slot assignment.")]
+    [SerializeField] private TextMeshProUGUI hotbarSlotLabel;
 
     private INV_Inventory inv;
     private INV_Inventory.ItemInstance itemInst;
@@ -65,6 +70,12 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         {
             durabilityBar.rectTransform.anchoredPosition = new Vector2(0f, durabilityBarYOffset);
             durabilityBar.rectTransform.sizeDelta = new Vector2(rt.sizeDelta.x - durabilityBarWidthFromEdge, durabilityBarMaxHeight);
+        }
+
+        INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+        if (hotBar != null && itemInst != null)
+        {
+            SetHotbarSlotLabel(hotBar.GetAssignedSlotForItem(itemInst));
         }
 
         // mesh visuals
@@ -116,6 +127,21 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         // horizontal rotate
         meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -90f);
+    }
+
+    public void SetHotbarSlotLabel(int slotIndex)
+    {
+        if (hotbarSlotLabel == null) { return; }
+
+        if (slotIndex < 0)
+        {
+            hotbarSlotLabel.text = string.Empty;
+            hotbarSlotLabel.gameObject.SetActive(false);
+            return;
+        }
+
+        hotbarSlotLabel.gameObject.SetActive(true);
+        hotbarSlotLabel.text = (slotIndex + 1).ToString();
     }
 
     public void OnBeginDrag(PointerEventData eventData)

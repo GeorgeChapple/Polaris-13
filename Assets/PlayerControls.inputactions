@@ -61,6 +61,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "StabiliseThrusters",
+                    "type": "PassThrough",
+                    "id": "cd2bcc5b-949a-4c20-9a84-e119c96fc1eb",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Sprint",
                     "type": "PassThrough",
                     "id": "ecd992e8-696d-412f-9a89-93d7a609b509",
@@ -127,6 +136,42 @@
                     "name": "DropHeldItem",
                     "type": "PassThrough",
                     "id": "68e2a4ea-5149-40e2-aeb3-737411cacfde",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "HotbarSlot1",
+                    "type": "PassThrough",
+                    "id": "40fdc831-674c-45a6-b2d6-39c1677e6708",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "HotbarSlot2",
+                    "type": "PassThrough",
+                    "id": "67bd2c74-b110-4d60-bce7-7fb2db483aa1",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "HotbarSlot3",
+                    "type": "PassThrough",
+                    "id": "b2a55cc8-d29b-4e30-9e90-78af282460b3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "HotbarSlot4",
+                    "type": "PassThrough",
+                    "id": "933cd020-ed03-4f16-86fb-4663c58abb62",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -285,6 +330,17 @@
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1a74127d-b358-479f-bcc2-3596a66b467d",
+                    "path": "<Keyboard>/leftAlt",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "StabiliseThrusters",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -472,6 +528,50 @@
                     "processors": "",
                     "groups": "",
                     "action": "DropHeldItem",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8b1d61f3-679e-4034-8aaa-42e72dd46718",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "HotbarSlot1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9839faa3-3b9e-4236-92da-c1156c80e4bf",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "HotbarSlot2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b09f2f87-fd17-4ce6-8596-96913f7f817b",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "HotbarSlot3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "10183151-77d8-4005-b2cc-f625997af00d",
+                    "path": "<Keyboard>/4",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "HotbarSlot4",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
