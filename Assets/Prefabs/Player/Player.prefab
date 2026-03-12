@@ -2585,7 +2585,7 @@ SphereCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5054708247881435090}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 79d523b7dca09be4f9450080a9b12613, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 192
@@ -2674,9 +2674,9 @@ MonoBehaviour:
   crouchSharpness: 14
   bodyCapsule: {fileID: 574529689200235230}
   crouchCapsuleHeightMult: 0.6
-  jumpPower: 10
-  groundThrusterAccel: 4
-  groundThrusterUpSpeedCap: 8
+  jumpPower: 6
+  groundThrusterAccel: 6
+  groundThrusterUpSpeedCap: 10
   groundThrusterDrainPerSecond: 15
   torqueStrength: 5
   stabiliseRange: 10
