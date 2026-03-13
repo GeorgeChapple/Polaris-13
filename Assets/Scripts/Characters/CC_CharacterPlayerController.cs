@@ -78,6 +78,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         playerInput = GetComponent<PlayerInput>();
 #endif
         input = GetComponent<CC_PlayerInputManager>();
+        movement = GetComponent<CC_Movement>();
+        cameraController = GetComponent<CC_CameraController>();
+        interaction = GetComponent<CC_Interaction>();
 
         if (inventory == null)
         {
