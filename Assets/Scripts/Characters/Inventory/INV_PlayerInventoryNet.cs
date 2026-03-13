@@ -29,10 +29,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (replicatedEquippedItemRoot == null)
         {
-            CC_CharacterBase characterBase = GetComponentInParent<CC_CharacterBase>();
-            if (characterBase != null)
+            CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
+            if (cameraController != null)
             {
-                replicatedEquippedItemRoot = characterBase.ReplicatedCameraDirectionRoot;
+                replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
             }
         }
     }
@@ -263,10 +263,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        // init before spawn so item id is already set
-        equippedItem.Init(itemId);
+        // init before spawn so replicated vars are already set
+        equippedItem.Init(itemId, OwnerClientId);
 
-        netObj.SpawnWithOwnership(OwnerClientId);
+        // server owns the replicated equipped item because server is driving its transform
+        netObj.Spawn();
 
         // valid network parenting, because parent is a spawned network object
         bool parented = netObj.TrySetParent(playerNetObj, false);
@@ -387,10 +388,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return replicatedEquippedItemRoot;
         }
 
-        CC_CharacterBase characterBase = GetComponentInParent<CC_CharacterBase>();
-        if (characterBase != null && characterBase.ReplicatedCameraDirectionRoot != null)
+        CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
+        if (cameraController != null && cameraController.ReplicatedCameraDirectionRoot != null)
         {
-            replicatedEquippedItemRoot = characterBase.ReplicatedCameraDirectionRoot;
+            replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
             return replicatedEquippedItemRoot;
         }
 
