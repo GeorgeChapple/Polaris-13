@@ -3,7 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 
 // Made By: Jason Lodge
-// Summary: Script that goes on the eqipped item instance, inherits the item instance data.
+// Summary: Script that goes on the equipped item instance, inherits the item instance data.
 
 public class CC_INV_EquippedItem : NetworkBehaviour
 {
@@ -23,6 +23,12 @@ public class CC_INV_EquippedItem : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    private NetworkVariable<ulong> owningPlayerClientId = new NetworkVariable<ulong>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     public string ItemId => networkItemId.Value.ToString();
 
     public override void OnNetworkSpawn()
@@ -30,27 +36,22 @@ public class CC_INV_EquippedItem : NetworkBehaviour
         base.OnNetworkSpawn();
 
         networkItemId.OnValueChanged += OnItemIdChanged;
-        ResolveItemFromNetworkId();
+        owningPlayerClientId.OnValueChanged += OnOwningPlayerChanged;
 
-        // owner uses local-only equipped visual instead, so hide the replicated one locally
-        if (IsOwner)
-        {
-            SetVisualVisible(false);
-        }
-        else
-        {
-            SetVisualVisible(true);
-        }
+        ResolveItemFromNetworkId();
+        RefreshOwnerVisibility();
     }
 
     public override void OnNetworkDespawn()
     {
         networkItemId.OnValueChanged -= OnItemIdChanged;
+        owningPlayerClientId.OnValueChanged -= OnOwningPlayerChanged;
+
         base.OnNetworkDespawn();
     }
 
     // called by server before spawn
-    public void Init(string itemId)
+    public void Init(string itemId, ulong ownerClientId)
     {
         if (string.IsNullOrWhiteSpace(itemId))
         {
@@ -59,12 +60,18 @@ public class CC_INV_EquippedItem : NetworkBehaviour
         }
 
         networkItemId.Value = itemId;
+        owningPlayerClientId.Value = ownerClientId;
         ResolveItemFromNetworkId();
     }
 
     private void OnItemIdChanged(FixedString128Bytes oldValue, FixedString128Bytes newValue)
     {
         ResolveItemFromNetworkId();
+    }
+
+    private void OnOwningPlayerChanged(ulong oldValue, ulong newValue)
+    {
+        RefreshOwnerVisibility();
     }
 
     private void ResolveItemFromNetworkId()
@@ -110,6 +117,25 @@ public class CC_INV_EquippedItem : NetworkBehaviour
         }
     }
 
+    private void RefreshOwnerVisibility()
+    {
+        if (NetworkManager == null)
+        {
+            SetVisualVisible(true);
+            return;
+        }
+
+        // owner uses the local-only first person visual instead
+        if (NetworkManager.LocalClientId == owningPlayerClientId.Value)
+        {
+            SetVisualVisible(false);
+        }
+        else
+        {
+            SetVisualVisible(true);
+        }
+    }
+
     private void ApplyVisuals(INV_Item item)
     {
         if (item == null) { return; }
@@ -136,6 +162,8 @@ public class CC_INV_EquippedItem : NetworkBehaviour
         cachedRenderers = GetComponentsInChildren<Renderer>(true);
 
         gameObject.name = $"Equipped_{item.Name}";
+
+        RefreshOwnerVisibility();
     }
 
     private void EnsureVisualSetup()

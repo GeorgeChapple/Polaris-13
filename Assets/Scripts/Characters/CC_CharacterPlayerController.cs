@@ -1,24 +1,30 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 // Made by: Jason Lodge
-// Summary: Player controller, drives all the locomotion code in the character base and things like interaction.
-// This is separated as the character base will be used by AI too to be modular.
-[RequireComponent(typeof(CC_CharacterBase))]
-public class CC_CharacterPlayerController : MonoBehaviour
+// Summary: Player controller, drives all the locomotion code and things like interaction, menus, etc.
+// This is separated as movement/camera/interaction are modular and can be reused by AI.
+
+[RequireComponent(typeof(CC_Movement))]
+[RequireComponent(typeof(CC_CameraController))]
+[RequireComponent(typeof(CC_Interaction))]
+public class CC_CharacterPlayerController : NetworkBehaviour
 {
 #if ENABLE_INPUT_SYSTEM
     private PlayerInput playerInput;
 #endif
 
     private CC_PlayerInputManager input;
-    private CC_CharacterBase characterBase;
+    private CC_Movement movement;
+    private CC_CameraController cameraController;
+    private CC_Interaction interaction;
 
     [Header("Cursor")]
     public bool lockCursorOnStart = true;
 
     [Header("Menus")]
-    [Tooltip("True when any menu is open, will stop TickFixed/TickLate and free cursor.")]
+    [Tooltip("True when any menu is open, will stop movement / camera / interaction and free cursor.")]
     [SerializeField] private bool inMenu;
 
     [Tooltip("Pause menu root.")]
@@ -61,13 +67,20 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
     }
 
+    private bool IsLocallyControlled()
+    {
+        return movement != null && movement.IsLocallyControlled();
+    }
+
     private void Awake()
     {
 #if ENABLE_INPUT_SYSTEM
         playerInput = GetComponent<PlayerInput>();
 #endif
         input = GetComponent<CC_PlayerInputManager>();
-        characterBase = GetComponent<CC_CharacterBase>();
+        movement = GetComponent<CC_Movement>();
+        cameraController = GetComponent<CC_CameraController>();
+        interaction = GetComponent<CC_Interaction>();
 
         if (inventory == null)
         {
@@ -80,8 +93,57 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        ApplyOwnershipState();
+    }
+
+    public override void OnGainedOwnership()
+    {
+        base.OnGainedOwnership();
+        ApplyOwnershipState();
+    }
+
+    public override void OnLostOwnership()
+    {
+        base.OnLostOwnership();
+        ApplyOwnershipState();
+    }
+
+    private void ApplyOwnershipState()
+    {
+        bool local = IsLocallyControlled();
+
+#if ENABLE_INPUT_SYSTEM
+        if (playerInput != null)
+        {
+            playerInput.enabled = local;
+        }
+#endif
+
+        // disable this whole controller for non local players
+        enabled = local;
+
+        if (!local)
+        {
+            return;
+        }
+
+        if (inMenu)
+        {
+            SetCursorLocked(false);
+        }
+        else if (lockCursorOnStart)
+        {
+            SetCursorLocked(true);
+        }
+    }
+
     private void Start()
     {
+        if (!IsLocallyControlled()) { return; }
+
         // if we start in a menu, dont lock
         if (inMenu)
         {
@@ -101,6 +163,8 @@ public class CC_CharacterPlayerController : MonoBehaviour
     private void OnApplicationFocus(bool hasFocus)
     {
         // if a menu is open, dont re-lock cursor
+        if (!IsLocallyControlled()) { return; }
+
         if (hasFocus && cursorLocked && !inMenu)
         {
             SetCursorLocked(true);
@@ -121,30 +185,33 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (movement == null) { return; }
+
         if (inMenu)
         {
-            characterBase.TickFixed(new Vector2(0, 0), false, 0, false, false, false);
+            movement.TickFixed(Vector2.zero, false, 0f, false, false, false);
             return;
         }
 
         // movement / physics
-        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch, input.stabiliseThrusters);
+        movement.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch, input.stabiliseThrusters);
     }
 
     private void LateUpdate()
     {
+        bool isMouse = IsCurrentDeviceMouse;
+
         if (inMenu)
         {
-            characterBase.TickLate(new Vector2(0, 0), IsCurrentDeviceMouse);
-            characterBase.TickInteract(false);
+            if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
+            if (movement != null) { movement.TickLateState(); }
+            if (interaction != null) { interaction.TickInteract(false); }
             return;
         }
 
-        // camera / rotation
-        characterBase.TickLate(input.look, IsCurrentDeviceMouse);
-
-        // interaction
-        characterBase.TickInteract(input.interact);
+        if (cameraController != null) { cameraController.TickLate(input.look, isMouse); }
+        if (movement != null) { movement.TickLateState(); }
+        if (interaction != null) { interaction.TickInteract(input.interact); }
     }
 
     private void HandleInventoryActions()
@@ -182,10 +249,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
     private void HandleHotbarInput()
     {
-        if (hotBar == null)
-        {
-            return;
-        }
+        if (hotBar == null) { return; }
 
         bool inventoryOpen = inMenu && IsInventoryOpen();
 
@@ -285,16 +349,16 @@ public class CC_CharacterPlayerController : MonoBehaviour
         {
             SetCursorLocked(false);
         }
-        else
+        else if (lockCursorOnStart)
         {
-            if (lockCursorOnStart)
-            {
-                SetCursorLocked(true);
-            }
+            SetCursorLocked(true);
         }
 
         // clear look when entering/leaving menu
-        input.look = Vector2.zero;
+        if (input != null)
+        {
+            input.look = Vector2.zero;
+        }
     }
 
     public void SetPauseMenu(bool state)
@@ -305,9 +369,9 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         // when opening pause, force inventory closed
-        if (state)
+        if (state && inventoryMenuRoot != null)
         {
-            if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+            inventoryMenuRoot.SetActive(false);
         }
 
         SetInMenu(state || IsInventoryOpen());
@@ -321,9 +385,9 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         // when opening inventory, force pause closed
-        if (state)
+        if (state && pauseMenuRoot != null)
         {
-            if (pauseMenuRoot != null) { pauseMenuRoot.SetActive(false); }
+            pauseMenuRoot.SetActive(false);
         }
 
         SetInMenu(state || IsPauseOpen());
@@ -351,7 +415,8 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
         Cursor.lockState = shouldLock ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !shouldLock;
-        if (!cursorLocked)
+
+        if (!cursorLocked && input != null)
         {
             input.look = Vector2.zero;
         }
