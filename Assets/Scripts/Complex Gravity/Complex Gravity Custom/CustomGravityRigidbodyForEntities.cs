@@ -1,38 +1,30 @@
 using UnityEngine;
 
+// Made by: Jason Lodge
+// Original by: CatLikeCoding Available at:https://catlikecoding.com/unity/tutorials/movement/complex-gravity/
+// Summary: Script that adds new functionality to CustomGravityRigidbody.
+// Adds a Grounded functionality using multiple raycasts (for slopes).
+// For use by characters/entities.
+
 public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 {
     [Header("Grounded Check")]
-    [SerializeField]
-    private bool useGroundedCheck = true;
-
-    [SerializeField]
-    private Transform groundedCheckObj;
-
-    [SerializeField]
-    private float groundedRayLength = 0.75f;
-
-    [SerializeField]
-    private float groundedRayRadius = 0.2f;
-
-    [SerializeField]
-    private LayerMask groundLayers;
-
-    [SerializeField]
-    private float zeroGravityThreshold = 0.25f;
+    [SerializeField] private bool useGroundedCheck = true;
+    [SerializeField] private Transform groundedCheckObj;
+    [SerializeField] private float groundedRayLength = 0.75f;
+    [SerializeField] private float groundedRayRadius = 0.2f;
+    [SerializeField] private LayerMask groundLayers;
+    [SerializeField] private float zeroGravityThreshold = 0.25f;
 
     [Header("Ground Snap")]
     [Tooltip("How far above the ground point the grounded check should rest.")]
-    [SerializeField]
-    private float groundedHoverHeight = 1f;
+    [SerializeField] private float groundedHoverHeight = 1f;
 
     [Tooltip("Grace time before we fully lose grounded state.")]
-    [SerializeField]
-    private float groundedLoseGraceTime = 0.08f;
+    [SerializeField] private float groundedLoseGraceTime = 0.08f;
 
     [Tooltip("If true, while grounded we remove any velocity going towards ground.")]
-    [SerializeField]
-    private bool stopDownwardVelocityWhenGrounded = true;
+    [SerializeField] private bool stopDownwardVelocityWhenGrounded = true;
 
     public bool Grounded => grounded;
     public Vector3 UpAxis => upAxis;

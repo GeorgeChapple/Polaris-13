@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Assertions.Must;
 
 public class SP_SpaceJunk : MonoBehaviour
 {
@@ -28,7 +29,7 @@ public class SP_SpaceJunk : MonoBehaviour
         {
             SpawnDebris();
         }
-        RotateDebrisVelocity();
+        MoveDebris();
         Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
         foundObjects.Clear();
         foreach (Collider col in colliders)
@@ -54,17 +55,7 @@ public class SP_SpaceJunk : MonoBehaviour
                 spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
                 spawnTimer = 0;
                 newDebris.GetComponent<SP_Junk>().objDirection = (Vector3.back + debris[newDebris] - rocket.worldDirection).normalized * rocket.speed;
-                newDebris.GetComponent<Rigidbody>().AddForce(newDebris.GetComponent<SP_Junk>().objDirection * 100);
             }
-        }
-    }
-
-    private void RotateDebrisVelocity()
-    {
-        foreach (GameObject obj in debris.Keys)
-        {
-            Rigidbody rb = obj.GetComponent<Rigidbody>();
-            rb.linearVelocity = rb.linearVelocity.magnitude * obj.GetComponent<SP_Junk>().objDirection.normalized;
         }
     }
 
@@ -73,11 +64,9 @@ public class SP_SpaceJunk : MonoBehaviour
         foreach (GameObject obj in debris.Keys)
         {
             SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
-            junkComponent.objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
-            junkComponent.junkRotation.eulerAngles = Vector3.Lerp(junkComponent.junkRotation.eulerAngles, junkComponent.junkRotation.eulerAngles + junkComponent.junkRotationRate, Time.deltaTime);
-            obj.transform.eulerAngles = Quaternion.LookRotation(junkComponent.objDirection).eulerAngles;
-            obj.transform.localPosition = Vector3.Lerp(obj.transform.localPosition, obj.transform.localPosition + junkComponent.objDirection, Time.deltaTime);
-            obj.GetComponent<Rigidbody>().AddForce(junkComponent.objDirection * 0.001f, ForceMode.Impulse);
+            Rigidbody rb = obj.GetComponent<Rigidbody>();
+            rb.position = Vector3.Lerp(rb.position, rb.position + junkComponent.objDirection, Time.deltaTime);
+            //rb.rotation = Quaternion.LookRotation(junkComponent.objDirection + rb.rotation.eulerAngles);
         }
     }
 

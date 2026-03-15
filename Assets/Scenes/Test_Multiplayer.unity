@@ -2988,7 +2988,7 @@ GameObject:
   - component: {fileID: 1397356072}
   - component: {fileID: 1397356071}
   - component: {fileID: 1397356070}
-  - component: {fileID: 1397356069}
+  - component: {fileID: 1397356074}
   m_Layer: 6
   m_Name: Plane
   m_TagString: Untagged
@@ -2996,20 +2996,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1397356069
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1397356068}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb65a36eb7fd28d4d9d672140d5b3413, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gravity: 9.81
-  range: 25
 --- !u!64 &1397356070
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -3100,6 +3086,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1397356074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397356068}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69edbb7fac7e63f4c8c28ddf271332cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  volumeSize: {x: 500, y: 25, z: 500}
+  volumeOffset: {x: 0, y: 12.5, z: 0}
+  directionalGravity: 1
+  gravityDirection: {x: 0, y: -1, z: 0}
 --- !u!1 &1434679638
 GameObject:
   m_ObjectHideFlags: 0
@@ -3616,7 +3619,7 @@ GameObject:
   - component: {fileID: 1646160968}
   - component: {fileID: 1646160967}
   - component: {fileID: 1646160966}
-  - component: {fileID: 1646160965}
+  - component: {fileID: 1646160970}
   m_Layer: 6
   m_Name: Sphere (3)
   m_TagString: Untagged
@@ -3624,23 +3627,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1646160965
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1646160964}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26db57f8fbf1ee2408ec85d64e8339d9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gravity: 5
-  innerFalloffRadius: 1
-  innerRadius: 5
-  outerRadius: 10
-  outerFalloffRadius: 15
 --- !u!135 &1646160966
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -3730,6 +3716,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1646160970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646160964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26db57f8fbf1ee2408ec85d64e8339d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 5
+  innerFalloffRadius: 1
+  innerRadius: 5
+  outerRadius: 10
+  outerFalloffRadius: 15
 --- !u!1 &1714025331
 GameObject:
   m_ObjectHideFlags: 0
