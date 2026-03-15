@@ -3877,6 +3877,67 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -562046557257658609, guid: 319b54cc8aa0cf64685ee04cfec1bbdd, type: 3}
+--- !u!1001 &268745367
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -89.438416
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -72.08377
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -265.52872
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_Name
+      value: ShipHull_CollisionMeshSegmented
+      objectReference: {fileID: 0}
+    - target: {fileID: 7322483616397084915, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
+      propertyPath: m_Name
+      value: Collision5
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9d0c2bfd736da5b41a5c3052380559fd, type: 3}
 --- !u!1 &277830663 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -2630456670528727451, guid: 2881999ee5d7f9a4ab119de4678841eb, type: 3}
@@ -24869,3 +24930,4 @@ SceneRoots:
   - {fileID: 17097570}
   - {fileID: 4958415983333187119}
   - {fileID: 1837649328}
+  - {fileID: 268745367}
