@@ -49,7 +49,15 @@ public class SP_SpaceJunk : MonoBehaviour
             }
             else
             {
-                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)], new Vector3(Random.Range(spawnBounds.x / 2 * -1, spawnBounds.x / 2), Random.Range(spawnBounds.y / 2 * -1, spawnBounds.y / 2), spaceBounds.z / 2), transform.rotation);
+                GameObject newDebris = Instantiate(
+                    debrisPrefabs[Random.Range(0, debrisPrefabs.Count)], 
+                    new Vector3(
+                        Random.Range(spawnBounds.x / 2 * -1, spawnBounds.x / 2), 
+                        Random.Range(spawnBounds.y / 2 * -1, spawnBounds.y / 2), 
+                        spaceBounds.z / 2
+                        ), 
+                    transform.rotation
+                );
                 //newDebris.transform.SetParent(this.transform);
                 newDebris.transform.eulerAngles = Vector3.back;
                 debris.Add(newDebris, rocket.worldDirection);

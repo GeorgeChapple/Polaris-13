@@ -8,8 +8,9 @@ public class SP_Junk : MonoBehaviour
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
     [HideInInspector] public Vector3 objDirection;
-    private SP_SpaceJunk spaceManager;
     [SerializeField] private float scaleSpeed = 1;
+    [SerializeField] private Vector2 sizeSpread = new Vector2(0.7f, 1.3f);
+    private SP_SpaceJunk spaceManager;
     private bool scaling = false;
     private Rigidbody rb;
 
@@ -20,6 +21,7 @@ public class SP_Junk : MonoBehaviour
         {
             rb = this.AddComponent<Rigidbody>();
         }
+        transform.localScale = Vector3.one * Random.Range(sizeSpread.x, sizeSpread.y);
         spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
     }
 
