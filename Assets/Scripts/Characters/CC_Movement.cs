@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using TMPro;
+using System.Collections;
 
 // Made by: Jason Lodge
 // Summary: Handles locomotion, gravity, jumping, body rotation and stamina / thruster usage.
@@ -159,6 +160,9 @@ public class CC_Movement : NetworkBehaviour
         {
             playerText.text = "Player";
         }
+
+        Transform spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint")[0].transform;
+        rb.position = spawnPoints.position;
     }
 
     void InitialiseComponents()
@@ -211,6 +215,9 @@ public class CC_Movement : NetworkBehaviour
         {
             playerText.text = (OwnerClientId + 1).ToString();
         }
+
+        Transform spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint")[OwnerClientId].transform;
+        rb.position = spawnPoints.position;
     }
 
     // Call in FixedUpdate.

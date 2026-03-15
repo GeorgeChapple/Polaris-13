@@ -87,7 +87,7 @@ MonoBehaviour:
   junkRotationRate: {x: 0, y: 0, z: 0}
   objDirection: {x: 0, y: 0, z: 0}
   scaleSpeed: 1
-  sizeSpread: {x: 1, y: 10}
+  sizeSpread: {x: 0.8, y: 1.2}
 --- !u!54 &3150087662550895451
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -114,7 +114,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 1
+  m_CollisionDetection: 2
 --- !u!135 &8559015397499454501
 SphereCollider:
   m_ObjectHideFlags: 0
