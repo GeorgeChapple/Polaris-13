@@ -11,9 +11,10 @@ public class SP_SpaceJunk : MonoBehaviour
     private float spawnTimer;
     [HideInInspector] public RS_Move rocket;
     public List<GameObject> debrisPrefabs = new List<GameObject>(); 
-    public List<GameObject> foundObjects = new List<GameObject>();
+    [HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Vector3 spaceBounds = new Vector3 (20, 20, 20);
+    public Vector2 spawnBounds = new Vector2 (20, 20);
 
     private void Awake()
     {
@@ -48,7 +49,7 @@ public class SP_SpaceJunk : MonoBehaviour
             }
             else
             {
-                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)], new Vector3(Random.Range(spaceBounds.x / 2 * -1, spaceBounds.x / 2), Random.Range(spaceBounds.y / 2 * -1, spaceBounds.y / 2), spaceBounds.z / 2), transform.rotation);
+                GameObject newDebris = Instantiate(debrisPrefabs[Random.Range(0, debrisPrefabs.Count)], new Vector3(Random.Range(spawnBounds.x / 2 * -1, spawnBounds.x / 2), Random.Range(spawnBounds.y / 2 * -1, spawnBounds.y / 2), spaceBounds.z / 2), transform.rotation);
                 //newDebris.transform.SetParent(this.transform);
                 newDebris.transform.eulerAngles = Vector3.back;
                 debris.Add(newDebris, rocket.worldDirection);
@@ -72,7 +73,8 @@ public class SP_SpaceJunk : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        DrawBox(transform.position, transform.rotation, spaceBounds, Color.red);
+        DrawBox(Vector3.zero, transform.rotation, spaceBounds, Color.red);
+        DrawBox(new Vector3(0, 0, spaceBounds.z / 2), transform.rotation, spawnBounds, Color.green);
     }
 
     public void DrawBox(Vector3 pos, Quaternion rot, Vector3 scale, Color c)

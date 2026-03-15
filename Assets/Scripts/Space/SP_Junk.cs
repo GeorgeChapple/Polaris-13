@@ -27,7 +27,7 @@ public class SP_Junk : MonoBehaviour
     {
         StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
         GetObjectDirection();
-        rb.AddTorque(Vector3.one * Random.Range(-100, 100));
+        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
     }
 
     // Update is called once per frame
