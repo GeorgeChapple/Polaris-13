@@ -161,8 +161,7 @@ public class CC_Movement : NetworkBehaviour
             playerText.text = "Player";
         }
 
-        Transform spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint")[0].transform;
-        rb.position = spawnPoints.position;
+        StartCoroutine(WaitSpawn(true));
     }
 
     void InitialiseComponents()
@@ -216,8 +215,28 @@ public class CC_Movement : NetworkBehaviour
             playerText.text = (OwnerClientId + 1).ToString();
         }
 
-        Transform spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint")[OwnerClientId].transform;
-        rb.position = spawnPoints.position;
+        StartCoroutine(WaitSpawn(true));
+    }
+
+    private IEnumerator WaitSpawn(bool networked)
+    {
+        GameObject[] spawnPoints;
+        ulong id = 0;
+        while (true)
+        {
+            spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint");
+            if (spawnPoints.Length > 0)
+            {
+                if (networked)
+                {
+                    id = OwnerClientId;
+                }
+                Transform spawnPoint = spawnPoints[id].transform;
+                rb.position = spawnPoint.position;
+                break;
+            }
+            yield return null;
+        }
     }
 
     // Call in FixedUpdate.

@@ -2,8 +2,9 @@ using System.Collections;
 using System.Net.Sockets;
 using Unity.VisualScripting;
 using UnityEngine;
+using Unity.Netcode;
 
-public class SP_Junk : MonoBehaviour
+public class SP_Junk : NetworkBehaviour
 {
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
@@ -15,6 +16,17 @@ public class SP_Junk : MonoBehaviour
     private Rigidbody rb;
 
     private void Awake()
+    {
+        InitialiseComponents();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        InitialiseComponents();
+    }
+
+    private void InitialiseComponents()
     {
         rb = GetComponent<Rigidbody>();
         if (GetComponent<Rigidbody>() == null)

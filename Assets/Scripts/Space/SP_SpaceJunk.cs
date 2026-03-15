@@ -2,8 +2,9 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions.Must;
+using Unity.Netcode;
 
-public class SP_SpaceJunk : MonoBehaviour
+public class SP_SpaceJunk : NetworkBehaviour
 {
     [SerializeField] private int maxDebris = 20;
     [SerializeField] private Vector2 spawnTimeRange = new Vector2(3, 6);
@@ -18,9 +19,24 @@ public class SP_SpaceJunk : MonoBehaviour
 
     private void Awake()
     {
+        InitialiseComponents();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        if (!IsHost)
+        {
+            Destroy(this);
+        }
+        InitialiseComponents();
+    }
+
+    private void InitialiseComponents()
+    {
         spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
         rocket = FindFirstObjectByType<RS_Move>();
-    } 
+    }
 
     // Update is called once per frame
     void Update()
