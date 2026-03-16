@@ -259,7 +259,7 @@ Canvas:
   m_GameObject: {fileID: 1015223365284675570}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 126646995658284371}
   m_PlaneDistance: 0.2
   m_PixelPerfect: 0
@@ -2427,6 +2427,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 2525829125682972623}
   - {fileID: 1032991081567785883}
   - {fileID: 348508103958163370}
   m_Father: {fileID: 4827758710393173946}
@@ -2529,7 +2530,6 @@ Transform:
   - {fileID: 8236564078002858386}
   - {fileID: 4865604785855627939}
   - {fileID: 3637123821088872404}
-  - {fileID: 2525829125682972623}
   - {fileID: 6627632656998436838}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2990,7 +2990,7 @@ MonoBehaviour:
   inventoryGridSpacing: {x: 8, y: 8}
   gridCellPrefab: {fileID: 7850465892296457764, guid: dc8cb3add5aeedd439f3cbbb65a4d0fa, type: 3}
   itemUIPrefab: {fileID: 7850465892296457764, guid: f9e53926364655248bc50381cd209861, type: 3}
-  occupiedSpaceVisualPrefab: {fileID: 7850465892296457764, guid: 982ae07e22c2457439bd5beb97bf0d4f, type: 3}
+  occupiedSpacePrefab: {fileID: 0}
   itemPrefab: {fileID: 2353747757295221720, guid: 48fe5c44cb91e5c42a109603d853cb1a, type: 3}
   dropItemTransform: {fileID: 2525829125682972623}
   logPlacement: 1
@@ -3014,6 +3014,8 @@ MonoBehaviour:
   equippedItemPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
   equippedItemRoot: {fileID: 6389068181120928608}
   replicatedEquippedItemRoot: {fileID: 348508103958163370}
+  testThrowPower: 8
+  testThrowTorque: 5
 --- !u!114 &6897484885061798330
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4125,11 +4127,11 @@ Transform:
   m_GameObject: {fileID: 7267066407272589429}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.23, z: 1.25}
+  m_LocalPosition: {x: 0, y: 0, z: 1.25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 4827758710393173946}
+  m_Father: {fileID: 4865604785855627939}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7661295565930805663
 GameObject:
