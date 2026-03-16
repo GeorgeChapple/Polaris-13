@@ -347,9 +347,14 @@ public class CC_Movement : NetworkBehaviour
 
     protected virtual void UpdateLocomotionMode()
     {
-        locomotionType = currentGravity.magnitude <= zeroGravityThreshold
-            ? LocomotionType.SpaceMode
-            : LocomotionType.GroundMode;
+        if (customGravityBody.useGravity && currentGravity.magnitude <= zeroGravityThreshold)
+        {
+            locomotionType = LocomotionType.GroundMode;
+        } 
+        else
+        {
+            locomotionType = LocomotionType.SpaceMode;
+        }
     }
 
     protected virtual void GroundMove(Vector2 moveInput)

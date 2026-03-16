@@ -35,6 +35,8 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     [Tooltip("Small dead zone around hover height to stop tiny corrections / pogoing.")]
     [SerializeField] private float groundedSnapDeadZone = 0.02f;
 
+    public bool useGravity;
+    [HideInInspector] public bool triggered = false;
     public bool Grounded => grounded;
     public Vector3 UpAxis => upAxis;
     public Vector3 CurrentGravity => currentGravity;
@@ -63,31 +65,34 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 
     protected override void FixedUpdate()
     {
-        currentGravity = CustomGravity.GetGravity(body.position, out upAxis);
-
-        if (groundedIgnoreTimer > 0f)
+        if (useGravity)
         {
-            groundedIgnoreTimer -= Time.fixedDeltaTime;
-        }
+            currentGravity = CustomGravity.GetGravity(body.position, out upAxis);
 
-        UpdateGroundedState();
-
-        if (grounded)
-        {
-            if (stopDownwardVelocityWhenGrounded)
+            if (groundedIgnoreTimer > 0f)
             {
-                StopGroundPushThroughVelocity();
+                groundedIgnoreTimer -= Time.fixedDeltaTime;
             }
 
-            SnapBodyToGround();
-        }
+            UpdateGroundedState();
 
-        if (HandleFloatToSleep()) { return; }
+            if (grounded)
+            {
+                if (stopDownwardVelocityWhenGrounded)
+                {
+                    StopGroundPushThroughVelocity();
+                }
 
-        // only apply gravity if we actually have usable gravity and are not grounded
-        if (!grounded && currentGravity.magnitude > 0.0001f)
-        {
-            body.AddForce(currentGravity, ForceMode.Acceleration);
+                SnapBodyToGround();
+            }
+
+            if (HandleFloatToSleep()) { return; }
+
+            // only apply gravity if we actually have usable gravity and are not grounded
+            if (!grounded && currentGravity.magnitude > 0.0001f)
+            {
+                body.AddForce(currentGravity, ForceMode.Acceleration);
+            }
         }
     }
 
