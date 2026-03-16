@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 // Made By: Jason Lodge
@@ -126,6 +125,71 @@ public class INV_HotBar : MonoBehaviour
         return true;
     }
 
+    public bool DropSelectedItem()
+    {
+        if (!IsValidSlotIndex(selectedSlot)) { return false; }
+        if (inventory == null) { return false; }
+
+        INV_Inventory.ItemInstance inst = GetItemInSlot(selectedSlot);
+        if (inst == null || inst.data == null) { return false; }
+
+        string itemId = inst.data.ItemID;
+        if (string.IsNullOrWhiteSpace(itemId)) { return false; }
+
+        // stacked items drop one and stay assigned
+        if (inst.data.Stackable && inst.quantity > 1)
+        {
+            inst.quantity--;
+
+            if (inst.uiHandler != null)
+            {
+                inst.uiHandler.ApplyUpdatedVisuals();
+            }
+
+            if (playerInventoryNet == null)
+            {
+                playerInventoryNet = GetComponentInParent<INV_PlayerInventoryNet>();
+            }
+
+            if (playerInventoryNet == null)
+            {
+                Debug.LogError("INV_HotBar could not find INV_PlayerInventoryNet.", this);
+                return false;
+            }
+
+            if (logHotbar)
+            {
+                Debug.Log($"Hotbar, Dropped one from stack in slot {selectedSlot}: {inst.data.Name}");
+            }
+
+            playerInventoryNet.RequestDropItem(itemId);
+            RefreshAllVisuals();
+            return true;
+        }
+
+        // single item drop clears slot ref and removes from inventory
+        slotItems[selectedSlot] = null;
+
+        inventory.hoverItem = inst.uiHandler;
+        bool dropped = inventory.DropHoverItem();
+        inventory.hoverItem = null;
+
+        if (!dropped)
+        {
+            slotItems[selectedSlot] = inst;
+            return false;
+        }
+
+        if (logHotbar)
+        {
+            Debug.Log($"Hotbar, Dropped selected item from slot {selectedSlot}: {inst.data.Name}");
+        }
+
+        RefreshAllVisuals();
+        RefreshEquippedItem();
+        return true;
+    }
+
     public INV_Inventory.ItemInstance GetItemInSlot(int slotIndex)
     {
         if (!IsValidSlotIndex(slotIndex)) { return null; }
@@ -208,6 +272,7 @@ public class INV_HotBar : MonoBehaviour
         {
             RectTransform slot = hotBarSlots[i];
             if (slot == null) { continue; }
+            if (slot.childCount <= 0) { continue; }
 
             Transform visualRoot = slot.transform.GetChild(0);
             if (visualRoot == null) { continue; }
@@ -234,9 +299,11 @@ public class INV_HotBar : MonoBehaviour
             mr.sharedMaterial = inst.data.Material;
 
             // hotbar uses inventory scale
-            visualRoot.localPosition = Vector3.zero;
-            visualRoot.localRotation = Quaternion.identity;
+            visualRoot.localPosition = inst.data.InventoryMeshOffset;
             visualRoot.localScale = Vector3.one * inst.data.InventoryMeshScale;
+
+            // hotbar always shows items in upright orientation
+            visualRoot.localEulerAngles = Vector3.zero;
         }
     }
 

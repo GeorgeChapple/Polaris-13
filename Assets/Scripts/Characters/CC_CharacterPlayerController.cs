@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
+using UnityEngine.UI;
 
 // Made by: Jason Lodge
 // Summary: Player controller, drives all the locomotion code and things like interaction, menus, etc.
@@ -22,6 +23,15 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     [Header("Cursor")]
     public bool lockCursorOnStart = true;
+
+    [Tooltip("Simple centered cursor image.")]
+    [SerializeField] private Image cursorImage;
+
+    [Tooltip("Default cursor sprite.")]
+    [SerializeField] private Sprite defaultCursorSprite;
+
+    [Tooltip("Cursor sprite shown when looking at an interactable.")]
+    [SerializeField] private Sprite interactCursorSprite;
 
     [Header("Menus")]
     [Tooltip("True when any menu is open, will stop movement / camera / interaction and free cursor.")]
@@ -46,6 +56,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private bool inventoryHeld;
     private bool rotateHeld;
     private bool dropHeld;
+    private bool dropHeldItemHeld;
 
     private bool hotbarSlot1Held;
     private bool hotbarSlot2Held;
@@ -181,6 +192,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         // hotbar assign / selection
         HandleHotbarInput();
+
+        // cursor
+        UpdateCursorUI();
     }
 
     private void FixedUpdate()
@@ -212,6 +226,39 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (cameraController != null) { cameraController.TickLate(input.look, isMouse); }
         if (movement != null) { movement.TickLateState(); }
         if (interaction != null) { interaction.TickInteract(input.interact); }
+    }
+
+    private void UpdateCursorUI()
+    {
+        if (!IsLocallyControlled()) { return; }
+        if (cursorImage == null) { return; }
+
+        // hide cursor while menu is open
+        if (inMenu)
+        {
+            if (cursorImage.gameObject.activeSelf)
+            {
+                cursorImage.gameObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        if (!cursorImage.gameObject.activeSelf)
+        {
+            cursorImage.gameObject.SetActive(true);
+        }
+
+        bool lookingAtInteractable = interaction != null && interaction.HasLookInteractable();
+
+        if (lookingAtInteractable && interactCursorSprite != null)
+        {
+            cursorImage.sprite = interactCursorSprite;
+        }
+        else
+        {
+            cursorImage.sprite = defaultCursorSprite;
+        }
     }
 
     private void HandleInventoryActions()
@@ -268,6 +315,17 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
 
         lastHotbarScrollDirection = scrollDirection;
+
+        // drop currently selected hotbar item
+        if (input.dropHeldItem && !dropHeldItemHeld)
+        {
+            dropHeldItemHeld = true;
+            hotBar.DropSelectedItem();
+        }
+        else if (!input.dropHeldItem && dropHeldItemHeld)
+        {
+            dropHeldItemHeld = false;
+        }
     }
 
     private void HandleHotbarSlotPress(bool pressed, ref bool held, int slotIndex, bool inventoryOpen)
