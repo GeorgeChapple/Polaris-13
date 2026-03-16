@@ -26,6 +26,15 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     [Tooltip("If true, while grounded we remove any velocity going towards ground.")]
     [SerializeField] private bool stopDownwardVelocityWhenGrounded = true;
 
+    [Tooltip("How quickly we correct hover height while grounded.")]
+    [SerializeField] private float groundedSnapSharpness = 18f;
+
+    [Tooltip("Maximum snap speed while correcting hover height.")]
+    [SerializeField] private float groundedSnapMaxSpeed = 6f;
+
+    [Tooltip("Small dead zone around hover height to stop tiny corrections / pogoing.")]
+    [SerializeField] private float groundedSnapDeadZone = 0.02f;
+
     public bool Grounded => grounded;
     public Vector3 UpAxis => upAxis;
     public Vector3 CurrentGravity => currentGravity;
@@ -194,14 +203,15 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     private void StopGroundPushThroughVelocity()
     {
         Vector3 vel = body.linearVelocity;
+        Vector3 supportNormal = hasGroundHit ? groundHit.normal : upAxis;
 
-        // split velocity into up axis and planar parts
-        Vector3 axisVel = Vector3.Project(vel, upAxis);
-        Vector3 planarVel = vel - axisVel;
+        // split velocity into support normal and planar parts
+        Vector3 normalVel = Vector3.Project(vel, supportNormal);
+        Vector3 planarVel = vel - normalVel;
 
-        // if moving opposite up axis, we are moving into the ground
-        float axisSpeed = Vector3.Dot(axisVel, upAxis);
-        if (axisSpeed < 0f)
+        // if moving into the ground, remove that part
+        float normalSpeed = Vector3.Dot(normalVel, supportNormal);
+        if (normalSpeed < 0f)
         {
             body.linearVelocity = planarVel;
         }
@@ -212,18 +222,27 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         if (!hasGroundHit) { return; }
         if (groundedCheckObj == null) { return; }
 
-        // grounded check should rest this far above the surface
-        Vector3 targetCheckPos = groundHit.point + (upAxis * groundedHoverHeight);
+        Vector3 supportNormal = groundHit.normal;
 
-        // move body so grounded check reaches target exactly
+        // grounded check should rest this far above the surface along the actual ground normal
+        Vector3 targetCheckPos = groundHit.point + (supportNormal * groundedHoverHeight);
+
+        // move body so grounded check reaches target
         Vector3 deltaToTarget = targetCheckPos - groundedCheckObj.position;
 
-        // only move along up axis
-        float alongUp = Vector3.Dot(deltaToTarget, upAxis);
-        Vector3 moveDelta = upAxis * alongUp;
+        // only correct along the support normal so curved surfaces stay stable
+        float alongNormal = Vector3.Dot(deltaToTarget, supportNormal);
 
-        if (moveDelta.sqrMagnitude <= 0.00000001f) { return; }
+        // dead zone stops tiny constant corrections / pogoing
+        if (Mathf.Abs(alongNormal) <= groundedSnapDeadZone) { return; }
 
+        float t = 1f - Mathf.Exp(-groundedSnapSharpness * Time.fixedDeltaTime);
+        float snapDelta = alongNormal * t;
+
+        float maxStep = groundedSnapMaxSpeed * Time.fixedDeltaTime;
+        snapDelta = Mathf.Clamp(snapDelta, -maxStep, maxStep);
+
+        Vector3 moveDelta = supportNormal * snapDelta;
         body.position += moveDelta;
     }
 
@@ -269,7 +288,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
             Gizmos.DrawSphere(groundHit.point, 0.03f);
 
             Gizmos.color = Color.magenta;
-            Gizmos.DrawSphere(groundHit.point + (upAxis * groundedHoverHeight), 0.03f);
+            Gizmos.DrawSphere(groundHit.point + (groundHit.normal * groundedHoverHeight), 0.03f);
         }
     }
 }
