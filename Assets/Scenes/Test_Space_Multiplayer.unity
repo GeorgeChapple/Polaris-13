@@ -3692,8 +3692,12 @@ GameObject:
   - component: {fileID: 1066651352}
   - component: {fileID: 1066651351}
   - component: {fileID: 1066651350}
+  - component: {fileID: 1066651368}
+  - component: {fileID: 1066651367}
+  - component: {fileID: 1066651366}
+  - component: {fileID: 1066651365}
   m_Layer: 0
-  m_Name: 'Gravity '
+  m_Name: 'ShipGravity '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4222,6 +4226,74 @@ MonoBehaviour:
   gravity: 9.81
   volumeSize: {x: 8.6, y: 4.5, z: 3.45}
   volumeOffset: {x: 0, y: -0.33, z: 62.9}
+  directionalGravity: 1
+  gravityDirection: {x: 0, y: -1, z: 0}
+--- !u!114 &1066651365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066651333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69edbb7fac7e63f4c8c28ddf271332cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  volumeSize: {x: 39.7, y: 7.96, z: 10.59}
+  volumeOffset: {x: 0, y: 2.62, z: -21.7}
+  directionalGravity: 1
+  gravityDirection: {x: 0, y: -1, z: 0}
+--- !u!114 &1066651366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066651333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69edbb7fac7e63f4c8c28ddf271332cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  volumeSize: {x: 61.3, y: 7.96, z: 10.59}
+  volumeOffset: {x: 0, y: 0, z: -21.7}
+  directionalGravity: 1
+  gravityDirection: {x: 0, y: -1, z: 0}
+--- !u!114 &1066651367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066651333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69edbb7fac7e63f4c8c28ddf271332cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  volumeSize: {x: 3.79, y: 4.39, z: 6.13}
+  volumeOffset: {x: 0, y: 5.66, z: 42.4}
+  directionalGravity: 1
+  gravityDirection: {x: 0, y: -1, z: 0}
+--- !u!114 &1066651368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066651333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69edbb7fac7e63f4c8c28ddf271332cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  volumeSize: {x: 6.7, y: 3.9, z: 5.26}
+  volumeOffset: {x: 0, y: 6.7, z: 36.8}
   directionalGravity: 1
   gravityDirection: {x: 0, y: -1, z: 0}
 --- !u!64 &1076638766
