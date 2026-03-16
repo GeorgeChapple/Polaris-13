@@ -20,6 +20,14 @@ public class SP_Junk : NetworkBehaviour
         InitialiseComponents();
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (spaceManager.debris.ContainsKey(this.gameObject) && collision.gameObject.CompareTag("Rocket"))
+        {
+            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
+        }  
+    }
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -54,14 +62,21 @@ public class SP_Junk : NetworkBehaviour
     }
 
     private void GetObjectDirection()
-    { 
-        objDirection = (Vector3.back + spaceManager.debris[this.gameObject] - spaceManager.rocket.worldDirection).normalized * spaceManager.rocket.speed;
+    {
+        if (spaceManager.debris.ContainsKey(this.gameObject))
+        {
+            objDirection = (Vector3.back + spaceManager.debris[this.gameObject] - spaceManager.rocket.worldDirection).normalized * spaceManager.rocket.speed;
+        }
     }
 
     private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)
     {
         if (!scaling)
         {
+            if (destroy)
+            { 
+                spaceManager.debris.Remove(this.gameObject);
+            }
             scaling = true;
             transform.localScale = start;
             float t = 0;
@@ -74,7 +89,6 @@ public class SP_Junk : NetworkBehaviour
             transform.localScale = end;
             if (destroy)
             {
-                spaceManager.debris.Remove(this.gameObject);
                 Destroy(this.gameObject);
             }
             scaling = false;

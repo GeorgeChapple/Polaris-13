@@ -90,7 +90,8 @@ public class SP_SpaceJunk : NetworkBehaviour
         {
             SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
             Rigidbody rb = obj.GetComponent<Rigidbody>();
-            rb.position = Vector3.Lerp(rb.position, rb.position + junkComponent.objDirection, Time.deltaTime);
+            //rb.position = Vector3.Lerp(rb.position, rb.position + junkComponent.objDirection, Time.deltaTime);
+            rb.MovePosition(rb.position + junkComponent.objDirection * Time.deltaTime);
             //rb.rotation = Quaternion.LookRotation(junkComponent.objDirection + rb.rotation.eulerAngles);
         }
     }
