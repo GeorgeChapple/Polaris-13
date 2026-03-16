@@ -1,13 +1,18 @@
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using TMPro;
 
 // Made By: Jason Lodge
 // Summary: UI dragging handler for inventory items.
 
 public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    [Header("Occupied Space Visual")]
+    [Tooltip("Root that will hold occupied space visuals behind the item.")]
+    [SerializeField] private RectTransform occupiedSpaceHolderRoot;
+
     [Header("Mesh Visual")]
     [Tooltip("Child object containing MeshFilter + MeshRenderer.")]
     [SerializeField] private Transform meshVisualRoot;
@@ -18,6 +23,9 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     [SerializeField] private float durabilityBarMaxHeight;
     [SerializeField] private float durabilityBarWidthFromEdge;
     [SerializeField] private float durabilityBarYOffset;
+
+    [Tooltip("TMP label used to show stack amount.")]
+    [SerializeField] private TextMeshProUGUI stackCountLabel;
 
     [Header("Hotbar")]
     [Tooltip("TMP label used to show hotbar slot assignment.")]
@@ -34,6 +42,9 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
     private Vector2 startAnchoredPos;
     private Vector2Int startCell; // for snapping back to if we dont/cant drop on that grid cell
+    private INV_Inventory.ItemInstance.Rotation startRotation; // to swap rotation back
+
+    private readonly List<RectTransform> occupiedSpaceVisuals = new List<RectTransform>();
 
     public INV_Inventory.ItemInstance Instance => itemInst;
 
@@ -53,7 +64,13 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             mr = meshVisualRoot.GetComponent<MeshRenderer>();
         }
 
+        if (occupiedSpaceHolderRoot == null)
+        {
+            occupiedSpaceHolderRoot = transform as RectTransform;
+        }
+
         // apply initial visuals
+        RebuildOccupiedSpaceVisuals();
         ApplyUpdatedVisuals();
 
         // initial cell, will be set when inventory places the item
@@ -72,6 +89,20 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             durabilityBar.rectTransform.sizeDelta = new Vector2(rt.sizeDelta.x - durabilityBarWidthFromEdge, durabilityBarMaxHeight);
         }
 
+        if (stackCountLabel != null)
+        {
+            if (itemInst.quantity > 1)
+            {
+                stackCountLabel.gameObject.SetActive(true);
+                stackCountLabel.text = $"x{itemInst.quantity.ToString()}";
+            }
+            else
+            {
+                stackCountLabel.text = string.Empty;
+                stackCountLabel.gameObject.SetActive(false);
+            }
+        }
+
         INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
         if (hotBar != null && itemInst != null)
         {
@@ -80,6 +111,88 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         // mesh visuals
         ApplyMeshVisuals();
+    }
+
+    public void RebuildOccupiedSpaceVisuals()
+    {
+        if (occupiedSpaceHolderRoot == null) { return; }
+        if (inv == null || itemInst == null) { return; }
+
+        for (int i = occupiedSpaceHolderRoot.childCount - 1; i >= 0; i--)
+        {
+            Transform child = occupiedSpaceHolderRoot.GetChild(i);
+
+            // dont delete the mesh visual if root is shared
+            if (meshVisualRoot != null && child == meshVisualRoot) { continue; }
+
+            Destroy(child.gameObject);
+        }
+
+        occupiedSpaceVisuals.Clear();
+
+        GameObject visualPrefab = inv.OccupiedSpacePrefab;
+        if (visualPrefab == null) { return; }
+
+        Vector2 cellSize = inv.CellSize;
+        Vector2 spacing = inv.GridSpacing;
+
+        for (int i = 0; i < itemInst.occupiedOffsets.Count; i++)
+        {
+            Vector2Int off = itemInst.occupiedOffsets[i];
+
+            GameObject go = Instantiate(visualPrefab, occupiedSpaceHolderRoot);
+            go.name = $"Occupied_X:{off.x},Y:{off.y}";
+
+            RectTransform cellRt = go.GetComponent<RectTransform>();
+            if (cellRt == null)
+            {
+                cellRt = go.AddComponent<RectTransform>();
+            }
+
+            cellRt.pivot = new Vector2(0f, 1f);
+            cellRt.anchorMin = new Vector2(0f, 1f);
+            cellRt.anchorMax = new Vector2(0f, 1f);
+
+            bool hasLeft = HasOccupiedOffset(new Vector2Int(off.x - 1, off.y));
+            bool hasRight = HasOccupiedOffset(new Vector2Int(off.x + 1, off.y));
+            bool hasUp = HasOccupiedOffset(new Vector2Int(off.x, off.y - 1));
+            bool hasDown = HasOccupiedOffset(new Vector2Int(off.x, off.y + 1));
+
+            // fill half the spacing on each touching side so neighbouring cells meet cleanly
+            float padLeft = hasLeft ? spacing.x * 0.5f : 0f;
+            float padRight = hasRight ? spacing.x * 0.5f : 0f;
+            float padUp = hasUp ? spacing.y * 0.5f : 0f;
+            float padDown = hasDown ? spacing.y * 0.5f : 0f;
+
+            float width = cellSize.x + padLeft + padRight;
+            float height = cellSize.y + padUp + padDown;
+
+            // top-left anchored item layout
+            // move into the shared gap by the amount we padded toward left / up
+            float x = (off.x * (cellSize.x + spacing.x)) - padLeft;
+            float y = (-off.y * (cellSize.y + spacing.y)) + padUp;
+
+            cellRt.sizeDelta = new Vector2(width, height);
+            cellRt.anchoredPosition = new Vector2(x, y);
+
+            cellRt.SetAsFirstSibling();
+            occupiedSpaceVisuals.Add(cellRt);
+        }
+    }
+
+    private bool HasOccupiedOffset(Vector2Int check)
+    {
+        if (itemInst == null) { return false; }
+
+        for (int i = 0; i < itemInst.occupiedOffsets.Count; i++)
+        {
+            if (itemInst.occupiedOffsets[i] == check)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void ApplyMeshVisuals()
@@ -112,21 +225,31 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         float itemScale = itemInst.data.InventoryMeshScale;
 
         // make sure we dont put a negative scale on it
-        if (itemScale <= 0f) { itemScale = 0; }
+        if (itemScale <= 0f) { itemScale = 0f; }
 
         // center placement
         meshVisualRoot.localPosition = rectCenterLocal + itemOffset;
         meshVisualRoot.localScale = Vector3.one * itemScale;
 
         // rotation handling
-        if (itemInst.rotation == INV_Inventory.ItemInstance.Rotation.Vertical)
+        switch (itemInst.rotation)
         {
-            meshVisualRoot.localEulerAngles = Vector3.zero;
-            return;
-        }
+            case INV_Inventory.ItemInstance.Rotation.Up:
+                meshVisualRoot.localEulerAngles = Vector3.zero;
+                break;
 
-        // horizontal rotate
-        meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -90f);
+            case INV_Inventory.ItemInstance.Rotation.Right:
+                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -90f);
+                break;
+
+            case INV_Inventory.ItemInstance.Rotation.Down:
+                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -180f);
+                break;
+
+            case INV_Inventory.ItemInstance.Rotation.Left:
+                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -270f);
+                break;
+        }
     }
 
     public void SetHotbarSlotLabel(int slotIndex)
@@ -159,6 +282,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         startAnchoredPos = rt.anchoredPosition;
         startCell = itemInst.cell;
+        startRotation = itemInst.rotation;
 
         // bring to front
         rt.SetAsLastSibling();
@@ -182,17 +306,19 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         bool moved = inv.TryMoveItemFromScreenPoint(itemInst, eventData.position, uiCam);
         if (!moved)
         {
-            // return to previous placed cell
-            Vector2 anchored = inv.GetAnchoredPosForCell(startCell.x, startCell.y);
-            rt.anchoredPosition = anchored;
+            // restore previous placed cell and previous rotation
+            inv.RestoreItemToCellAndRotation(itemInst, startCell, startRotation);
 
-            // restore the logical cell in case something changed
+            // keep local references in sync
+            startAnchoredPos = rt.anchoredPosition;
             itemInst.cell = startCell;
+            itemInst.rotation = startRotation;
         }
         else
         {
             // update snap back reference now that the item is placed somewhere new
             startCell = itemInst.cell;
+            startRotation = itemInst.rotation;
             startAnchoredPos = rt.anchoredPosition;
         }
 

@@ -1,5 +1,5 @@
-using UnityEngine;
 using Unity.Netcode;
+using UnityEngine;
 
 // Made by: Jason Lodge
 // Summary: Handles interaction and tap / hold interaction logic, also interaction traces.
@@ -54,6 +54,12 @@ public class CC_Interaction : NetworkBehaviour
         }
 
         return null;
+    }
+
+    public bool HasLookInteractable()
+    {
+        if (!IsLocallyControlled()) { return false; }
+        return GetLookInteractable() != null;
     }
 
     public virtual void TickInteract(bool interactHeld)

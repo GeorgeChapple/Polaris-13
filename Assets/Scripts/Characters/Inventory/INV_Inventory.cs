@@ -15,7 +15,7 @@ using UnityEngine.UI;
 // TODO:
 // redo grid generation to be set up in here via cell space size --
 // hotbar works like item stays in inventory but is hotkeyed, makes inventory management more of a challenge
-// 
+//
 public class INV_Inventory : MonoBehaviour
 {
     [Header("Inventory Menu")]
@@ -43,6 +43,9 @@ public class INV_Inventory : MonoBehaviour
     [Header("Items")]
     [Tooltip("Item UI prefab (needs to have INV_ItemUI).")]
     [SerializeField] private GameObject itemUIPrefab;
+
+    [Tooltip("Prefab used behind items to show occupied spaces.")]
+    [SerializeField] private GameObject occupiedSpacePrefab;
 
     [Tooltip("Item prefab we will use to drop an item with (needs to have INV_ItemDrop).")]
     [SerializeField] private GameObject itemPrefab;
@@ -72,6 +75,10 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private List<ItemInstance> items = new List<ItemInstance>();
     public List<ItemInstance> Items => items;
 
+    public Vector2 CellSize => cellSize;
+    public Vector2 GridSpacing => gridLayoutGroup != null ? gridLayoutGroup.spacing : inventoryGridSpacing;
+    public GameObject OccupiedSpacePrefab => occupiedSpacePrefab;
+
     [System.Serializable]
     public class InventoryGridSpace
     {
@@ -88,7 +95,7 @@ public class INV_Inventory : MonoBehaviour
         // rectangular size in cells for UI and bounds
         public Vector2Int size;
 
-        public enum Rotation { Vertical, Horizontal };
+        public enum Rotation { Up, Right, Down, Left };
         public Rotation rotation;
 
         // where the item is placed
@@ -103,6 +110,9 @@ public class INV_Inventory : MonoBehaviour
         // item specifics
         public float maxDurability;
         public float currentDurability;
+
+        // stack
+        public int quantity = 1;
 
         // ui
         public RectTransform ui;
@@ -226,6 +236,20 @@ public class INV_Inventory : MonoBehaviour
         EnsureGrid();
         if (item == null) { return false; }
 
+        // try stack identical items first
+        if (TryStackItem(item, 1))
+        {
+            if (logPlacement) { Debug.Log($"INV, Stacked: {item.Name}"); }
+
+            INV_HotBar hotBar = GetComponent<INV_HotBar>();
+            if (hotBar != null)
+            {
+                hotBar.RefreshAllVisuals();
+            }
+
+            return true;
+        }
+
         // create instance first so we can use its shape
         ItemInstance inst;
         if (!CreateItemInstance(item, out inst)) { return false; }
@@ -253,10 +277,10 @@ public class INV_Inventory : MonoBehaviour
 
         if (logPlacement) { Debug.Log($"INV, Added: {item.Name} at {cell}"); }
 
-        INV_HotBar hotBar = GetComponent<INV_HotBar>();
-        if (hotBar != null)
+        INV_HotBar hotBar2 = GetComponent<INV_HotBar>();
+        if (hotBar2 != null)
         {
-            hotBar.RefreshAllVisuals();
+            hotBar2.RefreshAllVisuals();
         }
 
         return true;
@@ -464,10 +488,11 @@ public class INV_Inventory : MonoBehaviour
 
         ItemInstance inst = new ItemInstance();
         inst.data = item;
-        inst.rotation = ItemInstance.Rotation.Vertical;
+        inst.rotation = ItemInstance.Rotation.Up;
+        inst.quantity = 1;
 
         // build occupancy offsets from the item shape
-        BuildShapeForInstance(inst, ItemInstance.Rotation.Vertical);
+        BuildShapeForInstance(inst, ItemInstance.Rotation.Up);
 
         // enforce top left pivot/anchors for consistent snapping
         rt.pivot = new Vector2(0f, 1f);
@@ -482,6 +507,12 @@ public class INV_Inventory : MonoBehaviour
 
         // apply correct UI size
         RebuildItemUISize(inst);
+
+        if (inst.uiHandler != null)
+        {
+            inst.uiHandler.RebuildOccupiedSpaceVisuals();
+            inst.uiHandler.ApplyUpdatedVisuals();
+        }
 
         items.Add(inst);
         instance = inst;
@@ -500,16 +531,17 @@ public class INV_Inventory : MonoBehaviour
         {
             Vector2Int s = inst.data != null ? inst.data.ItemGridSize : Vector2Int.one;
             inst.shapeSize = s;
-            inst.size = s;
 
+            List<Vector2Int> rawRect = new List<Vector2Int>();
             for (int y = 0; y < s.y; y++)
             {
                 for (int x = 0; x < s.x; x++)
                 {
-                    inst.occupiedOffsets.Add(new Vector2Int(x, y));
+                    rawRect.Add(new Vector2Int(x, y));
                 }
             }
 
+            ApplyRotatedOffsets(inst, rawRect, s, rot);
             return;
         }
 
@@ -525,7 +557,7 @@ public class INV_Inventory : MonoBehaviour
         // save original shape size
         inst.shapeSize = new Vector2Int(Mathf.Max(1, w), Mathf.Max(1, h));
 
-        // collect + cells in vertical orientation first
+        // collect + cells in up orientation first
         List<Vector2Int> raw = new List<Vector2Int>();
         for (int y = 0; y < h; y++)
         {
@@ -542,28 +574,74 @@ public class INV_Inventory : MonoBehaviour
             }
         }
 
-        // rotate offsets if needed
-        if (rot == ItemInstance.Rotation.Vertical)
+        ApplyRotatedOffsets(inst, raw, inst.shapeSize, rot);
+    }
+
+    private void ApplyRotatedOffsets(ItemInstance inst, List<Vector2Int> rawOffsets, Vector2Int baseSize, ItemInstance.Rotation rot)
+    {
+        List<Vector2Int> rotated = new List<Vector2Int>(rawOffsets);
+
+        int width = baseSize.x;
+        int height = baseSize.y;
+
+        int turns = 0;
+        switch (rot)
         {
-            inst.size = inst.shapeSize;
-            inst.occupiedOffsets.AddRange(raw);
+            case ItemInstance.Rotation.Up: turns = 0; break;
+            case ItemInstance.Rotation.Right: turns = 1; break;
+            case ItemInstance.Rotation.Down: turns = 2; break;
+            case ItemInstance.Rotation.Left: turns = 3; break;
+        }
+
+        // rotate clockwise in 90 degree steps
+        for (int t = 0; t < turns; t++)
+        {
+            List<Vector2Int> next = new List<Vector2Int>(rotated.Count);
+
+            for (int i = 0; i < rotated.Count; i++)
+            {
+                Vector2Int p = rotated[i];
+
+                // clockwise rotate inside current bounds
+                Vector2Int r = new Vector2Int(p.y, width - 1 - p.x);
+                next.Add(r);
+            }
+
+            rotated = next;
+
+            int oldWidth = width;
+            width = height;
+            height = oldWidth;
+        }
+
+        // normalize back to 0 based offsets just in case
+        int minX = int.MaxValue;
+        int minY = int.MaxValue;
+        int maxX = int.MinValue;
+        int maxY = int.MinValue;
+
+        for (int i = 0; i < rotated.Count; i++)
+        {
+            Vector2Int p = rotated[i];
+            if (p.x < minX) { minX = p.x; }
+            if (p.y < minY) { minY = p.y; }
+            if (p.x > maxX) { maxX = p.x; }
+            if (p.y > maxY) { maxY = p.y; }
+        }
+
+        if (rotated.Count == 0)
+        {
+            inst.size = Vector2Int.one;
             return;
         }
 
-        // horizontal is 90deg clockwise from the vertical shape
-        // so swap old width and height, this should also work for
-        // when i fix the rotation to have 4 orientations rather than 2
-        int oldW = inst.shapeSize.x;
-        int oldH = inst.shapeSize.y;
-
-        inst.size = new Vector2Int(oldH, oldW);
-
-        for (int i = 0; i < raw.Count; i++)
+        for (int i = 0; i < rotated.Count; i++)
         {
-            Vector2Int p = raw[i];
-            Vector2Int r = new Vector2Int(p.y, oldW - 1 - p.x);
-            inst.occupiedOffsets.Add(r);
+            Vector2Int p = rotated[i];
+            inst.occupiedOffsets.Add(new Vector2Int(p.x - minX, p.y - minY));
         }
+
+        inst.size = new Vector2Int((maxX - minX) + 1, (maxY - minY) + 1);
     }
 
     // recalculates the UI size from instance.size so rotation can update it too
@@ -577,6 +655,46 @@ public class INV_Inventory : MonoBehaviour
         float h = (inst.size.y * cellSize.y) + Mathf.Max(0, inst.size.y - 1) * spacing.y;
 
         inst.ui.sizeDelta = new Vector2(w, h);
+
+        if (inst.uiHandler != null)
+        {
+            inst.uiHandler.RebuildOccupiedSpaceVisuals();
+        }
+    }
+
+    private bool TryStackItem(INV_Item item, int amount)
+    {
+        if (item == null) { return false; }
+        if (amount <= 0) { return false; }
+        if (!item.Stackable) { return false; }
+
+        int maxStack = item.MaxStack;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemInstance inst = items[i];
+            if (inst == null || inst.data == null) { continue; }
+
+            if (inst.data.ItemID != item.ItemID) { continue; }
+            if (!inst.data.Stackable) { continue; }
+            if (inst.quantity >= maxStack) { continue; }
+
+            int room = maxStack - inst.quantity;
+            int add = Mathf.Min(room, amount);
+
+            if (add <= 0) { continue; }
+
+            inst.quantity += add;
+
+            if (inst.uiHandler != null)
+            {
+                inst.uiHandler.ApplyUpdatedVisuals();
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     // drop logic
@@ -657,10 +775,25 @@ public class INV_Inventory : MonoBehaviour
         // clear current occupied spaces before trying new shape
         ClearItemOccupancy(inst);
 
-        // toggle rotation state
-        inst.rotation = (inst.rotation == ItemInstance.Rotation.Vertical)
-            ? ItemInstance.Rotation.Horizontal
-            : ItemInstance.Rotation.Vertical;
+        // cycle through 4 orientations
+        switch (inst.rotation)
+        {
+            case ItemInstance.Rotation.Up:
+                inst.rotation = ItemInstance.Rotation.Right;
+                break;
+
+            case ItemInstance.Rotation.Right:
+                inst.rotation = ItemInstance.Rotation.Down;
+                break;
+
+            case ItemInstance.Rotation.Down:
+                inst.rotation = ItemInstance.Rotation.Left;
+                break;
+
+            default:
+                inst.rotation = ItemInstance.Rotation.Up;
+                break;
+        }
 
         // rebuild offsets and bounding size from shape for that rotation
         BuildShapeForInstance(inst, inst.rotation);
@@ -668,7 +801,12 @@ public class INV_Inventory : MonoBehaviour
         // rebuild UI size to match new size
         RebuildItemUISize(inst);
 
-        if (logPlacement) { Debug.Log($"INV, Rotated held item: {inst.data.Name}, size: {inst.size}"); }
+        if (inst.uiHandler != null)
+        {
+            inst.uiHandler.ApplyUpdatedVisuals();
+        }
+
+        if (logPlacement) { Debug.Log($"INV, Rotated held item: {inst.data.Name}, size: {inst.size}, rotation: {inst.rotation}"); }
         return true;
     }
 
@@ -685,6 +823,29 @@ public class INV_Inventory : MonoBehaviour
         {
             Debug.LogError("Cannot drop item with empty ItemID.");
             return false;
+        }
+
+        // if stacked, drop one and keep the rest
+        if (inst.quantity > 1)
+        {
+            inst.quantity--;
+
+            if (inst.uiHandler != null)
+            {
+                inst.uiHandler.ApplyUpdatedVisuals();
+            }
+
+            INV_PlayerInventoryNet netInvStack = GetComponentInParent<INV_PlayerInventoryNet>();
+            if (netInvStack == null)
+            {
+                Debug.LogError("Could not find INV_PlayerInventoryNet in parent.");
+                hoverItem = null;
+                return false;
+            }
+
+            netInvStack.RequestDropItem(itemId);
+            hoverItem = null;
+            return true;
         }
 
         // clear hotbar refs before we remove the item
@@ -717,6 +878,34 @@ public class INV_Inventory : MonoBehaviour
 
         hoverItem = null;
         return true;
+    }
+
+    public void RestoreItemToCellAndRotation(ItemInstance item, Vector2Int cell, ItemInstance.Rotation rotation)
+    {
+        EnsureGrid();
+        if (item == null || item.ui == null) { return; }
+
+        // clear whatever state it currently has
+        ClearItemOccupancy(item);
+
+        // restore shape / rotation
+        item.rotation = rotation;
+        BuildShapeForInstance(item, item.rotation);
+        RebuildItemUISize(item);
+
+        if (item.uiHandler != null)
+        {
+            item.uiHandler.ApplyUpdatedVisuals();
+        }
+
+        // restore occupied spaces
+        OccupySpaces(cell.x, cell.y, item);
+
+        // restore snap position
+        Vector2 anchored = GetAnchoredPosForCell(cell.x, cell.y);
+        SnapItemToTopLeft(item, anchored);
+
+        item.cell = cell;
     }
 
     // item drop logic, we're currently not using on account of networking.
