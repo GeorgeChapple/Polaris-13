@@ -171,9 +171,33 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 38249456003280987, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2961369899768630625, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4375285016237211603, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5475962414297404428, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6633234996917859776, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 7015588430051391312, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
       propertyPath: m_Name
       value: Radio
+      objectReference: {fileID: 0}
+    - target: {fileID: 7015588430051391312, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 7644772601369062890, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
       propertyPath: m_LocalScale.x
@@ -238,6 +262,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7015588430051391312, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
       insertIndex: -1
       addedObject: {fileID: 56987722}
+    - targetCorrespondingSourceObject: {fileID: 7015588430051391312, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 56987723}
+    - targetCorrespondingSourceObject: {fileID: 7015588430051391312, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 56987724}
     - targetCorrespondingSourceObject: {fileID: 7015588430051391312, guid: e4e39f12fce56cd4cb059f6f655cceaa, type: 3}
       insertIndex: -1
       addedObject: {fileID: 56987721}
@@ -340,8 +370,8 @@ AudioSource:
   SpatializePostEffects: 0
   Priority: 128
   DopplerLevel: 0
-  MinDistance: 1
-  MaxDistance: 500
+  MinDistance: 0.4248228
+  MaxDistance: 10
   Pan2D: 0
   rolloffMode: 0
   BypassEffects: 0
@@ -376,7 +406,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -391,7 +421,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -428,8 +458,88 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab3fd504afd219048a30157ef07d94d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  songs: []
+  songs:
+  - {fileID: 8300000, guid: f970c17b76731ad45813443219fb308a, type: 3}
+  - {fileID: 8300000, guid: a8fabfe851b288940a2ade2596f42843, type: 3}
+  - {fileID: 8300000, guid: 27049d0e294a39643946d16f02021437, type: 3}
+  - {fileID: 8300000, guid: f18d56568b614624dbdde7168ec5a4b0, type: 3}
+  - {fileID: 8300000, guid: 39ea885233f586341a7f72ca4c409281, type: 3}
+  - {fileID: 8300000, guid: c4a073e5f5893fc48b59ea99294d6d49, type: 3}
+  - {fileID: 8300000, guid: df3427a0d0ac0444eb7fa3b982ad68be, type: 3}
+  - {fileID: 8300000, guid: 3c034dc23570c7f4c9b9ad83ebec46be, type: 3}
+  - {fileID: 8300000, guid: 55c4aaca51fc69843a8b39d98ea3f587, type: 3}
+  - {fileID: 8300000, guid: a821310d0d831914d84b79559be7e917, type: 3}
   avoidImmediateRepeat: 1
+--- !u!114 &56987723
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 56987717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 255607947
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &56987724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 56987717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29185e725ffae2a49bb932cae58d658d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  onInteract:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 56987722}
+        m_TargetAssemblyTypeName: AUD_Radio, Assembly-CSharp
+        m_MethodName: PlayRandomSong
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onInteractWithInteractor:
+    m_PersistentCalls:
+      m_Calls: []
+  rewireInteractListenersOnNetworkSpawn: 1
+  invokeLegacyInteractEvent: 1
+  oneShot: 0
+  requiresHold: 0
+  holdTime: 1
+  onStartHold:
+    m_PersistentCalls:
+      m_Calls: []
+  onCancelHold:
+    m_PersistentCalls:
+      m_Calls: []
+  onHoldProgress:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!64 &78659781
 MeshCollider:
   m_ObjectHideFlags: 0
