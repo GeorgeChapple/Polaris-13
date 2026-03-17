@@ -60,6 +60,15 @@ public class SP_SpaceJunk : NetworkBehaviour
         {
             foundObjects.Add(col.gameObject);
         }
+
+        CC_Movement[] players = FindObjectsByType<CC_Movement>(FindObjectsSortMode.None);
+        foreach (CC_Movement player in players)
+        {
+            if (!foundObjects.Contains(player.gameObject))
+            {
+                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+            }
+        }
     }
 
     private void SpawnDebris()
