@@ -1772,7 +1772,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gravity: 9.81
-  volumeSize: {x: 240.1, y: 80.35, z: 222.1}
+  volumeSize: {x: 100.8, y: 24.5, z: 137.1}
   volumeOffset: {x: 0, y: 0, z: 0}
   directionalGravity: 1
   gravityDirection: {x: 0, y: -1, z: 0}
@@ -1956,7 +1956,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   maxDebris: 300
-  spawnTimeRange: {x: 0, y: 0}
+  spawnTimeRange: {x: 0.2, y: 0.4}
   rocket: {fileID: 0}
   debrisPrefabs:
   - {fileID: 346594225879649834, guid: 9c9c1a89f49928e45915114827e789ff, type: 3}
@@ -1964,8 +1964,8 @@ MonoBehaviour:
   - {fileID: 4799854575026602286, guid: e3b13856f5a9ab645a0cdd5d2dc35138, type: 3}
   - {fileID: 8530508181302635655, guid: abb2ac3b32b7b864fbf38773b514a8f4, type: 3}
   foundObjects: []
-  spaceBounds: {x: 1000, y: 1000, z: 200}
-  spawnBounds: {x: 20, y: 20}
+  spaceBounds: {x: 2000, y: 2000, z: 1000}
+  spawnBounds: {x: 500, y: 500}
 --- !u!4 &709164550
 Transform:
   m_ObjectHideFlags: 0
