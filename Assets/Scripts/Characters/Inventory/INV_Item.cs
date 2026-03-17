@@ -18,7 +18,7 @@ public class INV_Item : ScriptableObject
 
     [Header("Stack")]
     [SerializeField] private bool stackable;
-    [SerializeField] private int maxStack;
+    [SerializeField, Min(1)] private int maxStack = 1;
 
     [Header("Crafting")]
     [SerializeField] private bool craftable;
@@ -32,7 +32,6 @@ public class INV_Item : ScriptableObject
         public INV_Item item;
         public int amount;
     }
-
 
     [Header("Visuals")]
     [SerializeField] private Sprite icon;
@@ -67,6 +66,14 @@ public class INV_Item : ScriptableObject
     public string ItemID => itemID;
     public string Name => m_name;
     public string Description => description;
+    public float Durability => durability;
+
+    public bool Stackable => stackable;
+    public int MaxStack => stackable ? Mathf.Max(1, maxStack) : 1;
+
+    public bool Craftable => craftable;
+    public bool CanCraftAnywhere => canCraftAnywhere;
+
     public Sprite Icon => icon;
     public Mesh Mesh => mesh;
     public Material Material => material;
@@ -164,6 +171,7 @@ public class INV_Item : ScriptableObject
         }
     }
 }
+
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_Item))]
 public class INV_ItemEditor : Editor

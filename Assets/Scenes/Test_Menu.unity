@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 2e190554795b42f488652dbe4fbf10eb, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -1137,7 +1137,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 1
           m_FloatArgument: 0
-          m_StringArgument: Test_Multiplayer
+          m_StringArgument: Test_Space_Multiplayer
           m_BoolArgument: 0
         m_CallState: 2
   FailedToJoinSession:
@@ -1200,6 +1200,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71a2d3737ae936249b2d30cdc0e033f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   maxDebris: 100
   spawnTimeRange: {x: 1.1, y: 1.1}
   rocket: {fileID: 0}
@@ -1210,6 +1211,7 @@ MonoBehaviour:
   - {fileID: 8506519994881310762, guid: 4c882442c56a3744c8d769fa9f540d45, type: 3}
   foundObjects: []
   spaceBounds: {x: 10, y: 10, z: 50}
+  spawnBounds: {x: 10, y: 10}
 --- !u!4 &709164550
 Transform:
   m_ObjectHideFlags: 0

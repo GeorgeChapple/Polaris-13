@@ -7,6 +7,9 @@ public class CustomGravityRigidbody : MonoBehaviour
     [SerializeField]
     protected bool floatToSleep = false;
 
+    public bool useGravity;
+    [HideInInspector] public bool triggered = false;
+
     protected Rigidbody body;
 
     protected float floatDelay;
@@ -20,13 +23,18 @@ public class CustomGravityRigidbody : MonoBehaviour
         }
 
         body.useGravity = false;
+
+        if (useGravity) { triggered = true; }
     }
 
     protected virtual void FixedUpdate()
     {
-        if (HandleFloatToSleep()) { return; }
+        if (useGravity)
+        {
+            if (HandleFloatToSleep()) { return; }
 
-        ApplyGravity();
+            ApplyGravity();
+        }
     }
 
     protected bool HandleFloatToSleep()

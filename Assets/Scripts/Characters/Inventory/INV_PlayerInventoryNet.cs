@@ -13,6 +13,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Tooltip("Object root for the replicated equipped item for other players. If null, uses replicated camera direction root, then this objects transform.")]
     [SerializeField] private Transform replicatedEquippedItemRoot;
 
+    [Header("Throw Power, Power is force, Torque is rotational vel added +/- what ever it is.")]
+    [SerializeField] private float testThrowPower;
+    [SerializeField] private float testThrowTorque;
+
     private NetworkObject currentEquippedItem;
 
     // local owner only equipped visual
@@ -434,7 +438,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         Vector3 dropPoint = inventory.dropItemTransform.position;
-        GameObject drop = Instantiate(inventory.ItemPrefab, dropPoint, Quaternion.identity);
+        Quaternion dropRotation = inventory.dropItemTransform.rotation;
+
+        GameObject drop = Instantiate(inventory.ItemPrefab, dropPoint, dropRotation);
         if (drop == null)
         {
             Debug.LogError("Failed to instantiate dropped item prefab.", this);
@@ -457,13 +463,6 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             Debug.LogError("Dropped item prefab is missing INV_ItemDrop!", drop);
         }
 
-        Rigidbody rb = drop.GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.AddForce(inventory.dropItemTransform.forward, ForceMode.Impulse);
-            rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
-        }
-
         NetworkObject netObj = drop.GetComponent<NetworkObject>();
         if (netObj == null)
         {
@@ -472,6 +471,19 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
+        Rigidbody rb = drop.GetComponent<Rigidbody>();
+
         netObj.Spawn();
+
+        if (rb != null)
+        {
+            rb.WakeUp();
+
+            Vector3 throwVelocity = inventory.dropItemTransform.forward * testThrowPower;
+            Vector3 randomTorque = Vector3.one * Random.Range(-testThrowTorque, testThrowTorque);
+
+            rb.linearVelocity = throwVelocity;
+            rb.angularVelocity = randomTorque;
+        }
     }
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using TMPro;
+using System.Collections;
 
 // Made by: Jason Lodge
 // Summary: Handles locomotion, gravity, jumping, body rotation and stamina / thruster usage.
@@ -137,6 +138,11 @@ public class CC_Movement : NetworkBehaviour
     bool usingSpaceStabiliseThrusters;
     float thrusterDrainPerSecondThisTick;
 
+    // jump / thruster input state
+    bool jumpHeldLastTick;
+    bool groundThrustersActivatedThisAirborne;
+    bool groundThrustersRequiresRelease;
+
     bool initialised;
 
     // public read for other components like camera/interaction
@@ -159,6 +165,8 @@ public class CC_Movement : NetworkBehaviour
         {
             playerText.text = "Player";
         }
+
+        StartCoroutine(WaitSpawn(true));
     }
 
     void InitialiseComponents()
@@ -211,6 +219,29 @@ public class CC_Movement : NetworkBehaviour
         {
             playerText.text = (OwnerClientId + 1).ToString();
         }
+
+        StartCoroutine(WaitSpawn(true));
+    }
+
+    private IEnumerator WaitSpawn(bool networked)
+    {
+        GameObject[] spawnPoints;
+        ulong id = 0;
+        while (true)
+        {
+            spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint");
+            if (spawnPoints.Length > 0)
+            {
+                if (networked)
+                {
+                    id = OwnerClientId;
+                }
+                Transform spawnPoint = spawnPoints[id].transform;
+                rb.position = spawnPoint.position;
+                break;
+            }
+            yield return null;
+        }
     }
 
     // Call in FixedUpdate.
@@ -227,12 +258,22 @@ public class CC_Movement : NetworkBehaviour
         // grounded should only matter in ground mode
         grounded = locomotionType == LocomotionType.GroundMode && customGravityBody != null && customGravityBody.Grounded;
 
+        // detect jump press this tick so ground jump and airborne thrusters act like separate presses
+        bool jumpPressedThisTick = jumpInput && !jumpHeldLastTick;
+
         // clear each tick
         jumpedThisTick = false;
         usingGroundThrusters = false;
         usingSpaceMoveThrusters = false;
         usingSpaceStabiliseThrusters = false;
         thrusterDrainPerSecondThisTick = 0f;
+
+        // landing resets the airborne thruster activation
+        if (grounded)
+        {
+            groundThrustersActivatedThisAirborne = false;
+            groundThrustersRequiresRelease = false;
+        }
 
         // crouch only in ground mode + grounded
         bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded;
@@ -255,10 +296,13 @@ public class CC_Movement : NetworkBehaviour
         else
         {
             GroundMove(moveInput);
-            Jump(jumpInput);
-            GroundThrusters(jumpInput);
+            Jump(jumpPressedThisTick);
+            GroundThrusters(jumpInput, jumpPressedThisTick);
             GroundBodyRotation();
         }
+
+        // cache jump held for edge detection next tick
+        jumpHeldLastTick = jumpInput;
 
         // clear pending look after we use it in physics
         pendingLook = Vector2.zero;
@@ -272,10 +316,7 @@ public class CC_Movement : NetworkBehaviour
         // only drain stamina when sprinting in ground mode and grounded
         bool shouldDrain = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
 
-        // only regen stamina when grounded in ground mode
-        bool allowRegen = locomotionType == LocomotionType.GroundMode && grounded;
-
-        values.TickStamina(shouldDrain, allowRegen);
+        values.TickStamina(shouldDrain, true);
 
         // thrusters regen when not being used
         bool usingThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;
@@ -303,9 +344,14 @@ public class CC_Movement : NetworkBehaviour
 
     protected virtual void UpdateLocomotionMode()
     {
-        locomotionType = currentGravity.magnitude <= zeroGravityThreshold
-            ? LocomotionType.SpaceMode
-            : LocomotionType.GroundMode;
+        if (customGravityBody.useGravity && currentGravity.magnitude >= zeroGravityThreshold)
+        {
+            locomotionType = LocomotionType.GroundMode;
+        } 
+        else
+        {
+            locomotionType = LocomotionType.SpaceMode;
+        }
     }
 
     protected virtual void GroundMove(Vector2 moveInput)
@@ -380,7 +426,7 @@ public class CC_Movement : NetworkBehaviour
         rb.linearVelocity = newPlanarVel + verticalVel;
     }
 
-    protected virtual void Jump(bool jumpPressed)
+    protected virtual void Jump(bool jumpPressedThisTick)
     {
         if (rb == null) { return; }
 
@@ -388,13 +434,14 @@ public class CC_Movement : NetworkBehaviour
         {
             fallTimeoutDelta = fallTimeout;
 
-            if (jumpPressed && jumpTimeoutDelta <= 0f)
+            if (jumpPressedThisTick && jumpTimeoutDelta <= 0f)
             {
                 // jump along current up axis so it works on walls/ceilings
                 rb.AddForce(upAxis * jumpPower, ForceMode.Impulse);
 
                 grounded = false;
                 jumpTimeoutDelta = jumpTimeout;
+                groundThrustersRequiresRelease = true;
 
                 if (customGravityBody != null)
                 {
@@ -419,10 +466,32 @@ public class CC_Movement : NetworkBehaviour
         }
     }
 
-    protected virtual void GroundThrusters(bool jumpHeld)
+    protected virtual void GroundThrusters(bool jumpHeld, bool jumpPressedThisTick)
     {
         if (rb == null || values == null) { return; }
-        if (locomotionType != LocomotionType.GroundMode || grounded || !jumpHeld || !values.HasThruster()) { return; }
+        if (locomotionType != LocomotionType.GroundMode || grounded || !values.HasThruster()) { return; }
+
+        // holding jump from the initial ground jump shouldn't activate thrusters
+        // player must release jump after jumping, then press again while airborne to activate thrusters
+        if (groundThrustersRequiresRelease)
+        {
+            if (!jumpHeld)
+            {
+                groundThrustersRequiresRelease = false;
+            }
+
+            return;
+        }
+
+        // airborne thrusters activate like a second jump
+        if (!groundThrustersActivatedThisAirborne)
+        {
+            if (!jumpPressedThisTick) { return; }
+            groundThrustersActivatedThisAirborne = true;
+        }
+
+        // once activated, keep thrusting only while jump is held
+        if (!jumpHeld) { return; }
 
         float upSpeed = Vector3.Dot(rb.linearVelocity, upAxis);
         if (upSpeed >= groundThrusterUpSpeedCap) { return; }

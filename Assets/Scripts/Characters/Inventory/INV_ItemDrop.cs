@@ -247,6 +247,13 @@ public class INV_ItemDrop : NetworkBehaviour
             return;
         }
 
+        // if this pickup is also space junk, remove it from the debris manager first
+        SP_Junk junk = GetComponent<SP_Junk>();
+        if (junk != null)
+        {
+            junk.RemoveFromSpaceManager();
+        }
+
         playerInvNet.AddItemLocalRpc(
             itemId,
             RpcTarget.Single(senderClientId, RpcTargetUse.Temp)

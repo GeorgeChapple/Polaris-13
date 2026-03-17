@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
+  m_Name: DebrisIronSmall
+  m_EditorClassIdentifier: 
+  itemID: iron_ore_small
+  m_name: Small Iron Meteor
+  description: Small Meteor with Iron inside. Can be used to craft.
+  durability: 0
+  stackable: 1
+  maxStack: 15
+  craftable: 0
+  canCraftAnywhere: 0
+  craftingRequirements: []
+  icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
+  mesh: {fileID: -5008381810204397873, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
+  material: {fileID: 239378781582670930, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
+  inventoryMeshOffset: {x: 0, y: 0, z: -20}
+  inventoryMeshScale: 80
+  equippedMeshOffset: {x: 0, y: 0, z: 0}
+  equippedMeshScale: 0.3
+  inventorySpaceShape:
+  - +
+  inventorySpace: {x: 1, y: 1}
+  objectType: 4
