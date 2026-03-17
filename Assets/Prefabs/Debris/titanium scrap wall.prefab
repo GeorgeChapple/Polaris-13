@@ -53,6 +53,10 @@ PrefabInstance:
       value: titanium scrap wall
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
       propertyPath: m_TagString
       value: Debris
       objectReference: {fileID: 0}
@@ -78,6 +82,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
       insertIndex: -1
       addedObject: {fileID: -7677218310804622234}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -238042375850549597}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5790522819448206613}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -6518805355400737148}
   m_SourcePrefab: {fileID: 100100000, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
 --- !u!1 &4799854575026602286 stripped
 GameObject:
@@ -237,3 +250,81 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &-238042375850549597
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4799854575026602286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7571d826fe9df4d49863af985c6f7ec9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  item: {fileID: 11400000, guid: 5710b9bad6862e1488ec15474737fd12, type: 2}
+  useMeshCollider: 1
+  renameToItemName: 1
+--- !u!114 &5790522819448206613
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4799854575026602286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29185e725ffae2a49bb932cae58d658d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  onInteract:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: -238042375850549597}
+        m_TargetAssemblyTypeName: INV_ItemDrop, Assembly-CSharp
+        m_MethodName: TryAddToInventory
+        m_Mode: 2
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onInteractWithInteractor:
+    m_PersistentCalls:
+      m_Calls: []
+  rewireInteractListenersOnNetworkSpawn: 1
+  invokeLegacyInteractEvent: 0
+  oneShot: 0
+  requiresHold: 0
+  holdTime: 0
+  onStartHold:
+    m_PersistentCalls:
+      m_Calls: []
+  onCancelHold:
+    m_PersistentCalls:
+      m_Calls: []
+  onHoldProgress:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &-6518805355400737148
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4799854575026602286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkRigidbodyBaseExpanded: 0
+  UseRigidBodyForMotion: 1
+  AutoUpdateKinematicState: 1
+  AutoSetKinematicOnDespawn: 1

@@ -120,6 +120,16 @@ public class SP_SpaceJunk : NetworkBehaviour
         }
     }
 
+    public void RemoveDebris(GameObject obj)
+    {
+        if (obj == null) { return; }
+
+        if (debris.ContainsKey(obj))
+        {
+            debris.Remove(obj);
+        }
+    }
+
     private void OnDrawGizmos()
     {
         DrawBox(Vector3.zero, transform.rotation, spaceBounds, Color.red);

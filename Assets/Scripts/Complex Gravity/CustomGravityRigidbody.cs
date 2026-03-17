@@ -23,6 +23,8 @@ public class CustomGravityRigidbody : MonoBehaviour
         }
 
         body.useGravity = false;
+
+        if (useGravity) { triggered = true; }
     }
 
     protected virtual void FixedUpdate()

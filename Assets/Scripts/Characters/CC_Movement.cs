@@ -316,10 +316,7 @@ public class CC_Movement : NetworkBehaviour
         // only drain stamina when sprinting in ground mode and grounded
         bool shouldDrain = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
 
-        // only regen stamina when grounded in ground mode
-        bool allowRegen = locomotionType == LocomotionType.GroundMode && grounded;
-
-        values.TickStamina(shouldDrain, allowRegen);
+        values.TickStamina(shouldDrain, true);
 
         // thrusters regen when not being used
         bool usingThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;

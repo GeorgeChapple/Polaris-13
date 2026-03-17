@@ -114,6 +114,12 @@ public class CC_CameraController : NetworkBehaviour
     bool initialised;
 
     // replicated camera direction
+    private NetworkVariable<Vector3> replicatedCameraLocalPosition = new NetworkVariable<Vector3>(
+        Vector3.zero,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
     private NetworkVariable<Quaternion> replicatedCameraLocalRotation = new NetworkVariable<Quaternion>(
         Quaternion.identity,
         NetworkVariableReadPermission.Everyone,
@@ -175,6 +181,7 @@ public class CC_CameraController : NetworkBehaviour
         InitialiseComponents();
         ApplyOwnership(IsOwner);
 
+        replicatedCameraLocalPosition.OnValueChanged += OnReplicatedCameraLocalPositionChanged;
         replicatedCameraLocalRotation.OnValueChanged += OnReplicatedCameraLocalRotationChanged;
 
         ApplyReplicatedCameraDirection();
@@ -182,6 +189,7 @@ public class CC_CameraController : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        replicatedCameraLocalPosition.OnValueChanged -= OnReplicatedCameraLocalPositionChanged;
         replicatedCameraLocalRotation.OnValueChanged -= OnReplicatedCameraLocalRotationChanged;
 
         base.OnNetworkDespawn();
@@ -395,21 +403,30 @@ public class CC_CameraController : NetworkBehaviour
 
         Transform parent = replicatedCameraDirectionRoot.parent;
 
+        Vector3 localPos;
         Quaternion localRot;
 
         // convert source world pose into the replicated roots parent space
         if (parent != null)
         {
+            localPos = parent.InverseTransformPoint(source.position);
             localRot = Quaternion.Inverse(parent.rotation) * source.rotation;
         }
         else
         {
+            localPos = source.position;
             localRot = source.rotation;
         }
 
+        replicatedCameraLocalPosition.Value = localPos;
         replicatedCameraLocalRotation.Value = localRot;
 
         // also apply locally so owner sees the same replicated transform
+        ApplyReplicatedCameraDirection();
+    }
+
+    void OnReplicatedCameraLocalPositionChanged(Vector3 oldValue, Vector3 newValue)
+    {
         ApplyReplicatedCameraDirection();
     }
 
@@ -426,10 +443,12 @@ public class CC_CameraController : NetworkBehaviour
 
         if (parent != null)
         {
+            replicatedCameraDirectionRoot.localPosition = replicatedCameraLocalPosition.Value;
             replicatedCameraDirectionRoot.localRotation = replicatedCameraLocalRotation.Value;
         }
         else
         {
+            replicatedCameraDirectionRoot.position = replicatedCameraLocalPosition.Value;
             replicatedCameraDirectionRoot.rotation = replicatedCameraLocalRotation.Value;
         }
     }

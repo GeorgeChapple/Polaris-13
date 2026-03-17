@@ -53,6 +53,10 @@ PrefabInstance:
       value: small iron meteor
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
       propertyPath: m_TagString
       value: Debris
       objectReference: {fileID: 0}
@@ -78,6 +82,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
       insertIndex: -1
       addedObject: {fileID: -3074576987076487756}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3481281441232034324}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 755627026109640226}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -5661024308382891739}
   m_SourcePrefab: {fileID: 100100000, guid: 1a33747da6c9e784aadfd54c7af95b9e, type: 3}
 --- !u!1 &7239671084990043103 stripped
 GameObject:
@@ -237,3 +250,81 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &3481281441232034324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7239671084990043103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7571d826fe9df4d49863af985c6f7ec9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  item: {fileID: 11400000, guid: 0d757411c01f32d44ad5f5d908094561, type: 2}
+  useMeshCollider: 1
+  renameToItemName: 1
+--- !u!114 &755627026109640226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7239671084990043103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29185e725ffae2a49bb932cae58d658d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  onInteract:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 3481281441232034324}
+        m_TargetAssemblyTypeName: INV_ItemDrop, Assembly-CSharp
+        m_MethodName: TryAddToInventory
+        m_Mode: 2
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onInteractWithInteractor:
+    m_PersistentCalls:
+      m_Calls: []
+  rewireInteractListenersOnNetworkSpawn: 1
+  invokeLegacyInteractEvent: 0
+  oneShot: 0
+  requiresHold: 0
+  holdTime: 0
+  onStartHold:
+    m_PersistentCalls:
+      m_Calls: []
+  onCancelHold:
+    m_PersistentCalls:
+      m_Calls: []
+  onHoldProgress:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &-5661024308382891739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7239671084990043103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkRigidbodyBaseExpanded: 0
+  UseRigidBodyForMotion: 1
+  AutoUpdateKinematicState: 1
+  AutoSetKinematicOnDespawn: 1

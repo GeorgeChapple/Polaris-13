@@ -6,7 +6,7 @@ public class GravityToggler : MonoBehaviour
 
     private void OnTriggerEnter(Collider col)
     {
-        CustomGravityRigidbodyForEntities gravityBody = col.GetComponent<CustomGravityRigidbodyForEntities>();
+        CustomGravityRigidbody gravityBody = col.GetComponent<CustomGravityRigidbody>();
         if (gravityBody != null && !gravityBody.triggered)
         {
             gravityBody.triggered = true;
@@ -16,7 +16,7 @@ public class GravityToggler : MonoBehaviour
 
     private void OnTriggerExit(Collider col)
     {
-        CustomGravityRigidbodyForEntities gravityBody = col.GetComponent<CustomGravityRigidbodyForEntities>();
+        CustomGravityRigidbody gravityBody = col.GetComponent<CustomGravityRigidbody>();
         if (gravityBody != null)
         {
             gravityBody.triggered = false;

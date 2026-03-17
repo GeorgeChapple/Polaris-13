@@ -148,4 +148,19 @@ public class SP_Junk : NetworkBehaviour
             Destroy(this.gameObject);
         }
     }
+    public void RemoveFromSpaceManager()
+    {
+        if (spaceManager == null)
+        {
+            spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
+        }
+
+        if (spaceManager == null)
+        {
+            Debug.LogWarning("SP_Junk could not find SP_SpaceJunk.", this);
+            return;
+        }
+
+        spaceManager.RemoveDebris(gameObject);
+    }
 }
