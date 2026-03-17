@@ -2652,7 +2652,7 @@ MonoBehaviour:
   useGroundedCheck: 1
   groundedCheckObj: {fileID: 3637123821088872404}
   groundedRayLength: 1
-  groundedRayRadius: 0.25
+  groundedRayRadius: 0.5
   groundLayers:
     serializedVersion: 2
     m_Bits: 503
@@ -2946,6 +2946,7 @@ MonoBehaviour:
   pauseMenuRoot: {fileID: 8102134890253006248}
   inventoryMenuRoot: {fileID: 2437130736283423829}
   inventory: {fileID: 8659341846294892265}
+  inventoryNet: {fileID: 0}
   hotBar: {fileID: 7754135669426331764}
 --- !u!114 &7754135669426331764
 MonoBehaviour:
@@ -3016,6 +3017,7 @@ MonoBehaviour:
   replicatedEquippedItemRoot: {fileID: 348508103958163370}
   testThrowPower: 8
   testThrowTorque: 5
+  currentEquippedItem: {fileID: 0}
 --- !u!114 &6897484885061798330
 MonoBehaviour:
   m_ObjectHideFlags: 0
