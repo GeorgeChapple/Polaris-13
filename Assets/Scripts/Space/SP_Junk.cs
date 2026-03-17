@@ -101,7 +101,8 @@ public class SP_Junk : NetworkBehaviour
             transform.localScale = end;
             if (destroy)
             {
-                Destroy(this.gameObject);
+                GetComponent<NetworkObject>().Despawn();
+                //Destroy(this.gameObject);
             }
             scaling = false;
         }
