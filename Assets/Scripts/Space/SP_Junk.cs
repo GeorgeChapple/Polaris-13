@@ -1,8 +1,7 @@
 using System.Collections;
-using System.Net.Sockets;
+using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
-using Unity.Netcode;
 
 public class SP_Junk : NetworkBehaviour
 {
@@ -24,7 +23,13 @@ public class SP_Junk : NetworkBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
+        // Only server decides if junk gets destroyed
+        if (!IsServer)
+        {
+            return;
+        }
+
+        if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
         {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
@@ -39,7 +44,7 @@ public class SP_Junk : NetworkBehaviour
     private void InitialiseComponents()
     {
         rb = GetComponent<Rigidbody>();
-        if (GetComponent<Rigidbody>() == null)
+        if (rb == null)
         {
             rb = this.AddComponent<Rigidbody>();
         }
@@ -60,7 +65,13 @@ public class SP_Junk : NetworkBehaviour
     {
         GetObjectDirection();
 
-        if (!spaceManager.foundObjects.Contains(this.gameObject))
+        // only server decides if junk should despawn
+        if (!IsServer)
+        {
+            return;
+        }
+
+        if (spaceManager != null && !spaceManager.foundObjects.Contains(this.gameObject))
         {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
@@ -68,7 +79,7 @@ public class SP_Junk : NetworkBehaviour
 
     private void GetObjectDirection()
     {
-        if (spaceManager.debris.ContainsKey(this.gameObject))
+        if (spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
         {
             objDirection = (Vector3.back + spaceManager.debris[this.gameObject] - spaceManager.rocket.worldDirection).normalized * spaceManager.rocket.speed;
         }
@@ -78,7 +89,7 @@ public class SP_Junk : NetworkBehaviour
     {
         if (!scaling)
         {
-            if (destroy)
+            if (destroy && spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
             {
                 spaceManager.debris.Remove(this.gameObject);
             }
@@ -99,17 +110,22 @@ public class SP_Junk : NetworkBehaviour
             if (destroy && !destroyRequested)
             {
                 destroyRequested = true;
-                RequestDestroyRPC();
+                DestroyJunk();
             }
 
             scaling = false;
         }
     }
 
-    [Rpc(SendTo.Server)]
-    private void RequestDestroyRPC()
+    private void DestroyJunk()
     {
-        // spawn destroy VFX on server so it replicates properly
+        // safety check
+        if (!IsServer)
+        {
+            return;
+        }
+
+        // spawn destroy VFX on server
         if (destroyVFX != null)
         {
             GameObject vfxInstance = Instantiate(destroyVFX, transform.position, transform.rotation);
@@ -122,9 +138,10 @@ public class SP_Junk : NetworkBehaviour
         }
 
         // despawn junk over network
-        if (GetComponent<NetworkObject>() != null && GetComponent<NetworkObject>().IsSpawned)
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        if (netObj != null && netObj.IsSpawned)
         {
-            GetComponent<NetworkObject>().Despawn(true);
+            netObj.Despawn(true);
         }
         else
         {
