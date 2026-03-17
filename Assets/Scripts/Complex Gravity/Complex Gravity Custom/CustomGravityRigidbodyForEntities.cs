@@ -35,8 +35,6 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     [Tooltip("Small dead zone around hover height to stop tiny corrections / pogoing.")]
     [SerializeField] private float groundedSnapDeadZone = 0.02f;
 
-    public bool useGravity;
-    [HideInInspector] public bool triggered = false;
     public bool Grounded => grounded;
     public Vector3 UpAxis => upAxis;
     public Vector3 CurrentGravity => currentGravity;

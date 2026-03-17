@@ -72,6 +72,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d111a36fc48b9ad4590e30e6cf0dd6c0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2193547488628064582}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d111a36fc48b9ad4590e30e6cf0dd6c0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 629341035719348533}
   m_SourcePrefab: {fileID: 100100000, guid: d111a36fc48b9ad4590e30e6cf0dd6c0, type: 3}
 --- !u!1 &346594225879649834 stripped
 GameObject:
@@ -121,6 +124,7 @@ MonoBehaviour:
   objDirection: {x: 0, y: 0, z: 0}
   scaleSpeed: 1
   sizeSpread: {x: 0.8, y: 1.2}
+  destroyVFX: {fileID: 2014236133279003091, guid: 15c8a3da0cfce7b4b9e9f863de2984b1, type: 3}
 --- !u!54 &8931501265292920644
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -169,3 +173,18 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.34
   m_Center: {x: -0.0046417415, y: -0.010658027, z: -0.0057318523}
+--- !u!114 &629341035719348533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 346594225879649834}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  floatToSleep: 0
+  useGravity: 0
+  triggered: 0

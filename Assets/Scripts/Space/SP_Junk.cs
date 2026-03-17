@@ -11,6 +11,7 @@ public class SP_Junk : NetworkBehaviour
     [HideInInspector] public Vector3 objDirection;
     [SerializeField] private float scaleSpeed = 1;
     [SerializeField] private Vector2 sizeSpread = new Vector2(0.7f, 1.3f);
+    [SerializeField] private GameObject destroyVFX;
     private SP_SpaceJunk spaceManager;
     private bool scaling = false;
     private Rigidbody rb;
@@ -22,10 +23,21 @@ public class SP_Junk : NetworkBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (spaceManager.debris.ContainsKey(this.gameObject) && collision.gameObject.CompareTag("Rocket"))
+        if (spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
         {
+            if (destroyVFX != null)
+            {
+                GameObject vfxInstance = Instantiate(destroyVFX, transform.position, transform.rotation);
+                NetworkObject vfxNetObj = vfxInstance.GetComponent<NetworkObject>();
+
+                if (vfxNetObj != null && !vfxNetObj.IsSpawned)
+                {
+                    vfxNetObj.Spawn();
+                }
+            }
+
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
-        }  
+        }
     }
 
     public override void OnNetworkSpawn()
