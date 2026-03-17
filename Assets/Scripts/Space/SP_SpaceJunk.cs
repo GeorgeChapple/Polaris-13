@@ -25,6 +25,10 @@ public class SP_SpaceJunk : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+        if (!IsHost)
+        {
+            Destroy(this);
+        }
         InitialiseComponents();
     }
 

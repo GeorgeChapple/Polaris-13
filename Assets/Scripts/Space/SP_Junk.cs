@@ -14,6 +14,7 @@ public class SP_Junk : NetworkBehaviour
     [SerializeField] private GameObject destroyVFX;
     private SP_SpaceJunk spaceManager;
     private bool scaling = false;
+    private bool destroyRequested = false;
     private Rigidbody rb;
 
     private void Awake()
@@ -25,17 +26,6 @@ public class SP_Junk : NetworkBehaviour
     {
         if (spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
         {
-            if (destroyVFX != null)
-            {
-                GameObject vfxInstance = Instantiate(destroyVFX, transform.position, transform.rotation);
-                NetworkObject vfxNetObj = vfxInstance.GetComponent<NetworkObject>();
-
-                if (vfxNetObj != null && !vfxNetObj.IsSpawned)
-                {
-                    vfxNetObj.Spawn();
-                }
-            }
-
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
     }
@@ -53,6 +43,7 @@ public class SP_Junk : NetworkBehaviour
         {
             rb = this.AddComponent<Rigidbody>();
         }
+
         transform.localScale = Vector3.one * Random.Range(sizeSpread.x, sizeSpread.y);
         spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
     }
@@ -68,7 +59,9 @@ public class SP_Junk : NetworkBehaviour
     void Update()
     {
         GetObjectDirection();
-        if (!spaceManager.foundObjects.Contains(this.gameObject)) {
+
+        if (!spaceManager.foundObjects.Contains(this.gameObject))
+        {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
     }
@@ -86,25 +79,56 @@ public class SP_Junk : NetworkBehaviour
         if (!scaling)
         {
             if (destroy)
-            { 
+            {
                 spaceManager.debris.Remove(this.gameObject);
             }
+
             scaling = true;
             transform.localScale = start;
             float t = 0;
+
             while (t < 1)
             {
                 t += Time.deltaTime / duration;
                 transform.localScale = Vector3.Lerp(start, end, Easing.Sine.Out(t));
                 yield return null;
             }
+
             transform.localScale = end;
-            if (destroy)
+
+            if (destroy && !destroyRequested)
             {
-                GetComponent<NetworkObject>().Despawn();
-                //Destroy(this.gameObject);
+                destroyRequested = true;
+                RequestDestroyRPC();
             }
+
             scaling = false;
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestDestroyRPC()
+    {
+        // spawn destroy VFX on server so it replicates properly
+        if (destroyVFX != null)
+        {
+            GameObject vfxInstance = Instantiate(destroyVFX, transform.position, transform.rotation);
+            NetworkObject vfxNetObj = vfxInstance.GetComponent<NetworkObject>();
+
+            if (vfxNetObj != null && !vfxNetObj.IsSpawned)
+            {
+                vfxNetObj.Spawn();
+            }
+        }
+
+        // despawn junk over network
+        if (GetComponent<NetworkObject>() != null && GetComponent<NetworkObject>().IsSpawned)
+        {
+            GetComponent<NetworkObject>().Despawn(true);
+        }
+        else
+        {
+            Destroy(this.gameObject);
         }
     }
 }
