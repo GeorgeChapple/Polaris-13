@@ -13,6 +13,8 @@ public class CC_INV_EquippedItem : NetworkBehaviour
 
     // internals
     private INV_Inventory.ItemInstance itemInstance;
+    public string componentName;
+
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private Renderer[] cachedRenderers;

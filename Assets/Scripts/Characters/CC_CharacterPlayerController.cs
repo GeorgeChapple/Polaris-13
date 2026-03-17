@@ -46,6 +46,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Tooltip("Inventory")]
     [SerializeField] private INV_Inventory inventory;
 
+    [Tooltip("Network Inventory Handler")]
+    [SerializeField] private INV_PlayerInventoryNet inventoryNet;
+
     [Tooltip("Hotbar")]
     [SerializeField] private INV_HotBar hotBar;
 
@@ -187,6 +190,8 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         // open/close menu logic
         HandleMenuInput();
 
+        HandleItemUse();
+
         // one-off rotate/drop while inventory menu is open
         HandleInventoryActions();
 
@@ -259,6 +264,13 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         {
             cursorImage.sprite = defaultCursorSprite;
         }
+    }
+
+    private void HandleItemUse()
+    {
+        CC_INV_EquippedItem equippedItem = inventoryNet.currentEquippedItem.GetComponent<CC_INV_EquippedItem>();
+
+
     }
 
     private void HandleInventoryActions()

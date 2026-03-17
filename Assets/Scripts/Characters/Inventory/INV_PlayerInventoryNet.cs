@@ -1,4 +1,6 @@
+using System;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class INV_PlayerInventoryNet : NetworkBehaviour
@@ -17,7 +19,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [SerializeField] private float testThrowPower;
     [SerializeField] private float testThrowTorque;
 
-    private NetworkObject currentEquippedItem;
+    [HideInInspector] public NetworkObject currentEquippedItem;
 
     // local owner only equipped visual
     private GameObject localEquippedVisual;
@@ -270,6 +272,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         // init before spawn so replicated vars are already set
         equippedItem.Init(itemId, OwnerClientId);
 
+        // set up usage script here and wire up correctly.
+        //AddComponentByType<MonoBehaviour>(equippedItem.gameObject, item.ItemUseScript);
+
         // server owns the replicated equipped item because server is driving its transform
         netObj.Spawn();
 
@@ -286,7 +291,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         currentEquippedItem = netObj;
     }
 
-    private void ClearEquippedItem_Server()
+    //private void AddComponentByType<T>(GameObject go, MonoBehaviour type) where T : MonoBehaviour 
+    //{
+    //    go.AddComponent<T>();
+    //    go.SendMessage()
+        
+    //}
+
+private void ClearEquippedItem_Server()
     {
         if (!IsServer)
         {
@@ -480,7 +492,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             rb.WakeUp();
 
             Vector3 throwVelocity = inventory.dropItemTransform.forward * testThrowPower;
-            Vector3 randomTorque = Vector3.one * Random.Range(-testThrowTorque, testThrowTorque);
+            Vector3 randomTorque = Vector3.one * UnityEngine.Random.Range(-testThrowTorque, testThrowTorque);
 
             rb.linearVelocity = throwVelocity;
             rb.angularVelocity = randomTorque;

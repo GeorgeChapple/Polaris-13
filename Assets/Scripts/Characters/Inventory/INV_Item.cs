@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEditor;
 using UnityEngine;
 
@@ -52,6 +53,9 @@ public class INV_Item : ScriptableObject
     [Tooltip("Scale applied to the mesh visual when equipped.")]
     [SerializeField] private float equippedMeshScale = 1f;
 
+    [Header("Item Use Script")]
+    [SerializeField] private MonoBehaviour itemUseScript;
+
     [Header("Inventory")]
     [Tooltip("Complex shape per row. '+' = occupies, '-' = empty. Each entry is the next line down.\nExample: '++', '+-'")]
     [SerializeField] private List<string> inventorySpaceShape = new List<string>() { "++", "+-" };
@@ -82,6 +86,8 @@ public class INV_Item : ScriptableObject
     public float InventoryMeshScale => inventoryMeshScale;
     public Vector3 EquippedMeshOffset => equippedMeshOffset;
     public float EquippedMeshScale => equippedMeshScale;
+
+    public MonoBehaviour ItemUseScript => itemUseScript;
 
     public List<string> InventorySpaceShape => inventorySpaceShape;
 
