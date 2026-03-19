@@ -268,7 +268,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void HandleItemUse()
     {
-        CC_INV_EquippedItem equippedItem = inventoryNet.currentEquippedItem.GetComponent<CC_INV_EquippedItem>();
+        //CC_INV_EquippedItem equippedItem = inventoryNet.currentEquippedItem.GetComponent<CC_INV_EquippedItem>();
 
 
     }

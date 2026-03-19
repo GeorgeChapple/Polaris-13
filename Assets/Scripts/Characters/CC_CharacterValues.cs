@@ -11,13 +11,121 @@ public class CC_CharacterValues : MonoBehaviour
     {
         public Image img;
 
-        public void SetFill(float f01)
+        public bool appearOnUpdated;
+
+        [Tooltip("How long the ui stays visible after being updated.")]
+        public float visibleDelay = 1f;
+
+        [Tooltip("How fast the ui alpha lerps in.")]
+        public float alphaLerpInSpeed = 10f;
+
+        [Tooltip("How fast the ui alpha lerps out.")]
+        public float alphaLerpOutSpeed = 6f;
+
+        float lastFill = -1f;
+        float hideTimer;
+        float currentAlpha = 1f;
+        bool isShowing;
+
+        public void Init(float f01)
         {
             if (img == null) { return; }
 
             float v = Mathf.Clamp01(f01);
 
-            img.fillAmount = Mathf.Clamp01(v);
+            lastFill = v;
+            img.fillAmount = v;
+
+            if (appearOnUpdated)
+            {
+                currentAlpha = 0f;
+                hideTimer = 0f;
+                isShowing = false;
+                SetAlpha(0f);
+            }
+            else
+            {
+                currentAlpha = 1f;
+                hideTimer = 0f;
+                isShowing = true;
+                SetAlpha(1f);
+            }
+        }
+
+        public void SetFill(float f01, bool triggerAppear = true)
+        {
+            if (img == null) { return; }
+
+            float v = Mathf.Clamp01(f01);
+
+            // if value changed, show ui
+            if (appearOnUpdated && triggerAppear)
+            {
+                if (lastFill < 0f || !Mathf.Approximately(lastFill, v))
+                {
+                    Show();
+                }
+            }
+
+            lastFill = v;
+            img.fillAmount = v;
+        }
+
+        public void Tick()
+        {
+            if (img == null) { return; }
+            if (!appearOnUpdated) { return; }
+
+            // lerp in while showing
+            if (isShowing)
+            {
+                currentAlpha = Mathf.Lerp(currentAlpha, 1f, alphaLerpInSpeed * Time.deltaTime);
+
+                // snap close values to 1
+                if (currentAlpha >= 0.99f)
+                {
+                    currentAlpha = 1f;
+                }
+
+                if (hideTimer > 0f)
+                {
+                    hideTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    isShowing = false;
+                }
+            }
+            else
+            {
+                // lerp out after delay
+                currentAlpha = Mathf.Lerp(currentAlpha, 0f, alphaLerpOutSpeed * Time.deltaTime);
+
+                // snap small values to 0
+                if (currentAlpha <= 0.01f)
+                {
+                    currentAlpha = 0f;
+                }
+            }
+
+            SetAlpha(currentAlpha);
+        }
+
+        public void Show()
+        {
+            if (img == null) { return; }
+
+            hideTimer = visibleDelay;
+            isShowing = true;
+        }
+
+        void SetAlpha(float a)
+        {
+            if (img == null) { return; }
+
+            Color c = img.color;
+            c.a = Mathf.Clamp01(a);
+            img.color = c;
         }
     }
 
@@ -107,12 +215,18 @@ public class CC_CharacterValues : MonoBehaviour
         thrusterRegenDelayTimer = 0f;
         thrusterWasDepleted = (thruster <= 0f);
 
-        RefreshUI();
+        InitUI();
+        RefreshUI(false);
     }
 
     void Awake()
     {
         SetDefaults();
+    }
+
+    void Update()
+    {
+        TickUIVisibility();
     }
 
 #if UNITY_EDITOR
@@ -135,12 +249,13 @@ public class CC_CharacterValues : MonoBehaviour
 
         isDead = (health <= 0f);
 
-        RefreshUI();
+        InitUI();
+        RefreshUI(false);
     }
 #endif
 
     // UI
-    public void RefreshUI()
+    public void RefreshUI(bool triggerAppear = true)
     {
         float h01 = (maxHealth <= 0f) ? 0f : (health / maxHealth);
         float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
@@ -150,27 +265,89 @@ public class CC_CharacterValues : MonoBehaviour
 
         if (healthUI != null)
         {
-            for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].SetFill(h01); } }
+            for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].SetFill(h01, triggerAppear); } }
         }
 
         if (staminaUI != null)
         {
-            for (int i = 0; i < staminaUI.Length; i++) { if (staminaUI[i] != null) { staminaUI[i].SetFill(s01); } }
+            for (int i = 0; i < staminaUI.Length; i++) { if (staminaUI[i] != null) { staminaUI[i].SetFill(s01, triggerAppear); } }
         }
 
         if (thrusterUI != null)
         {
-            for (int i = 0; i < thrusterUI.Length; i++) { if (thrusterUI[i] != null) { thrusterUI[i].SetFill(t01); } }
+            for (int i = 0; i < thrusterUI.Length; i++) { if (thrusterUI[i] != null) { thrusterUI[i].SetFill(t01, triggerAppear); } }
         }
 
         if (oxygenUI != null)
         {
-            for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].SetFill(o01); } }
+            for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].SetFill(o01, triggerAppear); } }
         }
 
         if (expUI != null)
         {
-            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].SetFill(e01); } }
+            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].SetFill(e01, triggerAppear); } }
+        }
+    }
+
+    void InitUI()
+    {
+        float h01 = (maxHealth <= 0f) ? 0f : (health / maxHealth);
+        float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
+        float t01 = (maxThruster <= 0f) ? 0f : (thruster / maxThruster);
+        float o01 = (maxOxygen <= 0f) ? 0f : (oxygen / maxOxygen);
+        float e01 = (expToNextLevel <= 0) ? 0f : Mathf.Clamp01((float)exp / expToNextLevel);
+
+        if (healthUI != null)
+        {
+            for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].Init(h01); } }
+        }
+
+        if (staminaUI != null)
+        {
+            for (int i = 0; i < staminaUI.Length; i++) { if (staminaUI[i] != null) { staminaUI[i].Init(s01); } }
+        }
+
+        if (thrusterUI != null)
+        {
+            for (int i = 0; i < thrusterUI.Length; i++) { if (thrusterUI[i] != null) { thrusterUI[i].Init(t01); } }
+        }
+
+        if (oxygenUI != null)
+        {
+            for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].Init(o01); } }
+        }
+
+        if (expUI != null)
+        {
+            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].Init(e01); } }
+        }
+    }
+
+    void TickUIVisibility()
+    {
+        if (healthUI != null)
+        {
+            for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].Tick(); } }
+        }
+
+        if (staminaUI != null)
+        {
+            for (int i = 0; i < staminaUI.Length; i++) { if (staminaUI[i] != null) { staminaUI[i].Tick(); } }
+        }
+
+        if (thrusterUI != null)
+        {
+            for (int i = 0; i < thrusterUI.Length; i++) { if (thrusterUI[i] != null) { thrusterUI[i].Tick(); } }
+        }
+
+        if (oxygenUI != null)
+        {
+            for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].Tick(); } }
+        }
+
+        if (expUI != null)
+        {
+            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].Tick(); } }
         }
     }
 
