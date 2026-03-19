@@ -43,6 +43,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Tooltip("Inventory menu root.")]
     [SerializeField] private GameObject inventoryMenuRoot;
 
+    [Tooltip("Interact menu ui.")]
+    [SerializeField] private UI_InteractMenu interactMenu;
+
     [Tooltip("Inventory")]
     [SerializeField] private INV_Inventory inventory;
 
@@ -95,6 +98,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         movement = GetComponent<CC_Movement>();
         cameraController = GetComponent<CC_CameraController>();
         interaction = GetComponent<CC_Interaction>();
+
+        if (interaction != null && interaction.playerController == null)
+        {
+            interaction.playerController = this;
+        }
 
         if (inventory == null)
         {
@@ -163,6 +171,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         {
             SetCursorLocked(false);
             SetMenuRoots(false, false);
+            if (interactMenu != null) { interactMenu.CloseMenu(false); }
             return;
         }
 
@@ -172,6 +181,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
 
         SetMenuRoots(false, false);
+
+        if (interactMenu != null)
+        {
+            interactMenu.CloseMenu(false);
+        }
     }
 
     private void OnApplicationFocus(bool hasFocus)
@@ -269,8 +283,6 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private void HandleItemUse()
     {
         //CC_INV_EquippedItem equippedItem = inventoryNet.currentEquippedItem.GetComponent<CC_INV_EquippedItem>();
-
-
     }
 
     private void HandleInventoryActions()
@@ -370,6 +382,12 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         {
             pauseHeld = true;
 
+            if (IsInteractMenuOpen())
+            {
+                CloseInteractMenu();
+                return;
+            }
+
             // if inventory is open, close it and open pause
             if (inventoryMenuRoot != null && inventoryMenuRoot.activeSelf)
             {
@@ -388,6 +406,12 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         {
             inventoryHeld = true;
 
+            if (IsInteractMenuOpen())
+            {
+                CloseInteractMenu();
+                return;
+            }
+
             // if pause is open, close it and open inventory
             if (pauseMenuRoot != null && pauseMenuRoot.activeSelf)
             {
@@ -402,7 +426,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
 
         // update in menu bool from actual roots so its always right
-        bool anyMenuOpen = IsPauseOpen() || IsInventoryOpen();
+        bool anyMenuOpen = IsPauseOpen() || IsInventoryOpen() || IsInteractMenuOpen();
         if (inMenu != anyMenuOpen)
         {
             SetInMenu(anyMenuOpen);
@@ -444,7 +468,12 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             inventoryMenuRoot.SetActive(false);
         }
 
-        SetInMenu(state || IsInventoryOpen());
+        if (state && interactMenu != null)
+        {
+            interactMenu.CloseMenu(false);
+        }
+
+        SetInMenu(state || IsInventoryOpen() || IsInteractMenuOpen());
     }
 
     public void SetInventoryMenu(bool state)
@@ -460,7 +489,34 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             pauseMenuRoot.SetActive(false);
         }
 
-        SetInMenu(state || IsPauseOpen());
+        if (state && interactMenu != null)
+        {
+            interactMenu.CloseMenu(false);
+        }
+
+        SetInMenu(state || IsPauseOpen() || IsInteractMenuOpen());
+    }
+
+    public void OpenInteractMenu(InteractableObject interactable, GameObject interactor)
+    {
+        if (interactMenu == null) { return; }
+        if (interactable == null) { return; }
+
+        if (pauseMenuRoot != null) { pauseMenuRoot.SetActive(false); }
+        if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+
+        interactMenu.OpenMenu(this, interactable, interactor);
+        SetInMenu(true);
+    }
+
+    public void CloseInteractMenu()
+    {
+        if (interactMenu != null)
+        {
+            interactMenu.CloseMenu();
+        }
+
+        SetInMenu(IsPauseOpen() || IsInventoryOpen() || IsInteractMenuOpen());
     }
 
     private bool IsPauseOpen()
@@ -471,6 +527,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private bool IsInventoryOpen()
     {
         return inventoryMenuRoot != null && inventoryMenuRoot.activeSelf;
+    }
+
+    private bool IsInteractMenuOpen()
+    {
+        return interactMenu != null && interactMenu.IsOpen();
     }
 
     private void SetMenuRoots(bool pauseState, bool invState)

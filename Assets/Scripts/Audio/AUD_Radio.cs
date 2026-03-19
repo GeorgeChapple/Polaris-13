@@ -18,6 +18,9 @@ public class AUD_Radio : MonoBehaviour
     private AudioSource audioSource;
     private int currentSongIndex = -1;
 
+    bool isPaused;
+    bool wasPlayingLastFrame;
+
     private void Awake()
     {
         InitialiseComponents();
@@ -25,7 +28,7 @@ public class AUD_Radio : MonoBehaviour
 
     private void Start()
     {
-        PlayRadio();
+        PlayRandomSong();
     }
 
     private void Update()
@@ -33,47 +36,19 @@ public class AUD_Radio : MonoBehaviour
         if (audioSource == null) { return; }
         if (songs == null || songs.Count == 0) { return; }
 
-        // if the current song has finished, play another random one
-        if (!audioSource.isPlaying && audioSource.clip != null)
+        // if the current song finished naturally, play another random one
+        if (!isPaused && wasPlayingLastFrame && !audioSource.isPlaying && audioSource.clip != null)
         {
+            Debug.Log("Playing Random", this);
             PlayRandomSong();
         }
+
+        wasPlayingLastFrame = audioSource.isPlaying;
     }
 
     private void InitialiseComponents()
     {
         audioSource = GetComponent<AudioSource>();
-    }
-
-    public void PlayRadio()
-    {
-        if (songs == null || songs.Count == 0)
-        {
-            Debug.LogWarning("AUD_Radio has no songs assigned.", this);
-            return;
-        }
-        PlayRandomSong();
-    }
-
-    public void StopRadio()
-    {
-        if (audioSource == null) { return; }
-
-        audioSource.Stop();
-    }
-
-    public void PauseRadio()
-    {
-        if (audioSource == null) { return; }
-
-        audioSource.Pause();
-    }
-
-    public void ResumeRadio()
-    {
-        if (audioSource == null) { return; }
-
-        audioSource.UnPause();
     }
 
     public void PlayRandomSong()
@@ -128,5 +103,30 @@ public class AUD_Radio : MonoBehaviour
         currentSongIndex = songIndex;
         audioSource.clip = songs[currentSongIndex];
         audioSource.Play();
+
+        isPaused = false;
+        wasPlayingLastFrame = audioSource.isPlaying;
+    }
+
+    public void PauseRadio()
+    {
+        if (audioSource == null) { InitialiseComponents(); }
+        if (audioSource == null) { return; }
+        if (audioSource.clip == null) { return; }
+
+        audioSource.Pause();
+        isPaused = true;
+        wasPlayingLastFrame = false;
+    }
+
+    public void UnpauseRadio()
+    {
+        if (audioSource == null) { InitialiseComponents(); }
+        if (audioSource == null) { return; }
+        if (audioSource.clip == null) { return; }
+
+        audioSource.UnPause();
+        isPaused = false;
+        wasPlayingLastFrame = audioSource.isPlaying;
     }
 }

@@ -148,7 +148,7 @@ public class INV_ItemDrop : NetworkBehaviour
         }
     }
 
-    // called by player interact script
+    // called by player interact script / grappling hook
     public void TryAddToInventory(Object interactor)
     {
         if (interactor == null)

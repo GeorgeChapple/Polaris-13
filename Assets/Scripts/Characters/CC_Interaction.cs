@@ -9,6 +9,7 @@ public class CC_Interaction : NetworkBehaviour
     [Header("References")]
     public CC_Movement movement;
     public CC_CameraController cameraController;
+    public CC_CharacterPlayerController playerController;
 
     [Header("Interaction")]
     public float interactRange = 2.5f;
@@ -25,11 +26,13 @@ public class CC_Interaction : NetworkBehaviour
     bool holding;
     bool interactWasHeld;
     bool interactUsedUntilRelease;
+    bool menuOpenedFromHold;
 
     void Awake()
     {
         if (movement == null) { movement = GetComponent<CC_Movement>(); }
         if (cameraController == null) { cameraController = GetComponent<CC_CameraController>(); }
+        if (playerController == null) { playerController = GetComponent<CC_CharacterPlayerController>(); }
     }
 
     bool IsLocallyControlled()
@@ -67,6 +70,7 @@ public class CC_Interaction : NetworkBehaviour
         if (!IsLocallyControlled()) { return; }
 
         bool pressed = interactHeld && !interactWasHeld;
+        bool released = !interactHeld && interactWasHeld;
         interactWasHeld = interactHeld;
 
         // once we interact, dont allow more interactions until the button is released
@@ -95,6 +99,7 @@ public class CC_Interaction : NetworkBehaviour
             currentInteractable = null;
             holdTimer = 0f;
             holding = false;
+            menuOpenedFromHold = false;
         }
 
         currentInteractable = current;
@@ -104,6 +109,7 @@ public class CC_Interaction : NetworkBehaviour
         {
             holdTimer = 0f;
             holding = false;
+            menuOpenedFromHold = false;
             return;
         }
 
@@ -112,6 +118,67 @@ public class CC_Interaction : NetworkBehaviour
         {
             holdTimer = 0f;
             holding = false;
+            menuOpenedFromHold = false;
+            return;
+        }
+
+        // interact menu objects
+        // tap uses first action, hold opens menu
+        if (currentInteractable.UsesInteractMenu())
+        {
+            if (pressed)
+            {
+                holding = true;
+                holdTimer = 0f;
+                menuOpenedFromHold = false;
+                currentInteractable.BeginHold(gameObject);
+            }
+
+            if (interactHeld && holding)
+            {
+                float required = currentInteractable.GetMenuHoldTime();
+                holdTimer += Time.deltaTime;
+
+                float progress01 = Mathf.Clamp01(holdTimer / required);
+                currentInteractable.HoldProgress(gameObject, progress01);
+
+                if (!menuOpenedFromHold && holdTimer >= required)
+                {
+                    menuOpenedFromHold = true;
+
+                    if (playerController != null)
+                    {
+                        playerController.OpenInteractMenu(currentInteractable, gameObject);
+                    }
+
+                    interactUsedUntilRelease = true;
+                    currentInteractable.HoldProgress(gameObject, 0f);
+
+                    currentInteractable = null;
+                    holdTimer = 0f;
+                    holding = false;
+                }
+            }
+
+            if (released)
+            {
+                // if we released before the hold completed, treat it as a press interact
+                if (!menuOpenedFromHold)
+                {
+                    if (holding)
+                    {
+                        currentInteractable.CancelHold(gameObject);
+                    }
+
+                    currentInteractable.Interact(gameObject);
+                    interactUsedUntilRelease = true;
+                }
+
+                holdTimer = 0f;
+                holding = false;
+                menuOpenedFromHold = false;
+            }
+
             return;
         }
 

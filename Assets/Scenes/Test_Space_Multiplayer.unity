@@ -557,29 +557,73 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 56987722}
-        m_TargetAssemblyTypeName: AUD_Radio, Assembly-CSharp
-        m_MethodName: PlayRandomSong
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  onInteractWithInteractor:
-    m_PersistentCalls:
-      m_Calls: []
-  rewireInteractListenersOnNetworkSpawn: 1
-  invokeLegacyInteractEvent: 1
+  interactActions:
+  - actionName: Play Random Song
+    onInteract:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 56987722}
+          m_TargetAssemblyTypeName: AUD_Radio, Assembly-CSharp
+          m_MethodName: PlayRandomSong
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+    onInteractWithInteractor:
+      m_PersistentCalls:
+        m_Calls: []
+    rewireInteractListenersOnNetworkSpawn: 0
+    invokeLegacyInteractEvent: 1
+  - actionName: Pause
+    onInteract:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 56987722}
+          m_TargetAssemblyTypeName: AUD_Radio, Assembly-CSharp
+          m_MethodName: PauseRadio
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+    onInteractWithInteractor:
+      m_PersistentCalls:
+        m_Calls: []
+    rewireInteractListenersOnNetworkSpawn: 0
+    invokeLegacyInteractEvent: 1
+  - actionName: Resume
+    onInteract:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 56987722}
+          m_TargetAssemblyTypeName: AUD_Radio, Assembly-CSharp
+          m_MethodName: UnpauseRadio
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+    onInteractWithInteractor:
+      m_PersistentCalls:
+        m_Calls: []
+    rewireInteractListenersOnNetworkSpawn: 0
+    invokeLegacyInteractEvent: 1
   oneShot: 0
   requiresHold: 0
-  holdTime: 1
+  holdTime: 0
   onStartHold:
     m_PersistentCalls:
       m_Calls: []
@@ -589,6 +633,9 @@ MonoBehaviour:
   onHoldProgress:
     m_PersistentCalls:
       m_Calls: []
+  openMenuOnHold: 1
+  interactMenuTitle: Radio
+  menuHoldTime: 0.35
 --- !u!64 &78659781
 MeshCollider:
   m_ObjectHideFlags: 0
