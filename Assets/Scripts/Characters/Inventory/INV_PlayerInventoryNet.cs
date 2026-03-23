@@ -273,7 +273,16 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         equippedItem.Init(itemId, OwnerClientId);
 
         // set up usage script here and wire up correctly.
-        //AddComponentByType<MonoBehaviour>(equippedItem.gameObject, item.ItemUseScript);
+
+        foreach (Type scriptType in item.GetItemUseScriptTypes())
+        {
+            if (scriptType == null) { continue; }
+
+            if (equippedItem.gameObject.GetComponent(scriptType) == null)
+            {
+                equippedItem.gameObject.AddComponent(scriptType);
+            }
+        }
 
         // server owns the replicated equipped item because server is driving its transform
         netObj.Spawn();
@@ -291,14 +300,15 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         currentEquippedItem = netObj;
     }
 
-    //private void AddComponentByType<T>(GameObject go, MonoBehaviour type) where T : MonoBehaviour 
-    //{
-    //    go.AddComponent<T>();
-    //    go.SendMessage()
-        
-    //}
+    public void AddComponentByType(GameObject target, Type type)
+    {
+        if (type != null && typeof(MonoBehaviour).IsAssignableFrom(type))
+        {
+            target.AddComponent(type);
+        }
+    }
 
-private void ClearEquippedItem_Server()
+    private void ClearEquippedItem_Server()
     {
         if (!IsServer)
         {

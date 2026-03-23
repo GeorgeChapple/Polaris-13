@@ -58,6 +58,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private bool cursorLocked;
 
     // internal press guards so hold wont spam toggle
+    private bool useHeld;
     private bool pauseHeld;
     private bool inventoryHeld;
     private bool rotateHeld;
@@ -282,7 +283,50 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void HandleItemUse()
     {
-        //CC_INV_EquippedItem equippedItem = inventoryNet.currentEquippedItem.GetComponent<CC_INV_EquippedItem>();
+        if (!IsLocallyControlled() || inMenu || inventoryNet == null)
+        {
+            useHeld = false;
+            return;
+        }
+
+        bool pressed = input.useItemPrimary;
+
+        if (pressed && !useHeld)
+        {
+            useHeld = true;
+            TryUseEquippedItem();
+        }
+        else if (!pressed && useHeld)
+        {
+            useHeld = false;
+        }
+    }
+    private void TryUseEquippedItem()
+    {
+        if (inventoryNet == null) { return; }
+        if (inventoryNet.currentEquippedItem == null) { return; }
+
+        GameObject equippedObject = inventoryNet.currentEquippedItem.gameObject;
+        if (equippedObject == null) { return; }
+
+        MonoBehaviour[] behaviours = equippedObject.GetComponents<MonoBehaviour>();
+        if (behaviours == null || behaviours.Length == 0) { return; }
+
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is IUsableItem usable)
+            {
+                foundUsable = true;
+                usable.OnUse();
+            }
+        }
+
+        if (!foundUsable)
+        {
+            Debug.Log("Equipped item has no IUsableItem scripts.", equippedObject);
+        }
     }
 
     private void HandleInventoryActions()

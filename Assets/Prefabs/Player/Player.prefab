@@ -1944,7 +1944,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -100, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8424403918036502203
@@ -2658,7 +2658,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4381274319871581439}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.00000454195}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -2667,8 +2667,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 175, y: 75}
-  m_SizeDelta: {x: 350, y: 150}
+  m_AnchoredPosition: {x: 75, y: 75}
+  m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5517111232022462822
 CanvasRenderer:
@@ -3214,7 +3214,7 @@ MonoBehaviour:
   useGroundedCheck: 1
   groundedCheckObj: {fileID: 3637123821088872404}
   groundedRayLength: 1
-  groundedRayRadius: 0.25
+  groundedRayRadius: 0.5
   groundLayers:
     serializedVersion: 2
     m_Bits: 503
@@ -3223,8 +3223,8 @@ MonoBehaviour:
   groundedLoseGraceTime: 0.08
   stopDownwardVelocityWhenGrounded: 1
   groundedSnapSharpness: 18
-  groundedSnapMaxSpeed: 6
-  groundedSnapDeadZone: 0.02
+  groundedSnapMaxSpeed: 10
+  groundedSnapDeadZone: 0.5
 --- !u!114 &4320378714285178058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3610,6 +3610,7 @@ MonoBehaviour:
   look: {x: 0, y: 0}
   jump: 0
   interact: 0
+  useItemPrimary: 0
   sprint: 0
   crouch: 0
   stabiliseThrusters: 0
@@ -4871,8 +4872,8 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
-  m_Antialiasing: 0
+  m_RenderPostProcessing: 1
+  m_Antialiasing: 1
   m_AntialiasingQuality: 2
   m_StopNaN: 0
   m_Dithering: 0

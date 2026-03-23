@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Unity.Netcode;
 using UnityEditor;
 using UnityEngine;
 
 // Made By: Jason Lodge
-// Summary: Data Holder for all objects.
-[CreateAssetMenu(menuName = "Inventory/Object")]
+// Summary: Data Holder for all items.
+[CreateAssetMenu(menuName = "Inventory/Item")]
 public class INV_Item : ScriptableObject
 {
     [Header("Info")]
@@ -53,8 +52,9 @@ public class INV_Item : ScriptableObject
     [Tooltip("Scale applied to the mesh visual when equipped.")]
     [SerializeField] private float equippedMeshScale = 1f;
 
-    [Header("Item Use Script")]
-    [SerializeField] private MonoBehaviour itemUseScript;
+    [Header("Item Use Scripts")]
+    [Tooltip("Assembly qualified type names for MonoBehaviours to add to the equipped item at runtime.")]
+    [SerializeField] private List<string> itemUseScriptTypeNames = new List<string>();
 
     [Header("Inventory")]
     [Tooltip("Complex shape per row. '+' = occupies, '-' = empty. Each entry is the next line down.\nExample: '++', '+-'")]
@@ -87,8 +87,7 @@ public class INV_Item : ScriptableObject
     public Vector3 EquippedMeshOffset => equippedMeshOffset;
     public float EquippedMeshScale => equippedMeshScale;
 
-    public MonoBehaviour ItemUseScript => itemUseScript;
-
+    public IReadOnlyList<string> ItemUseScriptTypeNames => itemUseScriptTypeNames;
     public List<string> InventorySpaceShape => inventorySpaceShape;
 
     // utility
@@ -107,6 +106,36 @@ public class INV_Item : ScriptableObject
             int h = Mathf.Max(1, Mathf.RoundToInt(inventorySpace.y));
             return new Vector2Int(w, h);
         }
+    }
+
+    public List<Type> GetItemUseScriptTypes()
+    {
+        List<Type> result = new List<Type>();
+
+        if (itemUseScriptTypeNames == null) { return result; }
+
+        for (int i = 0; i < itemUseScriptTypeNames.Count; i++)
+        {
+            string typeName = itemUseScriptTypeNames[i];
+            if (string.IsNullOrWhiteSpace(typeName)) { continue; }
+
+            Type type = Type.GetType(typeName);
+            if (type == null)
+            {
+                Debug.LogWarning($"Could not resolve item use script type '{typeName}' on item '{name}'.", this);
+                continue;
+            }
+
+            if (!typeof(MonoBehaviour).IsAssignableFrom(type))
+            {
+                Debug.LogWarning($"Type '{typeName}' is not a MonoBehaviour on item '{name}'.", this);
+                continue;
+            }
+
+            result.Add(type);
+        }
+
+        return result;
     }
 
     // returns bounding size of the current shape list
@@ -176,18 +205,34 @@ public class INV_Item : ScriptableObject
             inventorySpaceShape[i] = row;
         }
     }
+
+#if UNITY_EDITOR
+    public void Editor_SetItemUseScriptTypeNames(List<string> newTypeNames)
+    {
+        itemUseScriptTypeNames = newTypeNames ?? new List<string>();
+    }
+#endif
 }
 
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_Item))]
 public class INV_ItemEditor : Editor
 {
+    private readonly List<MonoScript> scriptRefs = new List<MonoScript>();
+    private bool scriptRefsLoaded;
+
     public override void OnInspectorGUI()
     {
+        serializedObject.Update();
+
         DrawDefaultInspector();
 
         INV_Item item = (INV_Item)target;
         if (item == null) { return; }
+
+        EditorGUILayout.Space(8);
+
+        DrawItemUseScriptsSection(item);
 
         EditorGUILayout.Space(8);
 
@@ -205,6 +250,163 @@ public class INV_ItemEditor : Editor
         }
 
         EditorGUILayout.EndVertical();
+
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    private void DrawItemUseScriptsSection(INV_Item item)
+    {
+        LoadScriptRefsIfNeeded(item);
+
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField("Item Use Script Picker", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("Assign MonoBehaviour scripts here. These script types will be added to the equipped item at runtime using AddComponent(type).", MessageType.Info);
+
+        int removeIndex = -1;
+
+        for (int i = 0; i < scriptRefs.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            MonoScript newScript = (MonoScript)EditorGUILayout.ObjectField(
+                $"Use Script {i + 1}",
+                scriptRefs[i],
+                typeof(MonoScript),
+                false);
+
+            if (newScript != scriptRefs[i])
+            {
+                scriptRefs[i] = ValidateMonoBehaviourScript(newScript);
+                SaveScriptRefs(item);
+            }
+
+            if (GUILayout.Button("X", GUILayout.Width(24)))
+            {
+                removeIndex = i;
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        if (removeIndex >= 0)
+        {
+            scriptRefs.RemoveAt(removeIndex);
+            SaveScriptRefs(item);
+        }
+
+        if (GUILayout.Button("Add Use Script"))
+        {
+            scriptRefs.Add(null);
+            SaveScriptRefs(item);
+        }
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void LoadScriptRefsIfNeeded(INV_Item item)
+    {
+        if (scriptRefsLoaded) { return; }
+        scriptRefsLoaded = true;
+
+        scriptRefs.Clear();
+
+        IReadOnlyList<string> typeNames = item.ItemUseScriptTypeNames;
+        if (typeNames == null) { return; }
+
+        for (int i = 0; i < typeNames.Count; i++)
+        {
+            string typeName = typeNames[i];
+
+            if (string.IsNullOrWhiteSpace(typeName))
+            {
+                scriptRefs.Add(null);
+                continue;
+            }
+
+            Type type = Type.GetType(typeName);
+            if (type == null)
+            {
+                scriptRefs.Add(null);
+                continue;
+            }
+
+            scriptRefs.Add(FindMonoScriptByType(type));
+        }
+    }
+
+    private void SaveScriptRefs(INV_Item item)
+    {
+        List<string> typeNames = new List<string>();
+
+        for (int i = 0; i < scriptRefs.Count; i++)
+        {
+            MonoScript script = scriptRefs[i];
+
+            if (script == null)
+            {
+                typeNames.Add(string.Empty);
+                continue;
+            }
+
+            Type type = script.GetClass();
+            if (type == null || !typeof(MonoBehaviour).IsAssignableFrom(type) || type.IsAbstract)
+            {
+                typeNames.Add(string.Empty);
+                continue;
+            }
+
+            typeNames.Add(type.AssemblyQualifiedName);
+        }
+
+        Undo.RecordObject(item, "Change Item Use Scripts");
+        item.Editor_SetItemUseScriptTypeNames(typeNames);
+        EditorUtility.SetDirty(item);
+        AssetDatabase.SaveAssets();
+    }
+
+    private MonoScript ValidateMonoBehaviourScript(MonoScript script)
+    {
+        if (script == null) { return null; }
+
+        Type type = script.GetClass();
+        if (type == null)
+        {
+            Debug.LogWarning($"'{script.name}' does not define a valid class.");
+            return null;
+        }
+
+        if (!typeof(MonoBehaviour).IsAssignableFrom(type))
+        {
+            Debug.LogWarning($"'{script.name}' is not a MonoBehaviour.");
+            return null;
+        }
+
+        if (type.IsAbstract)
+        {
+            Debug.LogWarning($"'{script.name}' is abstract and cannot be added as a component.");
+            return null;
+        }
+
+        return script;
+    }
+
+    private MonoScript FindMonoScriptByType(Type type)
+    {
+        string[] guids = AssetDatabase.FindAssets("t:MonoScript");
+
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+            MonoScript script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+
+            if (script == null) { continue; }
+            if (script.GetClass() == type)
+            {
+                return script;
+            }
+        }
+
+        return null;
     }
 }
 #endif
