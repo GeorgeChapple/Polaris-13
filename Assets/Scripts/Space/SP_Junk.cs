@@ -1,30 +1,55 @@
 using System.Collections;
-using System.Net.Sockets;
+using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class SP_Junk : MonoBehaviour
+public class SP_Junk : NetworkBehaviour
 {
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
     [HideInInspector] public Vector3 objDirection;
-    private SP_SpaceJunk spaceManager;
     [SerializeField] private float scaleSpeed = 1;
-    [SerializeField] private float resetTime = 20;
-    private float resetTimer;
+    [SerializeField] private Vector2 sizeSpread = new Vector2(0.7f, 1.3f);
+    [SerializeField] private GameObject destroyVFX;
+    private SP_SpaceJunk spaceManager;
     private bool scaling = false;
+    private bool destroyRequested = false;
     private Rigidbody rb;
 
     private void Awake()
     {
+        InitialiseComponents();
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Only server decides if junk gets destroyed
+        if (!IsServer)
+        {
+            return;
+        }
+
+        if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
+        {
+            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        InitialiseComponents();
+    }
+
+    private void InitialiseComponents()
+    {
         rb = GetComponent<Rigidbody>();
-        if (GetComponent<Rigidbody>() == null)
+        if (rb == null)
         {
             rb = this.AddComponent<Rigidbody>();
         }
-        resetTimer = resetTime;
-        junkRotation.eulerAngles = Vector3.one * Random.value * 360;
-        junkRotationRate = Vector3.one * Random.value * 5;
+
+        transform.localScale = Vector3.one * Random.Range(sizeSpread.x, sizeSpread.y);
         spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
     }
 
@@ -32,7 +57,6 @@ public class SP_Junk : MonoBehaviour
     {
         StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
         GetObjectDirection();
-        rb.AddForce(objDirection * 100);
         rb.AddTorque(Vector3.one * Random.Range(-10, 10));
     }
 
@@ -40,71 +64,103 @@ public class SP_Junk : MonoBehaviour
     void Update()
     {
         GetObjectDirection();
-        resetTimer += Time.deltaTime;
-        if (resetTimer > resetTime && !spaceManager.debris.ContainsKey(this.gameObject))
+
+        // only server decides if junk should despawn
+        if (!IsServer)
         {
-            rb.AddForce(objDirection * 100, ForceMode.Acceleration);
+            return;
         }
-        if (!spaceManager.foundObjects.Contains(this.gameObject)) {
+
+        if (spaceManager != null && !spaceManager.foundObjects.Contains(this.gameObject))
+        {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
     }
 
-    private void OnCollisionEnter(Collision collision)
-    {
-        resetTimer = 0;
-        rb.useGravity = false;
-        Vector3 forceDirection;
-        //forceDirection = (Vector3.back - spaceManager.rocket.worldDirection).normalized;
-        if (collision.gameObject.CompareTag("Rocket"))
-        {
-            resetTimer = resetTime - 1;
-            if (resetTimer < 0)
-            {
-                resetTimer = 0;
-            }
-            //forceDirection = (collision.transform.position - transform.position).normalized;
-            forceDirection = Vector3.zero;
-            float xPos = transform.position.x;
-            if (xPos < 0)
-            {
-                forceDirection += Vector3.left;
-            }
-            else
-            {
-                forceDirection += Vector3.right;
-            }
-            rb.AddForce(forceDirection * 100);
-            rb.AddTorque(Vector3.one * Random.Range(-10, 10));
-        }
-        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
-    }
-
     private void GetObjectDirection()
-    { 
-        objDirection = (Vector3.back + spaceManager.debris[this.gameObject] - spaceManager.rocket.worldDirection).normalized * spaceManager.rocket.speed;
+    {
+        if (spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
+        {
+            objDirection = (Vector3.back + spaceManager.debris[this.gameObject] - spaceManager.rocket.worldDirection).normalized * spaceManager.rocket.speed;
+        }
     }
 
     private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)
     {
         if (!scaling)
         {
+            if (destroy && spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
+            {
+                spaceManager.debris.Remove(this.gameObject);
+            }
+
             scaling = true;
             transform.localScale = start;
             float t = 0;
+
             while (t < 1)
             {
                 t += Time.deltaTime / duration;
                 transform.localScale = Vector3.Lerp(start, end, Easing.Sine.Out(t));
                 yield return null;
             }
+
             transform.localScale = end;
-            if (destroy)
+
+            if (destroy && !destroyRequested)
             {
-                spaceManager.debris.Remove(this.gameObject);
-                Destroy(this.gameObject);
+                destroyRequested = true;
+                DestroyJunk();
             }
+
             scaling = false;
         }
+    }
+
+    private void DestroyJunk()
+    {
+        // safety check
+        if (!IsServer)
+        {
+            return;
+        }
+
+        // spawn destroy VFX on server
+        if (destroyVFX != null)
+        {
+            GameObject vfxInstance = Instantiate(destroyVFX, transform.position, transform.rotation);
+            NetworkObject vfxNetObj = vfxInstance.GetComponent<NetworkObject>();
+
+            if (vfxNetObj != null && !vfxNetObj.IsSpawned)
+            {
+                vfxNetObj.Spawn();
+            }
+        }
+
+        // despawn junk over network
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        if (netObj != null && netObj.IsSpawned)
+        {
+            netObj.Despawn(true);
+        }
+        else
+        {
+            Destroy(this.gameObject);
+        }
+    }
+    public void RemoveFromSpaceManager()
+    {
+        if (spaceManager == null)
+        {
+            spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
+        }
+
+        if (spaceManager == null)
+        {
+            Debug.LogWarning("SP_Junk could not find SP_SpaceJunk.", this);
+            return;
+        }
+
+        spaceManager.RemoveDebris(gameObject);
     }
 }

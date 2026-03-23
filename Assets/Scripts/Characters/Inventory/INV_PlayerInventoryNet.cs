@@ -1,4 +1,6 @@
+using System;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class INV_PlayerInventoryNet : NetworkBehaviour
@@ -13,7 +15,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Tooltip("Object root for the replicated equipped item for other players. If null, uses replicated camera direction root, then this objects transform.")]
     [SerializeField] private Transform replicatedEquippedItemRoot;
 
-    private NetworkObject currentEquippedItem;
+    [Header("Throw Power, Power is force, Torque is rotational vel added +/- what ever it is.")]
+    [SerializeField] private float testThrowPower;
+    [SerializeField] private float testThrowTorque;
+
+    [HideInInspector] public NetworkObject currentEquippedItem;
 
     // local owner only equipped visual
     private GameObject localEquippedVisual;
@@ -29,10 +35,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (replicatedEquippedItemRoot == null)
         {
-            CC_CharacterBase characterBase = GetComponentInParent<CC_CharacterBase>();
-            if (characterBase != null)
+            CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
+            if (cameraController != null)
             {
-                replicatedEquippedItemRoot = characterBase.ReplicatedCameraDirectionRoot;
+                replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
             }
         }
     }
@@ -263,10 +269,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        // init before spawn so item id is already set
-        equippedItem.Init(itemId);
+        // init before spawn so replicated vars are already set
+        equippedItem.Init(itemId, OwnerClientId);
 
-        netObj.SpawnWithOwnership(OwnerClientId);
+        // set up usage script here and wire up correctly.
+        //AddComponentByType<MonoBehaviour>(equippedItem.gameObject, item.ItemUseScript);
+
+        // server owns the replicated equipped item because server is driving its transform
+        netObj.Spawn();
 
         // valid network parenting, because parent is a spawned network object
         bool parented = netObj.TrySetParent(playerNetObj, false);
@@ -281,7 +291,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         currentEquippedItem = netObj;
     }
 
-    private void ClearEquippedItem_Server()
+    //private void AddComponentByType<T>(GameObject go, MonoBehaviour type) where T : MonoBehaviour 
+    //{
+    //    go.AddComponent<T>();
+    //    go.SendMessage()
+        
+    //}
+
+private void ClearEquippedItem_Server()
     {
         if (!IsServer)
         {
@@ -387,10 +404,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return replicatedEquippedItemRoot;
         }
 
-        CC_CharacterBase characterBase = GetComponentInParent<CC_CharacterBase>();
-        if (characterBase != null && characterBase.ReplicatedCameraDirectionRoot != null)
+        CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
+        if (cameraController != null && cameraController.ReplicatedCameraDirectionRoot != null)
         {
-            replicatedEquippedItemRoot = characterBase.ReplicatedCameraDirectionRoot;
+            replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
             return replicatedEquippedItemRoot;
         }
 
@@ -433,7 +450,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         Vector3 dropPoint = inventory.dropItemTransform.position;
-        GameObject drop = Instantiate(inventory.ItemPrefab, dropPoint, Quaternion.identity);
+        Quaternion dropRotation = inventory.dropItemTransform.rotation;
+
+        GameObject drop = Instantiate(inventory.ItemPrefab, dropPoint, dropRotation);
         if (drop == null)
         {
             Debug.LogError("Failed to instantiate dropped item prefab.", this);
@@ -456,13 +475,6 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             Debug.LogError("Dropped item prefab is missing INV_ItemDrop!", drop);
         }
 
-        Rigidbody rb = drop.GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.AddForce(inventory.dropItemTransform.forward, ForceMode.Impulse);
-            rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
-        }
-
         NetworkObject netObj = drop.GetComponent<NetworkObject>();
         if (netObj == null)
         {
@@ -471,6 +483,19 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
+        Rigidbody rb = drop.GetComponent<Rigidbody>();
+
         netObj.Spawn();
+
+        if (rb != null)
+        {
+            rb.WakeUp();
+
+            Vector3 throwVelocity = inventory.dropItemTransform.forward * testThrowPower;
+            Vector3 randomTorque = Vector3.one * UnityEngine.Random.Range(-testThrowTorque, testThrowTorque);
+
+            rb.linearVelocity = throwVelocity;
+            rb.angularVelocity = randomTorque;
+        }
     }
 }

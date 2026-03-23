@@ -28,7 +28,6 @@ public class RS_Move : MonoBehaviour
     [SerializeField] private Vector3 anchorPoint = Vector3.zero;
 
     private Vector2 controllerDir = Vector2.zero; // max of 1 on both axis positive and negative
-    
 
     void Update()
     {

@@ -16,6 +16,10 @@ public class CC_CharacterBase : NetworkBehaviour
     [Header("References")]
     public CC_CharacterValues values;
 
+    [Header("Gravity")]
+    [Tooltip("Custom gravity component on the same object as this.")]
+    public CustomGravityRigidbodyForEntities customGravityBody;
+
     [Header("Player Movement")]
     public float moveSpeed = 5f;
     public float accelerationRate = 12f;
@@ -78,8 +82,21 @@ public class CC_CharacterBase : NetworkBehaviour
     [Header("Jump / Gravity")]
     public float jumpPower = 10f;
 
+    [Header("Ground Thrusters")]
+    [Tooltip("Acceleration applied upward while holding jump in ground mode and airborne.")]
+    public float groundThrusterAccel = 8f;
+
+    [Tooltip("Maximum upward speed the ground thrusters will push towards.")]
+    public float groundThrusterUpSpeedCap = 8f;
+
+    [Tooltip("Thruster drain per second while using airborne ground thrusters.")]
+    public float groundThrusterDrainPerSecond = 15f;
+
     [Header("Surface Stabalisation")]
     public float torqueStrength = 5f;
+
+    [Tooltip("How much stronger stabilisation is while grounded.")]
+    public float groundedTorqueStrength = 20f;
 
     [Tooltip("How far to check for a surface to start ramping stabilisation.")]
     public float stabiliseRange = 10f;
@@ -96,6 +113,16 @@ public class CC_CharacterBase : NetworkBehaviour
     [Header("Space Thrusters")]
     public float thrusterAccel = 4f;
 
+    [Tooltip("Thruster drain per second while using space movement thrusters.")]
+    public float spaceThrusterDrainPerSecond = 8f;
+
+    [Header("Space Stabilisation")]
+    [Tooltip("Acceleration applied opposite to current velocity while stabilising in space.")]
+    public float spaceStabiliseAccel = 8f;
+
+    [Tooltip("Thruster drain per second while using space stabilisation.")]
+    public float spaceStabiliseDrainPerSecond = 4f;
+
     [Header("Space Rotation")]
     public float spaceTurnSpeed = 30f;
     public float rollMaxSpeed = 30f;
@@ -105,11 +132,8 @@ public class CC_CharacterBase : NetworkBehaviour
     [Header("Gravity Detection")]
     public float zeroGravityThreshold = 0.25f;
 
-    [Header("Grounded Check")]
+    [Header("Grounded")]
     public bool grounded = true;
-    public Transform groundedCheckObj;
-    public float groundedRadius = 0.5f;
-    public LayerMask groundLayers;
 
     public float jumpTimeout = 0.1f;
     public float fallTimeout = 0.15f;
@@ -122,19 +146,6 @@ public class CC_CharacterBase : NetworkBehaviour
 
     [Tooltip("Origin used for interaction ray. If null, will use transform.")]
     public Transform interactOrigin;
-
-    [Header("Body")]
-    [Tooltip("Visual body object.")]
-    public Transform bodyTransform;
-
-    [Tooltip("How far the body sits above the ball along up axis.")]
-    public float bodyUpOffset = 1f;
-
-    [Tooltip("How fast body position follows ball.")]
-    public float bodyFollowPosSharpness = 50f;
-
-    [Tooltip("How fast body rotation follows its target rotation (up axis).")]
-    public float bodyFollowRotSharpness = 50f;
 
     [Header("Cinemachine")]
     [Tooltip("The follow target set in the Cinemachine camera that the camera will follow")]
@@ -218,13 +229,14 @@ public class CC_CharacterBase : NetworkBehaviour
 
     // body orientation state
     protected Quaternion bodyRotation = Quaternion.identity;
+    Vector3 groundedForward = Vector3.forward;
 
     // gravity
     Vector3 upAxis = Vector3.up;
     Vector3 currentGravity;
 
     // interact
-    InteractableObject currentInteractable;
+    [SerializeField] private InteractableObject currentInteractable;
     float holdTimer;
     bool holding;
     bool interactWasHeld;
@@ -232,6 +244,12 @@ public class CC_CharacterBase : NetworkBehaviour
 
     bool ownershipApplied;
     bool initialised;
+
+    // thrusters
+    bool usingGroundThrusters;
+    bool usingSpaceMoveThrusters;
+    bool usingSpaceStabiliseThrusters;
+    float thrusterDrainPerSecondThisTick;
 
     // replicated camera direction
     private NetworkVariable<Vector3> replicatedCameraLocalPosition = new NetworkVariable<Vector3>(
@@ -270,6 +288,8 @@ public class CC_CharacterBase : NetworkBehaviour
         initialised = true;
 
         if (values == null) { values = GetComponent<CC_CharacterValues>(); }
+        if (customGravityBody == null) { customGravityBody = GetComponent<CustomGravityRigidbodyForEntities>(); }
+        if (bodyCapsule == null) { bodyCapsule = GetComponent<CapsuleCollider>(); }
 
         rb = GetComponent<Rigidbody>();
         rb.interpolation = RigidbodyInterpolation.Interpolate;
@@ -277,14 +297,16 @@ public class CC_CharacterBase : NetworkBehaviour
         jumpTimeoutDelta = jumpTimeout;
         fallTimeoutDelta = fallTimeout;
 
-        if (bodyTransform != null)
+        groundedForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
+        if (groundedForward.sqrMagnitude < 0.0001f)
         {
-            bodyRotation = bodyTransform.rotation;
+            groundedForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
         }
-        else
+        if (groundedForward.sqrMagnitude < 0.0001f)
         {
-            bodyRotation = transform.rotation;
+            groundedForward = Vector3.forward;
         }
+        groundedForward.Normalize();
 
         // cache camera and base fov
         if (cCam != null) { baseFov = cCam.Lens.FieldOfView; }
@@ -295,7 +317,7 @@ public class CC_CharacterBase : NetworkBehaviour
             camTargetBaseLocalPos = cinemachineCameraTarget.localPosition;
         }
 
-        // cache capsule defaults (body, not ball)
+        // cache capsule defaults
         if (bodyCapsule != null)
         {
             capsuleBaseHeight = bodyCapsule.height;
@@ -412,24 +434,42 @@ public class CC_CharacterBase : NetworkBehaviour
     }
 
     // Call in FixedUpdate.
-    public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput)
+    public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
     {
         if (!IsLocallyControlled()) { return; }
         if (rb == null) { return; }
 
         // keep our up axis updated from gravity
-        currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
+        if (customGravityBody != null)
+        {
+            currentGravity = customGravityBody.CurrentGravity;
+            upAxis = customGravityBody.UpAxis;
+        }
+        else
+        {
+            currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
+        }
 
         UpdateLocomotionMode();
 
         pendingRoll = -rollInput;
 
         // grounded should only matter in ground mode
-        if (locomotionType == LocomotionType.GroundMode) { GroundedCheck(); }
-        else { grounded = false; }
+        if (locomotionType == LocomotionType.GroundMode && customGravityBody != null)
+        {
+            grounded = customGravityBody.Grounded;
+        }
+        else
+        {
+            grounded = false;
+        }
 
         // clear each tick
         jumpedThisTick = false;
+        usingGroundThrusters = false;
+        usingSpaceMoveThrusters = false;
+        usingSpaceStabiliseThrusters = false;
+        thrusterDrainPerSecondThisTick = 0f;
 
         // crouch only in ground mode + grounded
         bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded;
@@ -444,18 +484,17 @@ public class CC_CharacterBase : NetworkBehaviour
             sprinting = false;
         }
 
-        // movement is always applied to the ball
         if (locomotionType == LocomotionType.SpaceMode)
         {
-            SpaceThrusters(moveInput, jumpInput, crouchInput);
+            SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
         }
         else
         {
             GroundMove(moveInput);
             Jump(jumpInput);
+            GroundThrusters(jumpInput);
         }
 
-        // body rotation only applied to the body
         if (locomotionType == LocomotionType.SpaceMode)
         {
             SpaceBodyRotation();
@@ -476,7 +515,6 @@ public class CC_CharacterBase : NetworkBehaviour
         if (rb == null) { return; }
 
         CameraRotation(lookInput, isMouse);
-        UpdateBodyFollow();
         UpdateCrouch();
         UpdateSprintFov();
         UpdateCameraBobbing();
@@ -491,6 +529,10 @@ public class CC_CharacterBase : NetworkBehaviour
             bool allowRegen = locomotionType == LocomotionType.GroundMode && grounded;
 
             values.TickStamina(shouldDrain, allowRegen);
+
+            // thrusters regen when not being used
+            bool usingThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;
+            values.TickThruster(usingThrusters, true, thrusterDrainPerSecondThisTick);
 
             // if we run out of stamina, force sprint off
             if (sprinting && !values.HasStamina())
@@ -513,16 +555,6 @@ public class CC_CharacterBase : NetworkBehaviour
         locomotionType = LocomotionType.GroundMode;
     }
 
-    protected virtual void GroundedCheck()
-    {
-        // can't ground unless jump time out is over
-        if (jumpTimeoutDelta > 0f) { grounded = false; return; }
-        if (groundedCheckObj == null) { grounded = false; return; }
-
-        Vector3 spherePosition = groundedCheckObj.position;
-        grounded = Physics.CheckSphere(spherePosition, groundedRadius, groundLayers, QueryTriggerInteraction.Ignore);
-    }
-
     protected virtual void CameraRotation(Vector2 look, bool isMouse)
     {
         const float threshold = 0.0001f;
@@ -541,27 +573,33 @@ public class CC_CharacterBase : NetworkBehaviour
 
         if (invertY) { lookY = -lookY; }
 
-        // store for fixed update
-        pendingLook += new Vector2(lookX, lookY);
-
         // pitch always affects camera target first
         cinemachineTargetPitch -= lookY;
         cinemachineTargetPitch = ClampAngle(cinemachineTargetPitch, bottomClamp, topClamp);
         cinemachineCameraTarget.localRotation = Quaternion.Euler(cinemachineTargetPitch, 0f, 0f);
-    }
 
-    protected virtual void UpdateBodyFollow()
-    {
-        if (bodyTransform == null || rb == null) { return; }
+        // in ground mode, apply yaw immediately
+        if (locomotionType == LocomotionType.GroundMode)
+        {
+            if (Mathf.Abs(lookX) > 0.0001f)
+            {
+                Quaternion yawQ = Quaternion.AngleAxis(lookX, upAxis);
+                groundedForward = yawQ * groundedForward;
+                groundedForward = Vector3.ProjectOnPlane(groundedForward, upAxis);
 
-        // body sits above the ball along up axis, and follows smoothly
-        Vector3 targetPos = rb.position + (upAxis * bodyUpOffset);
-        float posT = 1f - Mathf.Exp(-bodyFollowPosSharpness * Time.deltaTime);
-        bodyTransform.position = Vector3.Lerp(bodyTransform.position, targetPos, posT);
+                if (groundedForward.sqrMagnitude < 0.0001f)
+                {
+                    groundedForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
+                }
 
-        // follow the calculated body rotation smoothly
-        float rotT = 1f - Mathf.Exp(-bodyFollowRotSharpness * Time.deltaTime);
-        bodyTransform.rotation = Quaternion.Slerp(bodyTransform.rotation, bodyRotation, rotT);
+                groundedForward.Normalize();
+            }
+
+            return;
+        }
+
+        // in space mode cache look for fixed update rotation
+        pendingLook = new Vector2(lookX, lookY);
     }
 
     protected virtual void UpdateCrouch()
@@ -723,13 +761,8 @@ public class CC_CharacterBase : NetworkBehaviour
 
         // current velocity split
         Vector3 vel = rb.linearVelocity;
-        Vector3 planarVel = Vector3.ProjectOnPlane(vel, upAxis);
-        Vector3 verticalVel = vel - planarVel;
-
-        if (grounded)
-        {
-            verticalVel = Vector3.zero;
-        }
+        Vector3 verticalVel = Vector3.Project(vel, -upAxis);
+        Vector3 planarVel = vel - verticalVel;
 
         // when in air in ground mode, dont allow air movement
         if (!grounded)
@@ -738,19 +771,21 @@ public class CC_CharacterBase : NetworkBehaviour
             return;
         }
 
-        // build desired direction relative to camera, projected on surface plane
+        // build desired direction relative to camera, projected on gravity plane
         Vector3 camForward = Vector3.ProjectOnPlane(cinemachineCameraTarget.forward, upAxis);
         Vector3 camRight = Vector3.ProjectOnPlane(cinemachineCameraTarget.right, upAxis);
 
         // if camera is looking almost straight up/down, projection can get tiny, so fallback
-        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(bodyRotation * Vector3.forward, upAxis); }
-        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(bodyRotation * Vector3.right, upAxis); }
+        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis); }
+        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(rb.rotation * Vector3.right, upAxis); }
 
         camForward.Normalize();
         camRight.Normalize();
 
         Vector3 moveDir = (camRight * moveInput.x + camForward * moveInput.y);
         if (moveDir.sqrMagnitude > 1f) { moveDir.Normalize(); }
+
+        planarVel = Vector3.ProjectOnPlane(planarVel, upAxis);
 
         // grounded movement + friction
         if (moveInput == Vector2.zero)
@@ -788,6 +823,11 @@ public class CC_CharacterBase : NetworkBehaviour
                 grounded = false;
                 jumpTimeoutDelta = jumpTimeout;
 
+                if (customGravityBody != null)
+                {
+                    customGravityBody.IgnoreGrounding(jumpTimeout);
+                }
+
                 // when jumping stop crouching
                 crouching = false;
                 jumpedThisTick = true;
@@ -806,30 +846,61 @@ public class CC_CharacterBase : NetworkBehaviour
         }
     }
 
+    protected virtual void GroundThrusters(bool jumpHeld)
+    {
+        if (rb == null || values == null) { return; }
+        if (locomotionType != LocomotionType.GroundMode) { return; }
+        if (grounded) { return; }
+        if (!jumpHeld) { return; }
+        if (!values.HasThruster()) { return; }
+
+        float upSpeed = Vector3.Dot(rb.linearVelocity, upAxis);
+        if (upSpeed >= groundThrusterUpSpeedCap) { return; }
+
+        rb.AddForce(upAxis * groundThrusterAccel, ForceMode.Acceleration);
+
+        usingGroundThrusters = true;
+        thrusterDrainPerSecondThisTick += groundThrusterDrainPerSecond;
+    }
+
     protected virtual void GroundBodyRotation()
     {
-        if (bodyTransform == null) { return; }
+        if (rb == null) { return; }
 
-        // align body up to gravity up axis with curve ramp
+        // keep our forward projected onto the gravity plane so yaw is preserved
+        groundedForward = Vector3.ProjectOnPlane(groundedForward, upAxis);
+
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
+        }
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        }
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.forward;
+        }
+
+        groundedForward.Normalize();
+
+        Quaternion current = rb.rotation;
+        Quaternion yawTarget = Quaternion.LookRotation(groundedForward, current * Vector3.up);
+
         float strength = GetStabiliseStrength();
+        Quaternion target = yawTarget;
+
+        // align body up to gravity up axis with curve ramp, while preserving yaw
         if (strength > 0.0001f)
         {
-            Quaternion current = bodyRotation;
-
-            Quaternion toUp = Quaternion.FromToRotation(current * Vector3.up, upAxis);
-            Quaternion target = toUp * current;
-
-            float t = 1f - Mathf.Exp(-strength * Time.fixedDeltaTime);
-            bodyRotation = Quaternion.Slerp(current, target, t);
+            Quaternion toUp = Quaternion.FromToRotation(yawTarget * Vector3.up, upAxis);
+            target = toUp * yawTarget;
         }
 
-        // rotate body around gravity up axis
-        float yawDelta = pendingLook.x;
-        if (Mathf.Abs(yawDelta) > 0.0001f)
-        {
-            Quaternion yawQ = Quaternion.AngleAxis(yawDelta, upAxis);
-            bodyRotation = yawQ * bodyRotation;
-        }
+        float t = 1f - Mathf.Exp(-Mathf.Max(0f, strength) * Time.fixedDeltaTime);
+        bodyRotation = Quaternion.Slerp(current, target, t);
+        rb.MoveRotation(bodyRotation);
     }
 
     protected virtual float GetStabiliseStrength()
@@ -852,22 +923,24 @@ public class CC_CharacterBase : NetworkBehaviour
             Debug.DrawRay(rb.position, -upAxis * castDist, Color.red);
 
             RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, castDist, groundLayers, QueryTriggerInteraction.Ignore))
+            if (customGravityBody != null &&
+                Physics.Raycast(ray, out hit, castDist, customGravityBody.GroundLayers, QueryTriggerInteraction.Ignore))
             {
                 float d = Mathf.Clamp(hit.distance - stabilisePadding, 0f, range);
                 proximity01 = 1f - (d / range);
             }
         }
 
+        float baseStrength = grounded ? groundedTorqueStrength : torqueStrength;
         float curve = stabiliseCurve != null ? stabiliseCurve.Evaluate(proximity01) : proximity01;
-        return torqueStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
+        return baseStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
     }
 
-    protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed, bool crouchPressed)
+    protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed, bool crouchPressed, bool stabilisePressed)
     {
         // add force as thrusters would have inertia
 
-        if (cinemachineCameraTarget == null || rb == null) { return; }
+        if (cinemachineCameraTarget == null || rb == null || values == null) { return; }
 
         Vector3 forward = cinemachineCameraTarget.forward;
         Vector3 right = cinemachineCameraTarget.right;
@@ -883,15 +956,55 @@ public class CC_CharacterBase : NetworkBehaviour
         float speedMult = 1f;
         if (sprinting) { speedMult *= sprintSpeedMult; }
 
-        rb.AddForce(accel * (thrusterAccel * speedMult), ForceMode.Acceleration);
+        if (accel.sqrMagnitude > 0.0001f && values.HasThruster())
+        {
+            rb.AddForce(accel * (thrusterAccel * speedMult), ForceMode.Acceleration);
+
+            usingSpaceMoveThrusters = true;
+            thrusterDrainPerSecondThisTick += spaceThrusterDrainPerSecond;
+        }
+
+        if (stabilisePressed)
+        {
+            SpaceStabilisation();
+        }
+    }
+
+    protected virtual void SpaceStabilisation()
+    {
+        if (rb == null || values == null) { return; }
+        if (!values.HasThruster()) { return; }
+
+        Vector3 velocity = rb.linearVelocity;
+        float speed = velocity.magnitude;
+        if (speed <= 0.01f) { return; }
+
+        Vector3 accel = -velocity.normalized * spaceStabiliseAccel;
+
+        // stop overshooting when nearly stopped
+        float maxDeltaV = spaceStabiliseAccel * Time.fixedDeltaTime;
+        if (speed < maxDeltaV)
+        {
+            accel = -velocity / Mathf.Max(Time.fixedDeltaTime, 0.0001f);
+        }
+
+        rb.AddForce(accel, ForceMode.Acceleration);
+
+        // stabilising should also settle roll faster
+        rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * Time.fixedDeltaTime);
+
+        usingSpaceStabiliseThrusters = true;
+        thrusterDrainPerSecondThisTick += spaceStabiliseDrainPerSecond;
     }
 
     protected virtual void SpaceBodyRotation()
     {
-        if (bodyTransform == null || cinemachineCameraTarget == null) { return; }
+        if (rb == null || cinemachineCameraTarget == null) { return; }
 
-        Quaternion current = bodyRotation;
+        Quaternion current = rb.rotation;
         float dt = Time.fixedDeltaTime;
+
+        Vector2 look = pendingLook;
 
         Vector3 camUp = cinemachineCameraTarget.up;
         Vector3 camRight = cinemachineCameraTarget.right;
@@ -901,8 +1014,8 @@ public class CC_CharacterBase : NetworkBehaviour
         camForward.Normalize();
 
         // yaw/pitch
-        float yawDelta = pendingLook.x * (spaceTurnSpeed / 180f) * dt * 180f;
-        float pitchDelta = -pendingLook.y * (spaceTurnSpeed / 180f) * dt * 180f;
+        float yawDelta = look.x * spaceTurnSpeed * dt;
+        float pitchDelta = -look.y * spaceTurnSpeed * dt;
 
         Quaternion yawQ = Quaternion.AngleAxis(yawDelta, camUp);
         Quaternion pitchQ = Quaternion.AngleAxis(pitchDelta, camRight);
@@ -920,6 +1033,7 @@ public class CC_CharacterBase : NetworkBehaviour
         Quaternion rollQ = Quaternion.AngleAxis(rollDelta, camForward);
 
         bodyRotation = rollQ * pitchQ * yawQ * current;
+        rb.MoveRotation(bodyRotation);
     }
 
     protected virtual InteractableObject GetLookInteractable()
@@ -933,9 +1047,9 @@ public class CC_CharacterBase : NetworkBehaviour
         Debug.DrawRay(origin.position, origin.forward * interactRange, Color.cyan);
 
         RaycastHit hit;
-        if (Physics.Raycast(ray, out hit, interactRange, interactLayers, QueryTriggerInteraction.Collide))
+        if (Physics.Raycast(ray, out hit, interactRange, interactLayers))
         {
-            return hit.collider.GetComponentInParent<InteractableObject>();
+            return hit.collider.GetComponent<InteractableObject>();
         }
 
         return null;
@@ -969,7 +1083,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (holding)
             {
-                currentInteractable.CancelHold(transform.parent.gameObject);
+                currentInteractable.CancelHold(gameObject);
             }
 
             currentInteractable = null;
@@ -1000,7 +1114,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (pressed)
             {
-                currentInteractable.Interact(transform.parent.gameObject);
+                currentInteractable.Interact(gameObject);
 
                 // stop interacting until released
                 interactUsedUntilRelease = true;
@@ -1020,12 +1134,12 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             if (holding)
             {
-                currentInteractable.CancelHold(transform.parent.gameObject);
+                currentInteractable.CancelHold(gameObject);
             }
 
             holdTimer = 0f;
             holding = false;
-            currentInteractable.HoldProgress(transform.parent.gameObject, 0f);
+            currentInteractable.HoldProgress(gameObject, 0f);
             return;
         }
 
@@ -1034,7 +1148,7 @@ public class CC_CharacterBase : NetworkBehaviour
         {
             holding = true;
             holdTimer = 0f;
-            currentInteractable.BeginHold(transform.parent.gameObject);
+            currentInteractable.BeginHold(gameObject);
         }
 
         // if we're holding, progress it
@@ -1044,11 +1158,11 @@ public class CC_CharacterBase : NetworkBehaviour
             holdTimer += Time.deltaTime;
 
             float progress01 = Mathf.Clamp01(holdTimer / required);
-            currentInteractable.HoldProgress(transform.parent.gameObject, progress01);
+            currentInteractable.HoldProgress(gameObject, progress01);
 
             if (holdTimer >= required)
             {
-                currentInteractable.Interact(transform.parent.gameObject);
+                currentInteractable.Interact(gameObject);
 
                 // stop interacting until release
                 interactUsedUntilRelease = true;
@@ -1067,16 +1181,5 @@ public class CC_CharacterBase : NetworkBehaviour
         if (angle > 360f) { angle -= 360f; }
 
         return Mathf.Clamp(angle, min, max);
-    }
-
-    protected virtual void OnDrawGizmosSelected()
-    {
-        Color col = grounded ? new Color(0, 1, 0, 0.35f) : new Color(1, 0, 0, 0.35f);
-        Gizmos.color = col;
-
-        if (groundedCheckObj != null)
-        {
-            Gizmos.DrawSphere(groundedCheckObj.position, groundedRadius);
-        }
     }
 }

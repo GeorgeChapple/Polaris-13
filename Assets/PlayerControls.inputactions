@@ -61,6 +61,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "StabiliseThrusters",
+                    "type": "PassThrough",
+                    "id": "cd2bcc5b-949a-4c20-9a84-e119c96fc1eb",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Sprint",
                     "type": "PassThrough",
                     "id": "ecd992e8-696d-412f-9a89-93d7a609b509",
@@ -321,6 +330,17 @@
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1a74127d-b358-479f-bcc2-3596a66b467d",
+                    "path": "<Keyboard>/leftAlt",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "StabiliseThrusters",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

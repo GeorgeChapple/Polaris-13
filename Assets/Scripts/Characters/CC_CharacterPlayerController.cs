@@ -1,24 +1,40 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
+using UnityEngine.UI;
 
 // Made by: Jason Lodge
-// Summary: Player controller, drives all the locomotion code in the character base and things like interaction.
-// This is separated as the character base will be used by AI too to be modular.
-[RequireComponent(typeof(CC_CharacterBase))]
-public class CC_CharacterPlayerController : MonoBehaviour
+// Summary: Player controller, drives all the locomotion code and things like interaction, menus, etc.
+// This is separated as movement/camera/interaction are modular and can be reused by AI.
+
+[RequireComponent(typeof(CC_Movement))]
+[RequireComponent(typeof(CC_CameraController))]
+[RequireComponent(typeof(CC_Interaction))]
+public class CC_CharacterPlayerController : NetworkBehaviour
 {
 #if ENABLE_INPUT_SYSTEM
     private PlayerInput playerInput;
 #endif
 
     private CC_PlayerInputManager input;
-    private CC_CharacterBase characterBase;
+    private CC_Movement movement;
+    private CC_CameraController cameraController;
+    private CC_Interaction interaction;
 
     [Header("Cursor")]
     public bool lockCursorOnStart = true;
 
+    [Tooltip("Simple centered cursor image.")]
+    [SerializeField] private Image cursorImage;
+
+    [Tooltip("Default cursor sprite.")]
+    [SerializeField] private Sprite defaultCursorSprite;
+
+    [Tooltip("Cursor sprite shown when looking at an interactable.")]
+    [SerializeField] private Sprite interactCursorSprite;
+
     [Header("Menus")]
-    [Tooltip("True when any menu is open, will stop TickFixed/TickLate and free cursor.")]
+    [Tooltip("True when any menu is open, will stop movement / camera / interaction and free cursor.")]
     [SerializeField] private bool inMenu;
 
     [Tooltip("Pause menu root.")]
@@ -27,8 +43,14 @@ public class CC_CharacterPlayerController : MonoBehaviour
     [Tooltip("Inventory menu root.")]
     [SerializeField] private GameObject inventoryMenuRoot;
 
+    [Tooltip("Interact menu ui.")]
+    [SerializeField] private UI_InteractMenu interactMenu;
+
     [Tooltip("Inventory")]
     [SerializeField] private INV_Inventory inventory;
+
+    [Tooltip("Network Inventory Handler")]
+    [SerializeField] private INV_PlayerInventoryNet inventoryNet;
 
     [Tooltip("Hotbar")]
     [SerializeField] private INV_HotBar hotBar;
@@ -40,6 +62,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
     private bool inventoryHeld;
     private bool rotateHeld;
     private bool dropHeld;
+    private bool dropHeldItemHeld;
 
     private bool hotbarSlot1Held;
     private bool hotbarSlot2Held;
@@ -61,13 +84,25 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
     }
 
+    private bool IsLocallyControlled()
+    {
+        return movement != null && movement.IsLocallyControlled();
+    }
+
     private void Awake()
     {
 #if ENABLE_INPUT_SYSTEM
         playerInput = GetComponent<PlayerInput>();
 #endif
         input = GetComponent<CC_PlayerInputManager>();
-        characterBase = GetComponent<CC_CharacterBase>();
+        movement = GetComponent<CC_Movement>();
+        cameraController = GetComponent<CC_CameraController>();
+        interaction = GetComponent<CC_Interaction>();
+
+        if (interaction != null && interaction.playerController == null)
+        {
+            interaction.playerController = this;
+        }
 
         if (inventory == null)
         {
@@ -80,13 +115,63 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        ApplyOwnershipState();
+    }
+
+    public override void OnGainedOwnership()
+    {
+        base.OnGainedOwnership();
+        ApplyOwnershipState();
+    }
+
+    public override void OnLostOwnership()
+    {
+        base.OnLostOwnership();
+        ApplyOwnershipState();
+    }
+
+    private void ApplyOwnershipState()
+    {
+        bool local = IsLocallyControlled();
+
+#if ENABLE_INPUT_SYSTEM
+        if (playerInput != null)
+        {
+            playerInput.enabled = local;
+        }
+#endif
+
+        // disable this whole controller for non local players
+        enabled = local;
+
+        if (!local)
+        {
+            return;
+        }
+
+        if (inMenu)
+        {
+            SetCursorLocked(false);
+        }
+        else if (lockCursorOnStart)
+        {
+            SetCursorLocked(true);
+        }
+    }
+
     private void Start()
     {
+        if (!IsLocallyControlled()) { return; }
+
         // if we start in a menu, dont lock
         if (inMenu)
         {
             SetCursorLocked(false);
             SetMenuRoots(false, false);
+            if (interactMenu != null) { interactMenu.CloseMenu(false); }
             return;
         }
 
@@ -96,11 +181,18 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         SetMenuRoots(false, false);
+
+        if (interactMenu != null)
+        {
+            interactMenu.CloseMenu(false);
+        }
     }
 
     private void OnApplicationFocus(bool hasFocus)
     {
         // if a menu is open, dont re-lock cursor
+        if (!IsLocallyControlled()) { return; }
+
         if (hasFocus && cursorLocked && !inMenu)
         {
             SetCursorLocked(true);
@@ -112,39 +204,85 @@ public class CC_CharacterPlayerController : MonoBehaviour
         // open/close menu logic
         HandleMenuInput();
 
+        HandleItemUse();
+
         // one-off rotate/drop while inventory menu is open
         HandleInventoryActions();
 
         // hotbar assign / selection
         HandleHotbarInput();
+
+        // cursor
+        UpdateCursorUI();
     }
 
     private void FixedUpdate()
     {
+        if (movement == null) { return; }
+
         if (inMenu)
         {
-            characterBase.TickFixed(new Vector2(0, 0), false, 0, false, false);
+            movement.TickFixed(Vector2.zero, false, 0f, false, false, false);
             return;
         }
 
         // movement / physics
-        characterBase.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch);
+        movement.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch, input.stabiliseThrusters);
     }
 
     private void LateUpdate()
     {
+        bool isMouse = IsCurrentDeviceMouse;
+
         if (inMenu)
         {
-            characterBase.TickLate(new Vector2(0, 0), IsCurrentDeviceMouse);
-            characterBase.TickInteract(false);
+            if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
+            if (movement != null) { movement.TickLateState(); }
+            if (interaction != null) { interaction.TickInteract(false); }
             return;
         }
 
-        // camera / rotation
-        characterBase.TickLate(input.look, IsCurrentDeviceMouse);
+        if (cameraController != null) { cameraController.TickLate(input.look, isMouse); }
+        if (movement != null) { movement.TickLateState(); }
+        if (interaction != null) { interaction.TickInteract(input.interact); }
+    }
 
-        // interaction
-        characterBase.TickInteract(input.interact);
+    private void UpdateCursorUI()
+    {
+        if (!IsLocallyControlled()) { return; }
+        if (cursorImage == null) { return; }
+
+        // hide cursor while menu is open
+        if (inMenu)
+        {
+            if (cursorImage.gameObject.activeSelf)
+            {
+                cursorImage.gameObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        if (!cursorImage.gameObject.activeSelf)
+        {
+            cursorImage.gameObject.SetActive(true);
+        }
+
+        bool lookingAtInteractable = interaction != null && interaction.HasLookInteractable();
+
+        if (lookingAtInteractable && interactCursorSprite != null)
+        {
+            cursorImage.sprite = interactCursorSprite;
+        }
+        else
+        {
+            cursorImage.sprite = defaultCursorSprite;
+        }
+    }
+
+    private void HandleItemUse()
+    {
+        //CC_INV_EquippedItem equippedItem = inventoryNet.currentEquippedItem.GetComponent<CC_INV_EquippedItem>();
     }
 
     private void HandleInventoryActions()
@@ -182,10 +320,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
     private void HandleHotbarInput()
     {
-        if (hotBar == null)
-        {
-            return;
-        }
+        if (hotBar == null) { return; }
 
         bool inventoryOpen = inMenu && IsInventoryOpen();
 
@@ -204,6 +339,17 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         lastHotbarScrollDirection = scrollDirection;
+
+        // drop currently selected hotbar item
+        if (input.dropHeldItem && !dropHeldItemHeld)
+        {
+            dropHeldItemHeld = true;
+            hotBar.DropSelectedItem();
+        }
+        else if (!input.dropHeldItem && dropHeldItemHeld)
+        {
+            dropHeldItemHeld = false;
+        }
     }
 
     private void HandleHotbarSlotPress(bool pressed, ref bool held, int slotIndex, bool inventoryOpen)
@@ -236,6 +382,12 @@ public class CC_CharacterPlayerController : MonoBehaviour
         {
             pauseHeld = true;
 
+            if (IsInteractMenuOpen())
+            {
+                CloseInteractMenu();
+                return;
+            }
+
             // if inventory is open, close it and open pause
             if (inventoryMenuRoot != null && inventoryMenuRoot.activeSelf)
             {
@@ -254,6 +406,12 @@ public class CC_CharacterPlayerController : MonoBehaviour
         {
             inventoryHeld = true;
 
+            if (IsInteractMenuOpen())
+            {
+                CloseInteractMenu();
+                return;
+            }
+
             // if pause is open, close it and open inventory
             if (pauseMenuRoot != null && pauseMenuRoot.activeSelf)
             {
@@ -268,7 +426,7 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         // update in menu bool from actual roots so its always right
-        bool anyMenuOpen = IsPauseOpen() || IsInventoryOpen();
+        bool anyMenuOpen = IsPauseOpen() || IsInventoryOpen() || IsInteractMenuOpen();
         if (inMenu != anyMenuOpen)
         {
             SetInMenu(anyMenuOpen);
@@ -285,16 +443,16 @@ public class CC_CharacterPlayerController : MonoBehaviour
         {
             SetCursorLocked(false);
         }
-        else
+        else if (lockCursorOnStart)
         {
-            if (lockCursorOnStart)
-            {
-                SetCursorLocked(true);
-            }
+            SetCursorLocked(true);
         }
 
         // clear look when entering/leaving menu
-        input.look = Vector2.zero;
+        if (input != null)
+        {
+            input.look = Vector2.zero;
+        }
     }
 
     public void SetPauseMenu(bool state)
@@ -305,12 +463,17 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         // when opening pause, force inventory closed
-        if (state)
+        if (state && inventoryMenuRoot != null)
         {
-            if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+            inventoryMenuRoot.SetActive(false);
         }
 
-        SetInMenu(state || IsInventoryOpen());
+        if (state && interactMenu != null)
+        {
+            interactMenu.CloseMenu(false);
+        }
+
+        SetInMenu(state || IsInventoryOpen() || IsInteractMenuOpen());
     }
 
     public void SetInventoryMenu(bool state)
@@ -321,12 +484,39 @@ public class CC_CharacterPlayerController : MonoBehaviour
         }
 
         // when opening inventory, force pause closed
-        if (state)
+        if (state && pauseMenuRoot != null)
         {
-            if (pauseMenuRoot != null) { pauseMenuRoot.SetActive(false); }
+            pauseMenuRoot.SetActive(false);
         }
 
-        SetInMenu(state || IsPauseOpen());
+        if (state && interactMenu != null)
+        {
+            interactMenu.CloseMenu(false);
+        }
+
+        SetInMenu(state || IsPauseOpen() || IsInteractMenuOpen());
+    }
+
+    public void OpenInteractMenu(InteractableObject interactable, GameObject interactor)
+    {
+        if (interactMenu == null) { return; }
+        if (interactable == null) { return; }
+
+        if (pauseMenuRoot != null) { pauseMenuRoot.SetActive(false); }
+        if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+
+        interactMenu.OpenMenu(this, interactable, interactor);
+        SetInMenu(true);
+    }
+
+    public void CloseInteractMenu()
+    {
+        if (interactMenu != null)
+        {
+            interactMenu.CloseMenu();
+        }
+
+        SetInMenu(IsPauseOpen() || IsInventoryOpen() || IsInteractMenuOpen());
     }
 
     private bool IsPauseOpen()
@@ -337,6 +527,11 @@ public class CC_CharacterPlayerController : MonoBehaviour
     private bool IsInventoryOpen()
     {
         return inventoryMenuRoot != null && inventoryMenuRoot.activeSelf;
+    }
+
+    private bool IsInteractMenuOpen()
+    {
+        return interactMenu != null && interactMenu.IsOpen();
     }
 
     private void SetMenuRoots(bool pauseState, bool invState)
@@ -351,7 +546,8 @@ public class CC_CharacterPlayerController : MonoBehaviour
 
         Cursor.lockState = shouldLock ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !shouldLock;
-        if (!cursorLocked)
+
+        if (!cursorLocked && input != null)
         {
             input.look = Vector2.zero;
         }

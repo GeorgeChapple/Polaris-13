@@ -16,6 +16,7 @@ public class CC_PlayerInputManager : MonoBehaviour
     [Header("Movement Modifiers")]
     public bool sprint;
     public bool crouch;
+    public bool stabiliseThrusters;
 
     [Header("Space Input Values")]
     public float roll;
@@ -40,6 +41,7 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void OnJump(InputValue value) { JumpInput(value.isPressed); }
     public void OnSprint(InputValue value) { SprintInput(value.isPressed); }
     public void OnCrouch(InputValue value) { CrouchInput(value.isPressed); }
+    public void OnStabiliseThrusters(InputValue value) { StabiliseThrustersInput(value.isPressed); }
     public void OnInteract(InputValue value) { InteractInput(value.isPressed); }
     public void OnRotateItem(InputValue value) { RotateItemInput(value.isPressed); }
     public void OnDropItem(InputValue value) { DropItemInput(value.isPressed); }
@@ -59,6 +61,7 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void JumpInput(bool newJumpState) { jump = newJumpState; }
     public void SprintInput(bool newSprint) { sprint = newSprint; }
     public void CrouchInput(bool newCrouch) { crouch = newCrouch; }
+    public void StabiliseThrustersInput(bool newState) { stabiliseThrusters = newState; }
     public void InteractInput(bool newInteractState) { interact = newInteractState; }
     public void RotateItemInput(bool newRotateItemState) { rotateItem = newRotateItemState; }
     public void DropItemInput(bool newDropItemState) { dropItem = newDropItemState; }

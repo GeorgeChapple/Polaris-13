@@ -2,43 +2,71 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class CustomGravityRigidbody : MonoBehaviour {
+public class CustomGravityRigidbody : MonoBehaviour
+{
+    [SerializeField]
+    protected bool floatToSleep = false;
 
-	[SerializeField]
-	bool floatToSleep = false;
+    public bool useGravity;
+    [HideInInspector] public bool triggered = false;
 
-	Rigidbody body;
+    protected Rigidbody body;
 
-	float floatDelay;
+    protected float floatDelay;
 
-	void Awake () {
-		body = GetComponent<Rigidbody>();
-		if (body == null )
-		{
-			body = this.AddComponent<Rigidbody>();
-		}
-		body.useGravity = false;
-	}
+    protected virtual void Awake()
+    {
+        body = GetComponent<Rigidbody>();
+        if (body == null)
+        {
+            body = this.AddComponent<Rigidbody>();
+        }
 
-	void FixedUpdate () {
-		if (floatToSleep) {
-			if (body.IsSleeping()) {
-				floatDelay = 0f;
-				return;
-			}
+        body.useGravity = false;
 
-			if (body.linearVelocity.sqrMagnitude < 0.0001f) {
-				floatDelay += Time.deltaTime;
-				if (floatDelay >= 1f) {
-					return;
-				}
-			}
-			else {
-				floatDelay = 0f;
-			}
-		}
-		body.AddForce(
-			CustomGravity.GetGravity(body.position), ForceMode.Acceleration
-		);
-	}
+        if (useGravity) { triggered = true; }
+    }
+
+    protected virtual void FixedUpdate()
+    {
+        if (useGravity)
+        {
+            if (HandleFloatToSleep()) { return; }
+
+            ApplyGravity();
+        }
+    }
+
+    protected bool HandleFloatToSleep()
+    {
+        if (!floatToSleep) { return false; }
+
+        if (body.IsSleeping())
+        {
+            floatDelay = 0f;
+            return true;
+        }
+
+        if (body.linearVelocity.sqrMagnitude < 0.0001f)
+        {
+            floatDelay += Time.deltaTime;
+            if (floatDelay >= 1f)
+            {
+                return true;
+            }
+        }
+        else
+        {
+            floatDelay = 0f;
+        }
+
+        return false;
+    }
+
+    protected virtual void ApplyGravity()
+    {
+        body.AddForce(
+            CustomGravity.GetGravity(body.position), ForceMode.Acceleration
+        );
+    }
 }

@@ -148,7 +148,7 @@ public class INV_ItemDrop : NetworkBehaviour
         }
     }
 
-    // called by player interact script
+    // called by player interact script / grappling hook
     public void TryAddToInventory(Object interactor)
     {
         if (interactor == null)
@@ -245,6 +245,13 @@ public class INV_ItemDrop : NetworkBehaviour
         {
             Debug.LogError("Couldn't find INV_PlayerInventoryNet on Player!", this);
             return;
+        }
+
+        // if this pickup is also space junk, remove it from the debris manager first
+        SP_Junk junk = GetComponent<SP_Junk>();
+        if (junk != null)
+        {
+            junk.RemoveFromSpaceManager();
         }
 
         playerInvNet.AddItemLocalRpc(

@@ -10,16 +10,49 @@ using UnityEngine.Events;
 // allowing the interactor to be passed through on network spawn.
 public class InteractableObject : NetworkBehaviour
 {
+    [System.Serializable]
+    public class FloatEvent : UnityEvent<float> { }
+
+    [System.Serializable]
+    public class ObjectEvent : UnityEvent<Object> { }
+
+    [System.Serializable]
+    public class InteractAction
+    {
+        [Header("Info")]
+        public string actionName = "Interact";
+
+        [Header("Interact")]
+        public UnityEvent onInteract;
+
+        [HideInInspector] public ObjectEvent onInteractWithInteractor = new ObjectEvent();
+
+        [Tooltip("If true, current onInteract listeners will be mirrored into onInteractWithInteractor on network spawn.")]
+        public bool rewireInteractListenersOnNetworkSpawn = true;
+
+        [Tooltip("If true, the original onInteract event will still be invoked as well. Disable this once fully migrated to avoid double-calls.")]
+        public bool invokeLegacyInteractEvent = true;
+
+        // runtime bindings created from the current onInteract persistent listeners
+        readonly List<RuntimeObjectBinding> runtimeInteractBindings = new List<RuntimeObjectBinding>();
+
+        internal void ClearRuntimeBindings()
+        {
+            onInteractWithInteractor.RemoveAllListeners();
+            runtimeInteractBindings.Clear();
+        }
+
+        internal void AddRuntimeBinding(RuntimeObjectBinding binding)
+        {
+            if (binding == null) { return; }
+
+            runtimeInteractBindings.Add(binding);
+            onInteractWithInteractor.AddListener(binding.Invoke);
+        }
+    }
+
     [Header("Interact")]
-    public UnityEvent onInteract;
-
-    [HideInInspector] public ObjectEvent onInteractWithInteractor;
-
-    [Tooltip("If true, current onInteract listeners will be mirrored into onInteractWithInteractor on network spawn.")]
-    public bool rewireInteractListenersOnNetworkSpawn = true;
-
-    [Tooltip("If true, the original onInteract event will still be invoked as well. Disable this once fully migrated to avoid double-calls.")]
-    public bool invokeLegacyInteractEvent = true;
+    public InteractAction[] interactActions;
 
     [Tooltip("Optional, If true, object can only be interacted with once.")]
     public bool oneShot;
@@ -37,28 +70,26 @@ public class InteractableObject : NetworkBehaviour
     [Tooltip("Fired when holding is cancelled (look away / release / out of range).")]
     public UnityEvent onCancelHold;
 
-    [System.Serializable]
-    public class FloatEvent : UnityEvent<float> { }
-
-    [System.Serializable]
-    public class ObjectEvent : UnityEvent<Object> { }
-
     [Tooltip("Progress from 0-1 while holding.")]
     public FloatEvent onHoldProgress;
 
-    bool used;
+    [Header("Interact Menu")]
+    [Tooltip("If true, holding interact opens the action menu instead of using normal hold interaction.")]
+    public bool openMenuOnHold = false;
 
-    // runtime bindings created from the current onInteract persistent listeners
-    readonly List<RuntimeObjectBinding> runtimeInteractBindings = new List<RuntimeObjectBinding>();
+    [Tooltip("Shown at the top of the interact menu.")]
+    public string interactMenuTitle = "Interact";
+
+    [Tooltip("How long the player must hold interact before the menu opens.")]
+    public float menuHoldTime = 0.35f;
+
+    bool used;
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
-        if (rewireInteractListenersOnNetworkSpawn)
-        {
-            RewireInteractListeners();
-        }
+        RewireInteractListeners();
     }
 
     public bool CanInteract()
@@ -69,6 +100,28 @@ public class InteractableObject : NetworkBehaviour
     public float GetHoldTime()
     {
         return Mathf.Max(0f, holdTime);
+    }
+
+    public float GetMenuHoldTime()
+    {
+        return Mathf.Max(0.01f, menuHoldTime);
+    }
+
+    public bool UsesInteractMenu()
+    {
+        return openMenuOnHold && interactActions != null && interactActions.Length > 0;
+    }
+
+    public int GetActionCount()
+    {
+        return interactActions != null ? interactActions.Length : 0;
+    }
+
+    public InteractAction GetAction(int index)
+    {
+        if (interactActions == null) { return null; }
+        if (index < 0 || index >= interactActions.Length) { return null; }
+        return interactActions[index];
     }
 
     // called by the character when hold begins
@@ -95,46 +148,61 @@ public class InteractableObject : NetworkBehaviour
     // called by the character when interaction completes (tap or hold finished)
     public void Interact(GameObject interactor)
     {
+        Interact(0, interactor);
+    }
+
+    public void Interact(int actionIndex, GameObject interactor)
+    {
         if (!CanInteract()) { return; }
+
+        InteractAction action = GetAction(actionIndex);
+        if (action == null) { return; }
 
         used = true;
 
-        if (invokeLegacyInteractEvent)
+        if (action.invokeLegacyInteractEvent)
         {
-            onInteract?.Invoke();
+            action.onInteract?.Invoke();
         }
 
-        onInteractWithInteractor?.Invoke(interactor);
+        action.onInteractWithInteractor?.Invoke(interactor);
     }
 
     public void RewireInteractListeners()
     {
-        onInteractWithInteractor.RemoveAllListeners();
-        runtimeInteractBindings.Clear();
+        if (interactActions == null) { return; }
 
-        if (onInteract == null) { return; }
-
-        int eventCount = onInteract.GetPersistentEventCount();
-
-        for (int i = 0; i < eventCount; i++)
+        for (int a = 0; a < interactActions.Length; a++)
         {
-            Object target = onInteract.GetPersistentTarget(i);
-            string methodName = onInteract.GetPersistentMethodName(i);
+            InteractAction action = interactActions[a];
+            if (action == null) { continue; }
 
-            if (target == null) { continue; }
-            if (string.IsNullOrEmpty(methodName)) { continue; }
+            action.ClearRuntimeBindings();
 
-            MethodInfo method = FindObjectCompatibleMethod(target, methodName);
+            if (!action.rewireInteractListenersOnNetworkSpawn) { continue; }
+            if (action.onInteract == null) { continue; }
 
-            if (method == null)
+            int eventCount = action.onInteract.GetPersistentEventCount();
+
+            for (int i = 0; i < eventCount; i++)
             {
-                Debug.LogWarning($"{name}: Could not rewire '{methodName}' on '{target.name}'. Expected a method with the same name that takes one Object/GameObject compatible parameter.", this);
-                continue;
-            }
+                Object target = action.onInteract.GetPersistentTarget(i);
+                string methodName = action.onInteract.GetPersistentMethodName(i);
 
-            RuntimeObjectBinding binding = new RuntimeObjectBinding(target, method);
-            runtimeInteractBindings.Add(binding);
-            onInteractWithInteractor.AddListener(binding.Invoke);
+                if (target == null) { continue; }
+                if (string.IsNullOrEmpty(methodName)) { continue; }
+
+                MethodInfo method = FindObjectCompatibleMethod(target, methodName);
+
+                if (method == null)
+                {
+                    Debug.LogWarning($"{name}: Could not rewire '{methodName}' on '{target.name}'. Expected a method with the same name that takes one Object/GameObject compatible parameter.", this);
+                    continue;
+                }
+
+                RuntimeObjectBinding binding = new RuntimeObjectBinding(target, method);
+                action.AddRuntimeBinding(binding);
+            }
         }
     }
 
@@ -166,7 +234,7 @@ public class InteractableObject : NetworkBehaviour
         return null;
     }
 
-    class RuntimeObjectBinding
+    internal sealed class RuntimeObjectBinding
     {
         readonly Object target;
         readonly MethodInfo method;
@@ -191,10 +259,5 @@ public class InteractableObject : NetworkBehaviour
     public void ResetOneShot()
     {
         used = false;
-    }
-
-    public void Test()
-    {
-        Debug.Log($"{name} has been interacted with. Calling Event {onInteract.GetPersistentMethodName(0)}");
     }
 }
