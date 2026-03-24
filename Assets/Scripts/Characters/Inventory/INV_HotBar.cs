@@ -298,12 +298,10 @@ public class INV_HotBar : MonoBehaviour
             mf.sharedMesh = inst.data.Mesh;
             mr.sharedMaterial = inst.data.Material;
 
-            // hotbar uses inventory scale
+            // hotbar uses inventory visual setup
             visualRoot.localPosition = inst.data.InventoryMeshOffset;
+            visualRoot.localRotation = Quaternion.Euler(inst.data.InventoryMeshRotation);
             visualRoot.localScale = Vector3.one * inst.data.InventoryMeshScale;
-
-            // hotbar always shows items in upright orientation
-            visualRoot.localEulerAngles = Vector3.zero;
         }
     }
 

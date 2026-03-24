@@ -110,6 +110,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             inventory = GetComponentInChildren<INV_Inventory>();
         }
 
+        if (inventoryNet == null)
+        {
+            inventoryNet = GetComponentInChildren<INV_PlayerInventoryNet>();
+        }
+
         if (hotBar == null)
         {
             hotBar = GetComponentInChildren<INV_HotBar>();
@@ -301,32 +306,15 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             useHeld = false;
         }
     }
+
     private void TryUseEquippedItem()
     {
         if (inventoryNet == null) { return; }
-        if (inventoryNet.currentEquippedItem == null) { return; }
 
-        GameObject equippedObject = inventoryNet.currentEquippedItem.gameObject;
-        if (equippedObject == null) { return; }
+        string equippedItemId = inventoryNet.GetEquippedItemId();
+        if (string.IsNullOrWhiteSpace(equippedItemId)) { return; }
 
-        MonoBehaviour[] behaviours = equippedObject.GetComponents<MonoBehaviour>();
-        if (behaviours == null || behaviours.Length == 0) { return; }
-
-        bool foundUsable = false;
-
-        for (int i = 0; i < behaviours.Length; i++)
-        {
-            if (behaviours[i] is IUsableItem usable)
-            {
-                foundUsable = true;
-                usable.OnUse();
-            }
-        }
-
-        if (!foundUsable)
-        {
-            Debug.Log("Equipped item has no IUsableItem scripts.", equippedObject);
-        }
+        inventoryNet.RequestUseEquippedItem();
     }
 
     private void HandleInventoryActions()

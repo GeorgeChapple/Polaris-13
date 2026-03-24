@@ -1,112 +1,34 @@
-using Unity.Collections;
-using Unity.Netcode;
 using UnityEngine;
 
 // Made By: Jason Lodge
 // Summary: Script that goes on the equipped item instance, inherits the item instance data.
 
-public class CC_INV_EquippedItem : NetworkBehaviour
+public class CC_INV_EquippedItem : MonoBehaviour
 {
     [Header("Visual Root")]
-    [Tooltip("Optional child root to hold the visual. If null we create one.")]
+    [Tooltip("Optional child root to hold the visual. If null we create one if item visual setup is enabled.")]
     [SerializeField] private Transform visualRoot;
-
-    // internals
-    private INV_Inventory.ItemInstance itemInstance;
-    public string componentName;
 
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private Renderer[] cachedRenderers;
 
-    private NetworkVariable<FixedString128Bytes> networkItemId = new NetworkVariable<FixedString128Bytes>(
-        default,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
+    private INV_Item item;
+    private bool isOwnerVisual;
 
-    private NetworkVariable<ulong> owningPlayerClientId = new NetworkVariable<ulong>(
-        0,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
+    public INV_Item Item => item;
+    public bool IsOwnerVisual => isOwnerVisual;
 
-    public string ItemId => networkItemId.Value.ToString();
-
-    public override void OnNetworkSpawn()
+    public void Init(INV_Item newItem, bool newIsOwnerVisual)
     {
-        base.OnNetworkSpawn();
+        item = newItem;
+        isOwnerVisual = newIsOwnerVisual;
 
-        networkItemId.OnValueChanged += OnItemIdChanged;
-        owningPlayerClientId.OnValueChanged += OnOwningPlayerChanged;
-
-        ResolveItemFromNetworkId();
-        RefreshOwnerVisibility();
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        networkItemId.OnValueChanged -= OnItemIdChanged;
-        owningPlayerClientId.OnValueChanged -= OnOwningPlayerChanged;
-
-        base.OnNetworkDespawn();
-    }
-
-    // called by server before spawn
-    public void Init(string itemId, ulong ownerClientId)
-    {
-        if (string.IsNullOrWhiteSpace(itemId))
-        {
-            Debug.LogError("CC_INV_EquippedItem Init called with empty item id.", this);
-            return;
-        }
-
-        networkItemId.Value = itemId;
-        owningPlayerClientId.Value = ownerClientId;
-        ResolveItemFromNetworkId();
-    }
-
-    private void OnItemIdChanged(FixedString128Bytes oldValue, FixedString128Bytes newValue)
-    {
-        ResolveItemFromNetworkId();
-    }
-
-    private void OnOwningPlayerChanged(ulong oldValue, ulong newValue)
-    {
-        RefreshOwnerVisibility();
-    }
-
-    private void ResolveItemFromNetworkId()
-    {
-        string itemId = networkItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId)) { return; }
-
-        INV_Item item = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
-
-        if (item == null)
-        {
-            Debug.LogError($"Could not resolve equipped item id '{itemId}' from INV_ItemDatabase.", this);
-            return;
-        }
-
-        ApplyVisuals(item);
-    }
-
-    public void SnapToAnchor(Transform anchor)
-    {
-        if (anchor == null) { return; }
-
-        transform.position = anchor.position;
-        transform.rotation = anchor.rotation;
-        transform.localScale = Vector3.one;
+        ApplyVisuals();
     }
 
     public void SetVisualVisible(bool isVisible)
     {
-        EnsureVisualSetup();
-
         if (cachedRenderers == null || cachedRenderers.Length == 0)
         {
             cachedRenderers = GetComponentsInChildren<Renderer>(true);
@@ -119,53 +41,36 @@ public class CC_INV_EquippedItem : NetworkBehaviour
         }
     }
 
-    private void RefreshOwnerVisibility()
-    {
-        if (NetworkManager == null)
-        {
-            SetVisualVisible(true);
-            return;
-        }
-
-        // owner uses the local-only first person visual instead
-        if (NetworkManager.LocalClientId == owningPlayerClientId.Value)
-        {
-            SetVisualVisible(false);
-        }
-        else
-        {
-            SetVisualVisible(true);
-        }
-    }
-
-    private void ApplyVisuals(INV_Item item)
+    private void ApplyVisuals()
     {
         if (item == null) { return; }
 
-        EnsureVisualSetup();
-
-        if (meshFilter != null)
+        if (item.ApplyEquippedPrefabVisuals)
         {
-            meshFilter.sharedMesh = item.Mesh;
-        }
+            EnsureVisualSetup();
 
-        if (meshRenderer != null)
-        {
-            meshRenderer.sharedMaterial = item.Material;
-        }
+            if (meshFilter != null)
+            {
+                meshFilter.sharedMesh = item.Mesh;
+            }
 
-        if (visualRoot != null)
-        {
-            visualRoot.localPosition = item.EquippedMeshOffset;
-            visualRoot.localRotation = Quaternion.identity;
-            visualRoot.localScale = Vector3.one * item.EquippedMeshScale;
+            if (meshRenderer != null)
+            {
+                meshRenderer.sharedMaterial = item.Material;
+            }
+
+            if (visualRoot != null)
+            {
+                visualRoot.localPosition = item.EquippedMeshOffset;
+                visualRoot.localRotation = Quaternion.Euler(item.EquippedMeshRotation);
+                visualRoot.localScale = Vector3.one * item.EquippedMeshScale;
+            }
         }
 
         cachedRenderers = GetComponentsInChildren<Renderer>(true);
 
         gameObject.name = $"Equipped_{item.Name}";
-
-        RefreshOwnerVisibility();
+        SetVisualVisible(true);
     }
 
     private void EnsureVisualSetup()

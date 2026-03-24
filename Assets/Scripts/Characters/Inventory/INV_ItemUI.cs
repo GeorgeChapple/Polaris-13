@@ -222,6 +222,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         Vector3 rectCenterLocal = new Vector3(rectSize.x * 0.5f, -rectSize.y * 0.5f, 0f);
 
         Vector3 itemOffset = itemInst.data.InventoryMeshOffset;
+        Vector3 itemRotation = itemInst.data.InventoryMeshRotation;
         float itemScale = itemInst.data.InventoryMeshScale;
 
         // make sure we dont put a negative scale on it
@@ -229,25 +230,26 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         // center placement
         meshVisualRoot.localPosition = rectCenterLocal + itemOffset;
+        meshVisualRoot.localRotation = Quaternion.Euler(itemRotation);
         meshVisualRoot.localScale = Vector3.one * itemScale;
 
         // rotation handling
         switch (itemInst.rotation)
         {
             case INV_Inventory.ItemInstance.Rotation.Up:
-                meshVisualRoot.localEulerAngles = Vector3.zero;
+                meshVisualRoot.localEulerAngles = itemRotation;
                 break;
 
             case INV_Inventory.ItemInstance.Rotation.Right:
-                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -90f);
+                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z + -90f);
                 break;
 
             case INV_Inventory.ItemInstance.Rotation.Down:
-                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -180f);
+                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z + -180f);
                 break;
 
             case INV_Inventory.ItemInstance.Rotation.Left:
-                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -270f);
+                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z + -270f);
                 break;
         }
     }
