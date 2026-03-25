@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -196,6 +197,7 @@ public class CC_CharacterValues : MonoBehaviour
     public FillUI[] staminaUI;
     public FillUI[] oxygenUI;
     public FillUI[] expUI;
+    public TextMeshProUGUI speedText;
 
     // Getters
     public float Health => health;
@@ -204,6 +206,8 @@ public class CC_CharacterValues : MonoBehaviour
 
     public int Level => level;
     public int Exp => exp;
+
+    private Rigidbody rb;
 
     // Init / Reset
     public void SetDefaults()
@@ -231,10 +235,12 @@ public class CC_CharacterValues : MonoBehaviour
     void Awake()
     {
         SetDefaults();
+        rb = GetComponent<Rigidbody>();
     }
 
     void Update()
     {
+        speedText.SetText(System.Convert.ToInt32(rb.linearVelocity.magnitude).ToString());
         TickUIVisibility();
     }
 
