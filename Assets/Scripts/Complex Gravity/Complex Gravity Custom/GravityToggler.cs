@@ -3,6 +3,7 @@ using UnityEngine;
 public class GravityToggler : MonoBehaviour
 {
     [SerializeField] private bool useGravity;
+    [SerializeField] private bool planet;
 
     private void OnTriggerEnter(Collider col)
     {
@@ -20,6 +21,10 @@ public class GravityToggler : MonoBehaviour
         if (gravityBody != null)
         {
             gravityBody.triggered = false;
+            if (planet)
+            {
+                gravityBody.useGravity = !useGravity;
+            }
         }
     }
 }
