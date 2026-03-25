@@ -65,6 +65,16 @@ public class INV_Item : ScriptableObject
     [Tooltip("Scale applied to the mesh visual when equipped.")]
     [SerializeField] private float equippedMeshScale = 1f;
 
+    [Header("Crafting Mesh Visual")]
+    [Tooltip("Local offset applied to the mesh visual when shown in crafting menu.")]
+    [SerializeField] private Vector3 craftingMeshOffset = Vector3.zero;
+
+    [Tooltip("Local rotation applied to the mesh visual when shown in crafting menu.")]
+    [SerializeField] private Vector3 craftingMeshRotation = Vector3.zero;
+
+    [Tooltip("Scale applied to the mesh visual when shown in crafting menu.")]
+    [SerializeField] private float craftingMeshScale = 1f;
+
     [Header("Inventory")]
     [Tooltip("Complex shape per row. '+' = occupies, '-' = empty. Each entry is the next line down.\nExample: '++', '+-'")]
     [SerializeField] private List<string> inventorySpaceShape = new List<string>() { "++", "+-" };
@@ -100,6 +110,10 @@ public class INV_Item : ScriptableObject
     public Vector3 EquippedMeshOffset => equippedMeshOffset;
     public Vector3 EquippedMeshRotation => equippedMeshRotation;
     public float EquippedMeshScale => equippedMeshScale;
+
+    public Vector3 CraftingMeshOffset => craftingMeshOffset;
+    public Vector3 CraftingMeshRotation => craftingMeshRotation;
+    public float CraftingMeshScale => craftingMeshScale;
 
     public List<string> InventorySpaceShape => inventorySpaceShape;
 

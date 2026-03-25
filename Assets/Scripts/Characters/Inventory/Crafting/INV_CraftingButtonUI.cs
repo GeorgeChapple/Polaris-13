@@ -47,6 +47,9 @@ public class INV_CraftingButtonUI : MonoBehaviour
             {
                 meshRenderer.sharedMaterial = item.Material;
                 meshRenderer.enabled = item.Mesh != null;
+                meshRenderer.transform.localPosition = item.CraftingMeshOffset;
+                meshRenderer.transform.localRotation = Quaternion.Euler(item.CraftingMeshRotation);
+                meshRenderer.transform.localScale = Vector3.one * item.CraftingMeshScale;
             }
             else
             {
