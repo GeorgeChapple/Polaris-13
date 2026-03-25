@@ -135,6 +135,7 @@ public class CC_Movement : NetworkBehaviour
     bool groundThrustersRequiresRelease;
 
     bool initialised;
+    bool deathRespawnRunning;
 
     // public read for other components like camera/interaction
     public Rigidbody Body => rb;
@@ -226,7 +227,12 @@ public class CC_Movement : NetworkBehaviour
                 if (networked)
                 {
                     id = OwnerClientId;
+                    if (id >= (ulong)spawnPoints.Length)
+                    {
+                        id = 0;
+                    }
                 }
+
                 Transform spawnPoint = spawnPoints[id].transform;
                 rb.position = spawnPoint.position;
                 break;
@@ -243,6 +249,29 @@ public class CC_Movement : NetworkBehaviour
         // keep our up axis updated from gravity
         UpdateGravity();
         UpdateLocomotionMode();
+
+        // dead = no movement/input handling
+        if (values != null && values.isDead)
+        {
+            jumpedThisTick = false;
+            usingGroundThrusters = false;
+            usingSpaceMoveThrusters = false;
+            usingSpaceStabiliseThrusters = false;
+            oxygenDrainMultiplierThisTick = 0f;
+
+            pendingLook = Vector2.zero;
+            pendingRoll = 0f;
+
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            if (!deathRespawnRunning)
+            {
+                StartCoroutine(DeathRespawnRoutine());
+            }
+
+            return;
+        }
 
         pendingRoll = -rollInput;
 
@@ -303,6 +332,11 @@ public class CC_Movement : NetworkBehaviour
     public virtual void TickLateState()
     {
         if (!IsLocallyControlled() || rb == null || values == null) { return; }
+
+        if (values.isDead)
+        {
+            return;
+        }
 
         // only drain stamina when sprinting in ground mode and grounded
         bool shouldDrainStamina = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
@@ -711,5 +745,72 @@ public class CC_Movement : NetworkBehaviour
 
         bodyCapsule.height = Mathf.Lerp(bodyCapsule.height, targetHeight, t);
         bodyCapsule.center = Vector3.Lerp(bodyCapsule.center, targetCenter, t);
+    }
+
+    private IEnumerator DeathRespawnRoutine()
+    {
+        deathRespawnRunning = true;
+
+        float delay = values != null ? values.DeathRespawnDelay : 3f;
+        yield return new WaitForSeconds(delay);
+
+        if (rb != null)
+        {
+            RespawnAtSpawnPoint();
+        }
+
+        if (values != null)
+        {
+            values.RespawnReset();
+        }
+
+        grounded = false;
+        crouching = false;
+        sprinting = false;
+        jumpedThisTick = false;
+
+        groundThrustersActivatedThisAirborne = false;
+        groundThrustersRequiresRelease = false;
+        jumpHeldLastTick = false;
+
+        deathRespawnRunning = false;
+    }
+
+    private void RespawnAtSpawnPoint()
+    {
+        GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint");
+        if (spawnPoints == null || spawnPoints.Length == 0 || rb == null)
+        {
+            return;
+        }
+
+        int spawnIndex = 0;
+
+        if (!singlePlayer)
+        {
+            spawnIndex = Mathf.Clamp((int)OwnerClientId, 0, spawnPoints.Length - 1);
+        }
+
+        Transform spawnPoint = spawnPoints[spawnIndex].transform;
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        rb.position = spawnPoint.position;
+        rb.rotation = spawnPoint.rotation;
+
+        bodyRotation = rb.rotation;
+
+        groundedForward = Vector3.ProjectOnPlane(spawnPoint.forward, upAxis);
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        }
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.forward;
+        }
+
+        groundedForward.Normalize();
     }
 }
