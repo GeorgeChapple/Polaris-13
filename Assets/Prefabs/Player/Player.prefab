@@ -843,7 +843,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 4413220172885515415}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99999326
+  m_Size: 0.9999925
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1277,7 +1277,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.00013871545}
+  m_AnchoredPosition: {x: 0, y: 0.00011166229}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7933735975570430747
@@ -4527,7 +4527,6 @@ MonoBehaviour:
   jumpPower: 6
   groundThrusterAccel: 11
   groundThrusterUpSpeedCap: 15
-  groundThrusterDrainPerSecond: 10
   airborneGroundControl: 0.3
   torqueStrength: 1.5
   groundedTorqueStrength: 10
@@ -4559,9 +4558,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   stabiliseMaxMult: 1
   thrusterAccel: 4
-  spaceThrusterDrainPerSecond: 6
   spaceStabiliseAccel: 8
-  spaceStabiliseDrainPerSecond: 3
   spaceTurnSpeed: 120
   rollMaxSpeed: 80
   rollAccel: 2
@@ -4657,13 +4654,16 @@ MonoBehaviour:
   staminaRegenPerSecond: 20
   staminaRegenDelay: 0.5
   staminaDepletedRegenDelay: 1.75
-  maxThruster: 100
-  thruster: 100
-  thrusterRegenPerSecond: 50
-  thrusterRegenDelay: 1
-  thrusterDepletedRegenDelay: 3
   maxOxygen: 100
   oxygen: 100
+  oxygenDrainPerSecondInSpace: 1
+  oxygenThrusterDrainPerSecond: 2
+  oxygenRegenPerSecond: 40
+  oxygenRegenDelay: 1
+  oxygenDepletedRegenDelay: 3
+  groundThrusterOxygenDrainMult: 1.5
+  spaceMoveOxygenDrainMult: 1
+  spaceStabiliseOxygenDrainMult: 0.5
   level: 1
   exp: 0
   expToNextLevel: 100
@@ -4680,13 +4680,12 @@ MonoBehaviour:
     visibleDelay: 1
     alphaLerpInSpeed: 10
     alphaLerpOutSpeed: 6
-  thrusterUI:
+  oxygenUI:
   - img: {fileID: 3931236817065909934}
     appearOnUpdated: 1
     visibleDelay: 1
     alphaLerpInSpeed: 10
     alphaLerpOutSpeed: 6
-  oxygenUI: []
   expUI: []
 --- !u!114 &8369474086802787515
 MonoBehaviour:
@@ -5630,7 +5629,7 @@ GameObject:
   - component: {fileID: 8775565689426516495}
   - component: {fileID: 3931236817065909934}
   m_Layer: 5
-  m_Name: Thruster
+  m_Name: Oxygen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
