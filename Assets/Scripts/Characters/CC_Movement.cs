@@ -4,7 +4,7 @@ using TMPro;
 using System.Collections;
 
 // Made by: Jason Lodge
-// Summary: Handles locomotion, gravity, jumping, body rotation and stamina / thruster usage.
+// Summary: Handles locomotion, gravity, jumping, body rotation and stamina / oxygen usage.
 
 [RequireComponent(typeof(Rigidbody))]
 public class CC_Movement : NetworkBehaviour
@@ -47,9 +47,6 @@ public class CC_Movement : NetworkBehaviour
     [Tooltip("Maximum upward speed the ground thrusters will push towards.")]
     public float groundThrusterUpSpeedCap = 8f;
 
-    [Tooltip("Thruster drain per second while using airborne ground thrusters.")]
-    public float groundThrusterDrainPerSecond = 15f;
-
     [Header("Ground Air Control")]
     [Tooltip("Allow horizontal airborne movement in ground mode using the space thruster settings.")]
     [Range(0f, 1f)] public float airborneGroundControl = 1f;
@@ -75,15 +72,9 @@ public class CC_Movement : NetworkBehaviour
     [Header("Space Thrusters")]
     public float thrusterAccel = 4f;
 
-    [Tooltip("Thruster drain per second while using space movement thrusters.")]
-    public float spaceThrusterDrainPerSecond = 8f;
-
     [Header("Space Stabilisation")]
     [Tooltip("Acceleration applied opposite to current velocity while stabilising in space.")]
     public float spaceStabiliseAccel = 8f;
-
-    [Tooltip("Thruster drain per second while using space stabilisation.")]
-    public float spaceStabiliseDrainPerSecond = 4f;
 
     [Header("Space Rotation")]
     public float spaceTurnSpeed = 30f;
@@ -136,7 +127,7 @@ public class CC_Movement : NetworkBehaviour
     bool usingGroundThrusters;
     bool usingSpaceMoveThrusters;
     bool usingSpaceStabiliseThrusters;
-    float thrusterDrainPerSecondThisTick;
+    float oxygenDrainMultiplierThisTick;
 
     // jump / thruster input state
     bool jumpHeldLastTick;
@@ -266,7 +257,7 @@ public class CC_Movement : NetworkBehaviour
         usingGroundThrusters = false;
         usingSpaceMoveThrusters = false;
         usingSpaceStabiliseThrusters = false;
-        thrusterDrainPerSecondThisTick = 0f;
+        oxygenDrainMultiplierThisTick = 0f;
 
         // landing resets the airborne thruster activation
         if (grounded)
@@ -314,13 +305,15 @@ public class CC_Movement : NetworkBehaviour
         if (!IsLocallyControlled() || rb == null || values == null) { return; }
 
         // only drain stamina when sprinting in ground mode and grounded
-        bool shouldDrain = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
+        bool shouldDrainStamina = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
+        values.TickStamina(shouldDrainStamina, true);
 
-        values.TickStamina(shouldDrain, true);
+        // oxygen regens when not being used for thrusters
+        bool usingOxygenForThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;
+        values.TickOxygenThrusterUsage(usingOxygenForThrusters, true, oxygenDrainMultiplierThisTick);
 
-        // thrusters regen when not being used
-        bool usingThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;
-        values.TickThruster(usingThrusters, true, thrusterDrainPerSecondThisTick);
+        // passive oxygen drain while in space mode
+        values.TickPassiveOxygenDrainInSpace(locomotionType == LocomotionType.SpaceMode);
 
         // if we run out of stamina, force sprint off
         if (sprinting && !values.HasStamina())
@@ -347,7 +340,7 @@ public class CC_Movement : NetworkBehaviour
         if (customGravityBody.useGravity && currentGravity.magnitude >= zeroGravityThreshold)
         {
             locomotionType = LocomotionType.GroundMode;
-        } 
+        }
         else
         {
             locomotionType = LocomotionType.SpaceMode;
@@ -379,12 +372,12 @@ public class CC_Movement : NetworkBehaviour
             Vector3 moveDir = camRight * moveInput.x + camForward * moveInput.y;
             if (moveDir.sqrMagnitude > 1f) { moveDir.Normalize(); }
 
-            // airborne movement uses thruster acceleration and thruster value
-            if (moveDir.sqrMagnitude > 0.0001f && values != null && values.HasThruster())
+            // airborne movement uses thruster acceleration and oxygen
+            if (moveDir.sqrMagnitude > 0.0001f && values != null && values.HasOxygen())
             {
                 rb.AddForce(moveDir * (thrusterAccel * airborneGroundControl), ForceMode.Acceleration);
                 usingSpaceMoveThrusters = true;
-                thrusterDrainPerSecondThisTick += spaceThrusterDrainPerSecond;
+                oxygenDrainMultiplierThisTick += values.spaceMoveOxygenDrainMult;
             }
 
             rb.linearVelocity = planarVel + verticalVel;
@@ -469,7 +462,7 @@ public class CC_Movement : NetworkBehaviour
     protected virtual void GroundThrusters(bool jumpHeld, bool jumpPressedThisTick)
     {
         if (rb == null || values == null) { return; }
-        if (locomotionType != LocomotionType.GroundMode || grounded || !values.HasThruster()) { return; }
+        if (locomotionType != LocomotionType.GroundMode || grounded || !values.HasOxygen()) { return; }
 
         // holding jump from the initial ground jump shouldn't activate thrusters
         // player must release jump after jumping, then press again while airborne to activate thrusters
@@ -499,7 +492,7 @@ public class CC_Movement : NetworkBehaviour
         rb.AddForce(upAxis * groundThrusterAccel, ForceMode.Acceleration);
 
         usingGroundThrusters = true;
-        thrusterDrainPerSecondThisTick += groundThrusterDrainPerSecond;
+        oxygenDrainMultiplierThisTick += values.groundThrusterOxygenDrainMult;
     }
 
     protected virtual void GroundBodyRotation()
@@ -600,12 +593,12 @@ public class CC_Movement : NetworkBehaviour
         float speedMult = 1f;
         if (sprinting) { speedMult *= sprintSpeedMult; }
 
-        if (accel.sqrMagnitude > 0.0001f && values.HasThruster())
+        if (accel.sqrMagnitude > 0.0001f && values.HasOxygen())
         {
             rb.AddForce(accel * (thrusterAccel * speedMult), ForceMode.Acceleration);
 
             usingSpaceMoveThrusters = true;
-            thrusterDrainPerSecondThisTick += spaceThrusterDrainPerSecond;
+            oxygenDrainMultiplierThisTick += values.spaceMoveOxygenDrainMult;
         }
 
         if (stabilisePressed)
@@ -616,7 +609,7 @@ public class CC_Movement : NetworkBehaviour
 
     protected virtual void SpaceStabilisation()
     {
-        if (rb == null || values == null || !values.HasThruster()) { return; }
+        if (rb == null || values == null || !values.HasOxygen()) { return; }
 
         Vector3 velocity = rb.linearVelocity;
         float speed = velocity.magnitude;
@@ -637,7 +630,7 @@ public class CC_Movement : NetworkBehaviour
         rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * Time.fixedDeltaTime);
 
         usingSpaceStabiliseThrusters = true;
-        thrusterDrainPerSecondThisTick += spaceStabiliseDrainPerSecond;
+        oxygenDrainMultiplierThisTick += values.spaceStabiliseOxygenDrainMult;
     }
 
     protected virtual void SpaceBodyRotation()
