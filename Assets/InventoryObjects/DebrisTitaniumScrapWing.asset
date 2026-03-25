@@ -25,11 +25,16 @@ MonoBehaviour:
   mesh: {fileID: 5060444177187149915, guid: 0693db9fa92a62d48910f545753e0c83, type: 3}
   material: {fileID: -3661639628750336703, guid: 0693db9fa92a62d48910f545753e0c83, type: 3}
   inventoryMeshOffset: {x: -10, y: 0, z: -20}
+  inventoryMeshRotation: {x: 0, y: 0, z: 0}
   inventoryMeshScale: 110
   equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
   applyEquippedPrefabVisuals: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
+  equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 0.3
+  craftingMeshOffset: {x: -10, y: 0, z: -20}
+  craftingMeshRotation: {x: 0, y: 0, z: 0}
+  craftingMeshScale: 110
   inventorySpaceShape:
   - ++
   - +-

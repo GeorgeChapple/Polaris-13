@@ -48,7 +48,13 @@ public class INV_Inventory : MonoBehaviour
 
     [Tooltip("Item prefab we will use to drop an item with (needs to have INV_ItemDrop).")]
     [SerializeField] private GameObject itemPrefab;
-    public GameObject ItemPrefab => itemPrefab;
+
+    [Header("Hover Tooltip")]
+    [SerializeField] private INV_ItemHoverTooltip hoverTooltip;
+    [SerializeField] private float hoverTooltipDelay = 0.4f;
+
+    private INV_ItemUI lastHoverItem;
+    private float hoverTimer;
 
     [Tooltip("Transform we will spawn dropped items from.")]
     public Transform dropItemTransform;
@@ -73,7 +79,7 @@ public class INV_Inventory : MonoBehaviour
     // item instances
     [SerializeField] private List<ItemInstance> items = new List<ItemInstance>();
     public List<ItemInstance> Items => items;
-
+    public GameObject ItemPrefab => itemPrefab;
     public Vector2 CellSize => cellSize;
     public Vector2 GridSpacing => gridLayoutGroup != null ? gridLayoutGroup.spacing : inventoryGridSpacing;
     public GameObject OccupiedSpacePrefab => occupiedSpacePrefab;
@@ -130,17 +136,31 @@ public class INV_Inventory : MonoBehaviour
         if (inventoryMenuRoot != null && !inventoryMenuRoot.gameObject.activeInHierarchy)
         {
             hoverItem = null;
+            lastHoverItem = null;
+            hoverTimer = 0f;
+
+            if (hoverTooltip != null)
+            {
+                hoverTooltip.HideImmediate();
+            }
+
             return;
         }
+
         if (inventoryMenuRoot.gameObject.activeInHierarchy)
-        { // update all items when inventory menu open
+        {
+            // update all items when inventory menu open
             foreach (ItemInstance item in items)
             {
                 item.uiHandler.ApplyUpdatedVisuals();
             }
         }
+
         // hover detection
         UpdateHoverItem();
+
+        // tooltip
+        UpdateHoverTooltip();
     }
 
     // generates the grid to use for inventory
@@ -729,6 +749,7 @@ public class INV_Inventory : MonoBehaviour
             hoverItem = null;
             return;
         }
+
         if (Mouse.current == null)
         {
             hoverItem = null;
@@ -742,13 +763,13 @@ public class INV_Inventory : MonoBehaviour
         INV_ItemUI found = null;
         int bestSibling = int.MinValue;
 
-        // check every item rect for mouse hit. choose the top-most in hierarchy.
+        // check every item occupied space for mouse hit. choose the top most in hierarchy.
         for (int i = 0; i < items.Count; i++)
         {
             ItemInstance inst = items[i];
             if (inst == null || inst.ui == null || inst.uiHandler == null) { continue; }
 
-            if (RectTransformUtility.RectangleContainsScreenPoint(inst.ui, mouse, uiCam))
+            if (inst.uiHandler.IsScreenPointOverOccupiedSpace(mouse, uiCam))
             {
                 int sib = inst.ui.GetSiblingIndex();
                 if (sib >= bestSibling)
@@ -760,6 +781,48 @@ public class INV_Inventory : MonoBehaviour
         }
 
         hoverItem = found;
+    }
+    private void UpdateHoverTooltip()
+    {
+        if (hoverTooltip == null)
+        {
+            return;
+        }
+
+        // dont show while dragging
+        if (heldItem != null)
+        {
+            hoverTooltip.HideImmediate();
+            lastHoverItem = null;
+            hoverTimer = 0f;
+            return;
+        }
+
+        if (hoverItem == null || hoverItem.Instance == null || hoverItem.Instance.data == null)
+        {
+            hoverTooltip.HideImmediate();
+            lastHoverItem = null;
+            hoverTimer = 0f;
+            return;
+        }
+
+        if (hoverItem != lastHoverItem)
+        {
+            lastHoverItem = hoverItem;
+            hoverTimer = 0f;
+            hoverTooltip.HideImmediate();
+            return;
+        }
+
+        hoverTimer += Time.deltaTime;
+
+        if (hoverTimer < hoverTooltipDelay)
+        {
+            return;
+        }
+
+        hoverTooltip.Show(hoverItem.Instance.data);
+        hoverTooltip.RefreshPosition();
     }
 
     // Rotate held item
