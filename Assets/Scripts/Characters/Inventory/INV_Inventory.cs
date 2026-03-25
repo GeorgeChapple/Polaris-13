@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -908,40 +907,132 @@ public class INV_Inventory : MonoBehaviour
         item.cell = cell;
     }
 
-    // item drop logic, we're currently not using on account of networking.
-    // however I might use it for single player if we dont treat single player like a server with only you on it.
-    private bool DropItem(ItemInstance inst)
+    // crafting
+    public int GetItemCount(string itemId)
     {
-        if (itemPrefab == null || dropItemTransform == null) { return false; }
-
-        Vector3 dropPoint = dropItemTransform.position;
-        GameObject drop = Instantiate(itemPrefab, dropPoint, Quaternion.identity);
-        if (drop == null) { return false; }
-
-        INV_ItemDrop dropHandler = drop.GetComponent<INV_ItemDrop>();
-        if (dropHandler != null)
+        if (string.IsNullOrWhiteSpace(itemId))
         {
-            dropHandler.Init(inst.data);
-            dropHandler.GetComponent<InteractableObject>().RewireInteractListeners();
+            return 0;
         }
 
-        Rigidbody rb = drop.GetComponent<Rigidbody>();
-        if (rb != null)
+        int total = 0;
+
+        for (int i = 0; i < items.Count; i++)
         {
-            rb.AddForce(dropItemTransform.forward, ForceMode.Impulse);
-            rb.AddTorque(Vector3.one * Random.Range(-0.5f, 0.5f), ForceMode.Impulse);
+            ItemInstance inst = items[i];
+            if (inst == null || inst.data == null) { continue; }
+
+            if (inst.data.ItemID != itemId) { continue; }
+
+            total += Mathf.Max(1, inst.quantity);
         }
 
-        NetworkObject netObj = drop.GetComponent<NetworkObject>();
-        if (netObj != null)
+        return total;
+    }
+
+    public bool HasItemAmount(string itemId, int amount)
+    {
+        if (string.IsNullOrWhiteSpace(itemId)) { return false; }
+        if (amount <= 0) { return true; }
+
+        return GetItemCount(itemId) >= amount;
+    }
+
+    public bool CanAddItem(INV_Item item)
+    {
+        EnsureGrid();
+        if (item == null) { return false; }
+
+        // stacking first
+        if (item.Stackable)
         {
-            netObj.Spawn();
-        }
-        else
-        {
-            Debug.LogError("Dropped item prefab is missing NetworkObject!", drop);
+            int maxStack = item.MaxStack;
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                ItemInstance inst = items[i];
+                if (inst == null || inst.data == null) { continue; }
+
+                if (inst.data.ItemID != item.ItemID) { continue; }
+                if (!inst.data.Stackable) { continue; }
+                if (inst.quantity < maxStack)
+                {
+                    return true;
+                }
+            }
         }
 
-        return true;
+        // otherwise see if a fresh instance could fit
+        ItemInstance temp = new ItemInstance();
+        temp.data = item;
+        temp.rotation = ItemInstance.Rotation.Up;
+        temp.quantity = 1;
+
+        BuildShapeForInstance(temp, ItemInstance.Rotation.Up);
+
+        Vector2Int foundCell;
+        return LookForOccupyableSpace(temp, out foundCell);
+    }
+
+    // used by crafting
+    public bool RemoveItemAmount(string itemId, int amount)
+    {
+        EnsureGrid();
+
+        if (string.IsNullOrWhiteSpace(itemId)) { return false; }
+        if (amount <= 0) { return true; }
+
+        if (!HasItemAmount(itemId, amount))
+        {
+            return false;
+        }
+
+        int remaining = amount;
+
+        for (int i = items.Count - 1; i >= 0; i--)
+        {
+            ItemInstance inst = items[i];
+            if (inst == null || inst.data == null) { continue; }
+
+            if (inst.data.ItemID != itemId) { continue; }
+
+            int take = Mathf.Min(inst.quantity, remaining);
+            inst.quantity -= take;
+            remaining -= take;
+
+            if (inst.quantity <= 0)
+            {
+                INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+                if (hotBar != null)
+                {
+                    hotBar.ClearReferencesToItem(inst);
+                }
+
+                ClearItemOccupancy(inst);
+                items.RemoveAt(i);
+
+                if (inst.ui != null)
+                {
+                    Destroy(inst.ui.gameObject);
+                }
+            }
+            else if (inst.uiHandler != null)
+            {
+                inst.uiHandler.ApplyUpdatedVisuals();
+            }
+
+            if (remaining <= 0)
+            {
+                INV_HotBar hotBar = GetComponent<INV_HotBar>();
+                if (hotBar != null)
+                {
+                    hotBar.RefreshAllVisuals();
+                }
+
+                return true;
+            }
+        }
+
+        return remaining <= 0;
     }
 }

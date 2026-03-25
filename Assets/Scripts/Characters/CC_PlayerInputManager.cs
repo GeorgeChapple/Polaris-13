@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 // Made by: Jason Lodge
 // Summary: Uses unity's new input system to change raw control values for movement, jumping, etc.
+
 public class CC_PlayerInputManager : MonoBehaviour
 {
     [Header("Character Input Values")]
@@ -24,7 +25,7 @@ public class CC_PlayerInputManager : MonoBehaviour
 
     [Header("Menu Values")]
     public bool pause;
-    public bool inventory;
+    public bool monitoringMenu;
     public bool rotateItem;
     public bool dropItem;
     public bool dropHeldItem;
@@ -49,7 +50,7 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void OnDropItem(InputValue value) { DropItemInput(value.isPressed); }
     public void OnDropHeldItem(InputValue value) { DropHeldItemInput(value.isPressed); }
     public void OnPause(InputValue value) { PauseInput(value.isPressed); }
-    public void OnInventory(InputValue value) { InventoryInput(value.isPressed); }
+    public void OnMonitoringMenu(InputValue value) { MonitoringMenuInput(value.isPressed); }
     public void OnHotbar(InputValue value) { HotbarInput(value.Get<float>()); }
     public void OnHotbarSlot1(InputValue value) { HotbarSlot1Input(value.isPressed); }
     public void OnHotbarSlot2(InputValue value) { HotbarSlot2Input(value.isPressed); }
@@ -70,7 +71,7 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void DropItemInput(bool newDropItemState) { dropItem = newDropItemState; }
     public void DropHeldItemInput(bool newDropHeldItemState) { dropHeldItem = newDropHeldItemState; }
     public void PauseInput(bool newPauseState) { pause = newPauseState; }
-    public void InventoryInput(bool newInventoryState) { inventory = newInventoryState; }
+    public void MonitoringMenuInput(bool newInventoryState) { monitoringMenu = newInventoryState; }
     public void HotbarInput(float newHotBarState) { hotBar = newHotBarState; }
     public void HotbarSlot1Input(bool newState) { hotbarSlot1 = newState; }
     public void HotbarSlot2Input(bool newState) { hotbarSlot2 = newState; }

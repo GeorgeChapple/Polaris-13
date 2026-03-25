@@ -58,7 +58,7 @@ public class CC_ClientPlayerControl : NetworkBehaviour
             m_PlayerInputManager.move, m_PlayerInputManager.look, m_PlayerInputManager.jump, m_PlayerInputManager.interact,
             m_PlayerInputManager.sprint, m_PlayerInputManager.crouch,
             m_PlayerInputManager.roll,
-            m_PlayerInputManager.pause, m_PlayerInputManager.inventory, m_PlayerInputManager.rotateItem, m_PlayerInputManager.dropItem, m_PlayerInputManager.dropHeldItem, m_PlayerInputManager.hotBar
+            m_PlayerInputManager.pause, m_PlayerInputManager.monitoringMenu, m_PlayerInputManager.rotateItem, m_PlayerInputManager.dropItem, m_PlayerInputManager.dropHeldItem, m_PlayerInputManager.hotBar
         );
     }
 
@@ -84,7 +84,7 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
         // Menu Values
         m_PlayerInputManager.PauseInput(pause);
-        m_PlayerInputManager.InventoryInput(inventory);
+        m_PlayerInputManager.MonitoringMenuInput(inventory);
         m_PlayerInputManager.RotateItemInput(rotateItem);
         m_PlayerInputManager.DropItemInput(dropItem);
         m_PlayerInputManager.DropHeldItemInput(dropHeldItem);

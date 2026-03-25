@@ -40,8 +40,8 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Tooltip("Pause menu root.")]
     [SerializeField] private GameObject pauseMenuRoot;
 
-    [Tooltip("Inventory menu root.")]
-    [SerializeField] private GameObject inventoryMenuRoot;
+    [Tooltip("Monitoring menu root. (Inventory, Crafting, and Status)")]
+    [SerializeField] private GameObject monitoringMenuRoot;
 
     [Tooltip("Interact menu ui.")]
     [SerializeField] private UI_InteractMenu interactMenu;
@@ -52,6 +52,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Tooltip("Network Inventory Handler")]
     [SerializeField] private INV_PlayerInventoryNet inventoryNet;
 
+    [Tooltip("Crafting")]
+    [SerializeField] private INV_Crafting crafting;
+
     [Tooltip("Hotbar")]
     [SerializeField] private INV_HotBar hotBar;
 
@@ -60,7 +63,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     // internal press guards so hold wont spam toggle
     private bool useHeld;
     private bool pauseHeld;
-    private bool inventoryHeld;
+    private bool monitoringMenuHeld;
     private bool rotateHeld;
     private bool dropHeld;
     private bool dropHeldItemHeld;
@@ -113,6 +116,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (inventoryNet == null)
         {
             inventoryNet = GetComponentInChildren<INV_PlayerInventoryNet>();
+        }
+
+        if (crafting == null)
+        {
+            crafting = GetComponentInChildren<INV_Crafting>();
         }
 
         if (hotBar == null)
@@ -212,7 +220,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         HandleItemUse();
 
-        // one-off rotate/drop while inventory menu is open
+        // one-off rotate/drop while monitoring menu is open
         HandleInventoryActions();
 
         // hotbar assign / selection
@@ -319,8 +327,8 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void HandleInventoryActions()
     {
-        // only allow these when we're in a menu and inventory is actually open
-        if (!inMenu || !IsInventoryOpen() || inventory == null)
+        // only allow these when we're in a menu and monitoring menu is actually open
+        if (!inMenu || !IsMonitoringMenuOpen() || inventory == null)
         {
             rotateHeld = false;
             dropHeld = false;
@@ -354,12 +362,12 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     {
         if (hotBar == null) { return; }
 
-        bool inventoryOpen = inMenu && IsInventoryOpen();
+        bool monitoringMenuOpen = inMenu && IsMonitoringMenuOpen();
 
-        HandleHotbarSlotPress(input.hotbarSlot1, ref hotbarSlot1Held, 0, inventoryOpen);
-        HandleHotbarSlotPress(input.hotbarSlot2, ref hotbarSlot2Held, 1, inventoryOpen);
-        HandleHotbarSlotPress(input.hotbarSlot3, ref hotbarSlot3Held, 2, inventoryOpen);
-        HandleHotbarSlotPress(input.hotbarSlot4, ref hotbarSlot4Held, 3, inventoryOpen);
+        HandleHotbarSlotPress(input.hotbarSlot1, ref hotbarSlot1Held, 0, monitoringMenuOpen);
+        HandleHotbarSlotPress(input.hotbarSlot2, ref hotbarSlot2Held, 1, monitoringMenuOpen);
+        HandleHotbarSlotPress(input.hotbarSlot3, ref hotbarSlot3Held, 2, monitoringMenuOpen);
+        HandleHotbarSlotPress(input.hotbarSlot4, ref hotbarSlot4Held, 3, monitoringMenuOpen);
 
         int scrollDirection = 0;
         if (input.hotBar > 0f) { scrollDirection = 1; }
@@ -384,15 +392,15 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
     }
 
-    private void HandleHotbarSlotPress(bool pressed, ref bool held, int slotIndex, bool inventoryOpen)
+    private void HandleHotbarSlotPress(bool pressed, ref bool held, int slotIndex, bool monitoringMenuOpen)
     {
         if (pressed && !held)
         {
             held = true;
 
-            // if inventory is open and we're hovering an item,
+            // if monitoring menu is open and we're hovering an item,
             // assign that hovered item into the slot.
-            if (inventoryOpen && inventory != null && inventory.hoverItem != null)
+            if (monitoringMenuOpen && inventory != null && inventory.hoverItem != null)
             {
                 hotBar.AssignHoverItemToSlot(slotIndex);
             }
@@ -420,10 +428,10 @@ public class CC_CharacterPlayerController : NetworkBehaviour
                 return;
             }
 
-            // if inventory is open, close it and open pause
-            if (inventoryMenuRoot != null && inventoryMenuRoot.activeSelf)
+            // if monitoring menu is open, close it and open pause
+            if (IsMonitoringMenuOpen())
             {
-                SetInventoryMenu(false);
+                SetMonitoringMenu(false, true);
             }
 
             SetPauseMenu(!IsPauseOpen());
@@ -433,10 +441,10 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             pauseHeld = false;
         }
 
-        // inventory (toggle)
-        if (input.inventory && !inventoryHeld)
+        // monitoring menu (toggle)
+        if (input.monitoringMenu && !monitoringMenuHeld)
         {
-            inventoryHeld = true;
+            monitoringMenuHeld = true;
 
             if (IsInteractMenuOpen())
             {
@@ -444,21 +452,21 @@ public class CC_CharacterPlayerController : NetworkBehaviour
                 return;
             }
 
-            // if pause is open, close it and open inventory
+            // if pause is open, close it and open monitoring menu
             if (pauseMenuRoot != null && pauseMenuRoot.activeSelf)
             {
                 SetPauseMenu(false);
             }
 
-            SetInventoryMenu(!IsInventoryOpen());
+            SetMonitoringMenu(!IsMonitoringMenuOpen(), true);
         }
-        else if (!input.inventory && inventoryHeld)
+        else if (!input.monitoringMenu && monitoringMenuHeld)
         {
-            inventoryHeld = false;
+            monitoringMenuHeld = false;
         }
 
         // update in menu bool from actual roots so its always right
-        bool anyMenuOpen = IsPauseOpen() || IsInventoryOpen() || IsInteractMenuOpen();
+        bool anyMenuOpen = IsPauseOpen() || IsMonitoringMenuOpen() || IsInteractMenuOpen();
         if (inMenu != anyMenuOpen)
         {
             SetInMenu(anyMenuOpen);
@@ -495,9 +503,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
 
         // when opening pause, force inventory closed
-        if (state && inventoryMenuRoot != null)
+        if (state && monitoringMenuRoot != null)
         {
-            inventoryMenuRoot.SetActive(false);
+            monitoringMenuRoot.SetActive(false);
         }
 
         if (state && interactMenu != null)
@@ -505,14 +513,14 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             interactMenu.CloseMenu(false);
         }
 
-        SetInMenu(state || IsInventoryOpen() || IsInteractMenuOpen());
+        SetInMenu(state || IsMonitoringMenuOpen() || IsInteractMenuOpen());
     }
 
-    public void SetInventoryMenu(bool state)
+    public void SetMonitoringMenu(bool state, bool openedByThis)
     {
-        if (inventoryMenuRoot != null)
+        if (monitoringMenuRoot != null)
         {
-            inventoryMenuRoot.SetActive(state);
+            monitoringMenuRoot.SetActive(state);
         }
 
         // when opening inventory, force pause closed
@@ -526,6 +534,15 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             interactMenu.CloseMenu(false);
         }
 
+        if (openedByThis)
+        {
+            if (state && crafting != null)
+            {
+                crafting.SetupEverything(false);
+            }
+        }
+
+
         SetInMenu(state || IsPauseOpen() || IsInteractMenuOpen());
     }
 
@@ -535,7 +552,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (interactable == null) { return; }
 
         if (pauseMenuRoot != null) { pauseMenuRoot.SetActive(false); }
-        if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(false); }
+        if (monitoringMenuRoot != null) { monitoringMenuRoot.SetActive(false); }
 
         interactMenu.OpenMenu(this, interactable, interactor);
         SetInMenu(true);
@@ -548,7 +565,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             interactMenu.CloseMenu();
         }
 
-        SetInMenu(IsPauseOpen() || IsInventoryOpen() || IsInteractMenuOpen());
+        SetInMenu(IsPauseOpen() || IsMonitoringMenuOpen() || IsInteractMenuOpen());
     }
 
     private bool IsPauseOpen()
@@ -556,9 +573,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         return pauseMenuRoot != null && pauseMenuRoot.activeSelf;
     }
 
-    private bool IsInventoryOpen()
+    private bool IsMonitoringMenuOpen()
     {
-        return inventoryMenuRoot != null && inventoryMenuRoot.activeSelf;
+        return monitoringMenuRoot != null && monitoringMenuRoot.activeSelf;
     }
 
     private bool IsInteractMenuOpen()
@@ -569,7 +586,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private void SetMenuRoots(bool pauseState, bool invState)
     {
         if (pauseMenuRoot != null) { pauseMenuRoot.SetActive(pauseState); }
-        if (inventoryMenuRoot != null) { inventoryMenuRoot.SetActive(invState); }
+        if (monitoringMenuRoot != null) { monitoringMenuRoot.SetActive(invState); }
     }
 
     private void SetCursorLocked(bool shouldLock)

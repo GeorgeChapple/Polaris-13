@@ -1,6 +1,12 @@
+using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+
+// Made By: Jason Lodge.
+// Summary: Inventory and crafting networking,
+// handles all server side capabilities for inventory and crafting.
 
 public class INV_PlayerInventoryNet : NetworkBehaviour
 {
@@ -19,6 +25,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool logEquippedItem;
+
+    public event Action<bool, string> OnCraftRequestFinished;
 
     // replicated equipped item id, the visual is built locally on each player from this
     private NetworkVariable<FixedString128Bytes> equippedItemId = new NetworkVariable<FixedString128Bytes>(
@@ -130,6 +138,49 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
     }
 
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void CraftResultLocalRpc(bool succeeded, string craftedItemId, RpcParams rpcParams = default)
+    {
+        if (inventory == null)
+        {
+            inventory = GetComponentInChildren<INV_Inventory>();
+        }
+
+        if (inventory == null)
+        {
+            Debug.LogError("INV_PlayerInventoryNet could not find INV_Inventory.", this);
+            OnCraftRequestFinished?.Invoke(false, craftedItemId);
+            return;
+        }
+
+        if (succeeded)
+        {
+            INV_Item craftedItem = INV_ItemDatabase.Instance != null
+                ? INV_ItemDatabase.Instance.GetItemById(craftedItemId)
+                : null;
+
+            if (craftedItem != null)
+            {
+                // remove crafting requirements locally
+                for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+                {
+                    INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+                    if (req == null || req.item == null || req.amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    inventory.RemoveItemAmount(req.item.ItemID, req.amount);
+                }
+
+                // then add crafted result locally
+                inventory.TryAddItem(craftedItem);
+            }
+        }
+
+        OnCraftRequestFinished?.Invoke(succeeded, craftedItemId);
+    }
+
     // Called by local inventory UI
     public void RequestDropItem(string itemId)
     {
@@ -206,6 +257,28 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestUseEquippedItemRpc();
     }
 
+    public void RequestCraftItem(string itemId)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return;
+        }
+
+        if (!IsOwner)
+        {
+            Debug.LogWarning("Only the owner can request crafting.", this);
+            return;
+        }
+
+        if (IsServer)
+        {
+            CraftItem_Server(itemId);
+            return;
+        }
+
+        RequestCraftItemRpc(itemId);
+    }
+
     [Rpc(SendTo.Server)]
     private void RequestDropItemRpc(string itemId, RpcParams rpcParams = default)
     {
@@ -268,6 +341,24 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         UseEquippedItem_Server();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestCraftItemRpc(string itemId, RpcParams rpcParams = default)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return;
+        }
+
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+        if (OwnerClientId != senderClientId)
+        {
+            Debug.LogWarning($"Client {senderClientId} tried to craft on player owned by {OwnerClientId}.", this);
+            return;
+        }
+
+        CraftItem_Server(itemId);
     }
 
     private void EquipItem_Server(string itemId)
@@ -355,6 +446,136 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         {
             Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components.", replicatedEquippedVisual);
         }
+    }
+
+    private void CraftItem_Server(string itemId)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        if (inventory == null)
+        {
+            inventory = GetComponentInChildren<INV_Inventory>();
+        }
+
+        if (inventory == null)
+        {
+            NotifyCraftResult(false, itemId);
+            return;
+        }
+
+        INV_Item craftedItem = INV_ItemDatabase.Instance != null
+            ? INV_ItemDatabase.Instance.GetItemById(itemId)
+            : null;
+
+        if (craftedItem == null)
+        {
+            NotifyCraftResult(false, itemId);
+            return;
+        }
+
+        if (!craftedItem.Craftable)
+        {
+            NotifyCraftResult(false, itemId);
+            return;
+        }
+
+        // first validate all requirements exist
+        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            if (req == null || req.item == null || req.amount <= 0)
+            {
+                continue;
+            }
+
+            if (!inventory.HasItemAmount(req.item.ItemID, req.amount))
+            {
+                NotifyCraftResult(false, itemId);
+                return;
+            }
+        }
+
+        // check output can be added before we remove requirements
+        if (!inventory.CanAddItem(craftedItem))
+        {
+            NotifyCraftResult(false, itemId);
+            return;
+        }
+
+        // remove requirements now
+        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            if (req == null || req.item == null || req.amount <= 0)
+            {
+                continue;
+            }
+
+            if (!inventory.RemoveItemAmount(req.item.ItemID, req.amount))
+            {
+                // failed removing, restore anything already removed
+                for (int r = 0; r < i; r++)
+                {
+                    INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[r];
+                    if (restoreReq == null || restoreReq.item == null || restoreReq.amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    for (int a = 0; a < restoreReq.amount; a++)
+                    {
+                        inventory.TryAddItem(restoreReq.item);
+                    }
+                }
+
+                NotifyCraftResult(false, itemId);
+                return;
+            }
+        }
+
+        // then add crafted item
+        bool added = inventory.TryAddItem(craftedItem);
+        if (!added)
+        {
+            // unexpected fail after remove, restore requirements
+            for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+            {
+                INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[i];
+                if (restoreReq == null || restoreReq.item == null || restoreReq.amount <= 0)
+                {
+                    continue;
+                }
+
+                for (int a = 0; a < restoreReq.amount; a++)
+                {
+                    inventory.TryAddItem(restoreReq.item);
+                }
+            }
+
+            NotifyCraftResult(false, itemId);
+            return;
+        }
+
+        NotifyCraftResult(true, itemId);
+    }
+
+    private void NotifyCraftResult(bool succeeded, string craftedItemId)
+    {
+        if (IsOwner)
+        {
+            // host / local owner already has the server side inventory instance changed
+            OnCraftRequestFinished?.Invoke(succeeded, craftedItemId);
+            return;
+        }
+
+        CraftResultLocalRpc(
+            succeeded,
+            craftedItemId,
+            RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
+        );
     }
 
     private void RebuildEquippedVisuals(string itemId)
