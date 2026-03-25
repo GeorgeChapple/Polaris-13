@@ -55,6 +55,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Tooltip("Crafting")]
     [SerializeField] private INV_Crafting crafting;
 
+    [Tooltip("Character Values")]
+    [SerializeField] private CC_CharacterValues values;
+
     [Tooltip("Hotbar")]
     [SerializeField] private INV_HotBar hotBar;
 
@@ -121,6 +124,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (crafting == null)
         {
             crafting = GetComponentInChildren<INV_Crafting>();
+        }
+
+        if (values == null)
+        {
+            values = GetComponent<CC_CharacterValues>();
         }
 
         if (hotBar == null)
@@ -215,6 +223,14 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void Update()
     {
+        // dead players cannot use input
+        if (values != null && values.isDead)
+        {
+            HandleDeadState();
+            UpdateCursorUI();
+            return;
+        }
+
         // open/close menu logic
         HandleMenuInput();
 
@@ -234,6 +250,12 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     {
         if (movement == null) { return; }
 
+        if (values != null && values.isDead)
+        {
+            movement.TickFixed(Vector2.zero, false, 0f, false, false, false);
+            return;
+        }
+
         if (inMenu)
         {
             movement.TickFixed(Vector2.zero, false, 0f, false, false, false);
@@ -247,6 +269,14 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private void LateUpdate()
     {
         bool isMouse = IsCurrentDeviceMouse;
+
+        if (values != null && values.isDead)
+        {
+            if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
+            if (movement != null) { movement.TickLateState(); }
+            if (interaction != null) { interaction.TickInteract(false); }
+            return;
+        }
 
         if (inMenu)
         {
@@ -542,7 +572,6 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             }
         }
 
-
         SetInMenu(state || IsPauseOpen() || IsInteractMenuOpen());
     }
 
@@ -597,6 +626,44 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         Cursor.visible = !shouldLock;
 
         if (!cursorLocked && input != null)
+        {
+            input.look = Vector2.zero;
+        }
+    }
+
+    private void HandleDeadState()
+    {
+        useHeld = false;
+        pauseHeld = false;
+        monitoringMenuHeld = false;
+        rotateHeld = false;
+        dropHeld = false;
+        dropHeldItemHeld = false;
+
+        hotbarSlot1Held = false;
+        hotbarSlot2Held = false;
+        hotbarSlot3Held = false;
+        hotbarSlot4Held = false;
+        lastHotbarScrollDirection = 0;
+
+        if (pauseMenuRoot != null && pauseMenuRoot.activeSelf)
+        {
+            pauseMenuRoot.SetActive(false);
+        }
+
+        if (monitoringMenuRoot != null && monitoringMenuRoot.activeSelf)
+        {
+            monitoringMenuRoot.SetActive(false);
+        }
+
+        if (interactMenu != null && interactMenu.IsOpen())
+        {
+            interactMenu.CloseMenu(false);
+        }
+
+        SetInMenu(false);
+
+        if (input != null)
         {
             input.look = Vector2.zero;
         }

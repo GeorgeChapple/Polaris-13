@@ -183,6 +183,13 @@ public class CC_CharacterValues : MonoBehaviour
     float oxygenRegenDelayTimer;
     bool oxygenWasDepleted;
 
+    [Header("Death")]
+    [Tooltip("How long to wait before respawning after death.")]
+    [SerializeField] private float deathRespawnDelay = 3f;
+
+    [Tooltip("Simple centered death image root shown while dead.")]
+    [SerializeField] private GameObject deathScreenRoot;
+
     [Header("Level / Exp")]
     [SerializeField] int level = 1;
     [SerializeField] int exp = 0;
@@ -208,6 +215,7 @@ public class CC_CharacterValues : MonoBehaviour
     public int Exp => exp;
 
     private Rigidbody rb;
+    public float DeathRespawnDelay => deathRespawnDelay;
 
     // Init / Reset
     public void SetDefaults()
@@ -220,7 +228,7 @@ public class CC_CharacterValues : MonoBehaviour
         SetLevel(level, false);
         SetExp(exp, false);
 
-        isDead = (health <= 0f);
+        isDead = (health <= 0f || oxygen <= 0f);
 
         staminaRegenDelayTimer = 0f;
         staminaWasDepleted = (stamina <= 0f);
@@ -230,17 +238,29 @@ public class CC_CharacterValues : MonoBehaviour
 
         InitUI();
         RefreshUI(false);
+        UpdateDeathScreenState();
     }
 
     void Awake()
     {
-        SetDefaults();
         rb = GetComponent<Rigidbody>();
+        SetDefaults();
     }
 
     void Update()
     {
-        speedText.SetText(System.Convert.ToInt32(rb.linearVelocity.magnitude).ToString());
+        if (speedText != null && rb != null)
+        {
+            speedText.SetText(System.Convert.ToInt32(rb.linearVelocity.magnitude).ToString());
+        }
+
+        // rudimentary death checks
+        if (!isDead && (health <= 0f || oxygen <= 0f))
+        {
+            Kill();
+        }
+
+        UpdateDeathScreenState();
         TickUIVisibility();
     }
 
@@ -257,20 +277,37 @@ public class CC_CharacterValues : MonoBehaviour
         oxygen = Mathf.Clamp(oxygen, 0f, maxOxygen);
 
         oxygenThrusterDrainPerSecond = Mathf.Max(0f, oxygenThrusterDrainPerSecond);
+        oxygenDrainPerSecondInSpace = Mathf.Max(0f, oxygenDrainPerSecondInSpace);
         oxygenRegenPerSecond = Mathf.Max(0f, oxygenRegenPerSecond);
         oxygenRegenDelay = Mathf.Max(0f, oxygenRegenDelay);
         oxygenDepletedRegenDelay = Mathf.Max(0f, oxygenDepletedRegenDelay);
+
+        deathRespawnDelay = Mathf.Max(0f, deathRespawnDelay);
 
         level = Mathf.Max(1, level);
         exp = Mathf.Max(0, exp);
         expToNextLevel = Mathf.Max(1, expToNextLevel);
 
-        isDead = (health <= 0f);
+        isDead = (health <= 0f || oxygen <= 0f);
 
         InitUI();
         RefreshUI(false);
+        UpdateDeathScreenState();
     }
 #endif
+
+    void UpdateDeathScreenState()
+    {
+        if (deathScreenRoot == null)
+        {
+            return;
+        }
+
+        if (deathScreenRoot.activeSelf != isDead)
+        {
+            deathScreenRoot.SetActive(isDead);
+        }
+    }
 
     // UI
     public void RefreshUI(bool triggerAppear = true)
@@ -356,8 +393,9 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetHealth(float value, bool clamp = true)
     {
         health = clamp ? Mathf.Clamp(value, 0f, maxHealth) : value;
-        isDead = (health <= 0f);
+        isDead = (health <= 0f || oxygen <= 0f);
         RefreshUI();
+        UpdateDeathScreenState();
     }
 
     public void AddHealth(float amount)
@@ -376,22 +414,26 @@ public class CC_CharacterValues : MonoBehaviour
         if (refill) { health = maxHealth; }
         else { health = Mathf.Clamp(health, 0f, maxHealth); }
 
-        isDead = (health <= 0f);
+        isDead = (health <= 0f || oxygen <= 0f);
         RefreshUI();
+        UpdateDeathScreenState();
     }
 
     public void Kill()
     {
-        SetHealth(0f, true);
+        health = 0f;
         isDead = true;
         RefreshUI();
+        UpdateDeathScreenState();
     }
 
     public void Revive(float healthPercent = 1f)
     {
         isDead = false;
+
         SetHealth(maxHealth * Mathf.Clamp01(healthPercent), true);
         RefreshUI();
+        UpdateDeathScreenState();
     }
 
     // Stamina
@@ -508,7 +550,9 @@ public class CC_CharacterValues : MonoBehaviour
 
         if (oxygen <= 0f) { oxygenWasDepleted = true; }
 
+        isDead = (health <= 0f || oxygen <= 0f);
         RefreshUI();
+        UpdateDeathScreenState();
     }
 
     public void AddOxygen(float amount)
@@ -529,26 +573,9 @@ public class CC_CharacterValues : MonoBehaviour
 
         oxygenWasDepleted = (oxygen <= 0f);
 
+        isDead = (health <= 0f || oxygen <= 0f);
         RefreshUI();
-    }
-
-    public void TickPassiveOxygenDrainInSpace(bool inSpace)
-    {
-        if (!inSpace)
-        {
-            return;
-        }
-
-        DrainOxygen(oxygenDrainPerSecondInSpace * Time.deltaTime);
-
-        if (oxygenWasDepleted)
-        {
-            oxygenRegenDelayTimer = oxygenDepletedRegenDelay;
-        }
-        else
-        {
-            oxygenRegenDelayTimer = oxygenRegenDelay;
-        }
+        UpdateDeathScreenState();
     }
 
     // Call once per frame to drain/regenerate oxygen used by thrusters.
@@ -581,6 +608,25 @@ public class CC_CharacterValues : MonoBehaviour
         }
 
         RegenOxygen(oxygenRegenPerSecond * Time.deltaTime);
+    }
+
+    public void TickPassiveOxygenDrainInSpace(bool inSpace)
+    {
+        if (!inSpace)
+        {
+            return;
+        }
+
+        DrainOxygen(oxygenDrainPerSecondInSpace * Time.deltaTime);
+
+        if (oxygenWasDepleted)
+        {
+            oxygenRegenDelayTimer = oxygenDepletedRegenDelay;
+        }
+        else
+        {
+            oxygenRegenDelayTimer = oxygenRegenDelay;
+        }
     }
 
     public void DrainOxygen(float amount)
@@ -658,6 +704,24 @@ public class CC_CharacterValues : MonoBehaviour
         return leveled;
     }
 
+    public void RespawnReset()
+    {
+        isDead = false;
+
+        health = maxHealth;
+        stamina = maxStamina;
+        oxygen = maxOxygen;
+
+        staminaRegenDelayTimer = 0f;
+        staminaWasDepleted = false;
+
+        oxygenRegenDelayTimer = 0f;
+        oxygenWasDepleted = false;
+
+        RefreshUI();
+        UpdateDeathScreenState();
+    }
+
     // Utility
     public void SetAll(
         float newHealth, float newMaxHealth,
@@ -679,5 +743,6 @@ public class CC_CharacterValues : MonoBehaviour
         SetExp(newExp, true);
 
         RefreshUI();
+        UpdateDeathScreenState();
     }
 }
