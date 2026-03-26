@@ -1973,26 +1973,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  onInteract:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CC_CharacterValues, Assembly-CSharp
-        m_MethodName: RemoveHealth
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 10
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  onInteractWithInteractor:
-    m_PersistentCalls:
-      m_Calls: []
-  rewireInteractListenersOnNetworkSpawn: 1
-  invokeLegacyInteractEvent: 1
+  interactActions: []
   oneShot: 0
   requiresHold: 1
   holdTime: 0.75
@@ -2005,6 +1986,9 @@ MonoBehaviour:
   onHoldProgress:
     m_PersistentCalls:
       m_Calls: []
+  openMenuOnHold: 0
+  interactMenuTitle: Interact
+  menuHoldTime: 0.35
 --- !u!65 &871526565
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2908,7 +2892,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
+  planet: 0
 --- !u!4 &1276807086
 Transform:
   m_ObjectHideFlags: 0

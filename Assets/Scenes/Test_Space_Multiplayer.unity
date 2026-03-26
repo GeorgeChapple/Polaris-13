@@ -2077,6 +2077,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 0
 --- !u!65 &381357738
@@ -2317,6 +2318,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 0
   planet: 0
 --- !u!65 &480484255
@@ -2603,6 +2605,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 1
 --- !u!135 &643837886
@@ -3039,7 +3042,7 @@ MonoBehaviour:
   RotationMaxInterpolationTime: 0.1
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
-  AuthorityMode: 0
+  AuthorityMode: 1
   TickSyncChildren: 0
   UseUnreliableDeltas: 0
   SyncPositionX: 1
@@ -3061,6 +3064,20 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &776965091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 776965085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45b18dbf3054d4f4fbd8447b3bd1cbca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 1
+  direction: {x: 0, y: 0, z: 1}
 --- !u!64 &783192723
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -3135,6 +3152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 0
 --- !u!65 &832077103
@@ -3411,6 +3429,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8436178687731681020, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 776965089}
+    - targetCorrespondingSourceObject: {fileID: 8436178687731681020, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 776965091}
     - targetCorrespondingSourceObject: {fileID: 6544506449508421119, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 893926519}
@@ -3426,6 +3447,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 966968647354286880, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1648320094}
+    - targetCorrespondingSourceObject: {fileID: 966968647354286880, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1648320095}
     - targetCorrespondingSourceObject: {fileID: 2704418793918335235, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 893926515}
@@ -3447,6 +3471,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4302516110455385491, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1028573717}
+    - targetCorrespondingSourceObject: {fileID: 4302516110455385491, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1028573718}
     - targetCorrespondingSourceObject: {fileID: 7465876971496331926, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1066936795}
@@ -3477,6 +3504,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3910623705682505402, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1277972814}
+    - targetCorrespondingSourceObject: {fileID: 3910623705682505402, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1277972815}
   m_SourcePrefab: {fileID: 100100000, guid: b588dca54feab694bb976cd95d3d18f3, type: 3}
 --- !u!1 &893926496 stripped
 GameObject:
@@ -4048,6 +4078,31 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1.2635953
   m_Center: {x: 0.007322369, y: -0.005380033, z: 0.0056943884}
+--- !u!114 &1028573718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 893926505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 2065405188
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 1
 --- !u!1001 &1052718958
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5627,6 +5682,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 1
 --- !u!135 &1115734882
@@ -6047,6 +6103,31 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1.2635957
   m_Center: {x: 0.007321419, y: -0.0053828964, z: 0.005702019}
+--- !u!114 &1277972815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 893926496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 3201664305
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 1
 --- !u!114 &1281985998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6681,6 +6762,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 0
 --- !u!65 &1516990387
@@ -6818,6 +6900,31 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1.2635955
   m_Center: {x: 0.007323323, y: -0.0053781257, z: 0.0056982036}
+--- !u!114 &1648320095
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 893926511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 3081223770
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 1
 --- !u!114 &1650527990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6975,6 +7082,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 1
 --- !u!135 &1686261764
@@ -7411,6 +7519,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 0
 --- !u!65 &1930665772
@@ -7635,6 +7744,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10513db13479d9049a67c53050468de9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   useGravity: 1
   planet: 0
 --- !u!65 &1992037834

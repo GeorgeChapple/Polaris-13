@@ -496,6 +496,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             ? INV_ItemDatabase.Instance.GetItemById(itemId)
             : null;
 
+        if (usedItem.objectType != INV_Item.ObjectType.Consumable) { return; }
+
         bool removed = inventory.RemoveItemAmount(itemId, 1);
 
         if (removed)
