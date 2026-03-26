@@ -1,6 +1,7 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class GravityToggler : MonoBehaviour
+public class GravityToggler : NetworkBehaviour
 {
     [SerializeField] private bool useGravity;
     [SerializeField] private bool planet;
@@ -12,6 +13,11 @@ public class GravityToggler : MonoBehaviour
         {
             gravityBody.triggered = true;
             gravityBody.useGravity = useGravity;
+            if (planet) 
+            { 
+                col.GetComponent<NetworkObject>().TrySetParent(transform.parent, true);
+            }
+            
         }
     }
 
@@ -24,6 +30,7 @@ public class GravityToggler : MonoBehaviour
             if (planet)
             {
                 gravityBody.useGravity = !useGravity;
+                col.GetComponent<NetworkObject>().TryRemoveParent(true);
             }
         }
     }

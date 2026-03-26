@@ -70,6 +70,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private bool rotateHeld;
     private bool dropHeld;
     private bool dropHeldItemHeld;
+    private bool useInInvHeld;
 
     private bool hotbarSlot1Held;
     private bool hotbarSlot2Held;
@@ -362,7 +363,19 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         {
             rotateHeld = false;
             dropHeld = false;
+            useInInvHeld = false;
             return;
+        }
+
+        // use item in inventory (consume)
+        if (input.interact && !useInInvHeld) 
+        {
+            useInInvHeld = true;
+            inventoryNet.RequestUseItemInInventory(inventory.hoverItem.Instance.data.ItemID);
+        }
+        else if (!input.interact && useInInvHeld)
+        {
+            useInInvHeld = false;
         }
 
         // rotate

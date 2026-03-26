@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -151,6 +152,24 @@ public class CC_CharacterValues : MonoBehaviour
     float staminaRegenDelayTimer;
     bool staminaWasDepleted;
 
+    [Header("Hunger")]
+    public float maxHunger = 100f;
+    [SerializeField] private float hunger = 100f;
+
+    [Header("Hunger Settings")]
+    public float hungerDrainPerSecond = 0.25f;
+    [SerializeField, Min(0)] private float hungerDrainDelay = 0f;
+    [SerializeField] private float maxHungerDrainDelay = 120f;
+
+    [Header("Thirst")]
+    public float maxThirst = 100f;
+    [SerializeField] private float thirst = 100f;
+
+    [Header("Thirst Settings")]
+    public float thirstDrainPerSecond = 0.4f;
+    [SerializeField, Min(0)] private float thirstDrainDelay = 0f;
+    [SerializeField] private float maxThirstDrainDelay = 120f;
+
     [Header("Oxygen")]
     public float maxOxygen = 100f;
     [SerializeField] float oxygen = 100f;
@@ -201,6 +220,8 @@ public class CC_CharacterValues : MonoBehaviour
 
     [Header("UI")]
     public FillUI[] healthUI;
+    public FillUI[] hungerUI;
+    public FillUI[] thirstUI;
     public FillUI[] staminaUI;
     public FillUI[] oxygenUI;
     public FillUI[] expUI;
@@ -208,6 +229,8 @@ public class CC_CharacterValues : MonoBehaviour
 
     // Getters
     public float Health => health;
+    public float Hunger => hunger;
+    public float Thirst => thirst;
     public float Stamina => stamina;
     public float Oxygen => oxygen;
 
@@ -222,6 +245,8 @@ public class CC_CharacterValues : MonoBehaviour
     {
         // ensures everything is within bounds
         SetMaxHealth(maxHealth, true);
+        SetMaxHunger(maxHunger, true);
+        SetMaxThirst(maxThirst, true);
         SetMaxStamina(maxStamina, true);
         SetMaxOxygen(maxOxygen, true);
 
@@ -249,6 +274,8 @@ public class CC_CharacterValues : MonoBehaviour
 
     void Update()
     {
+        TickHunger();
+        TickThirst();
         if (speedText != null && rb != null)
         {
             speedText.SetText(System.Convert.ToInt32(rb.linearVelocity.magnitude).ToString());
@@ -269,12 +296,19 @@ public class CC_CharacterValues : MonoBehaviour
     {
         // update bars when tweaking values
         maxHealth = Mathf.Max(0f, maxHealth);
+        maxHunger = Mathf.Max(0f, maxHunger);
+        maxThirst = Mathf.Max(0f, maxThirst);
         maxStamina = Mathf.Max(0f, maxStamina);
         maxOxygen = Mathf.Max(0f, maxOxygen);
 
         health = Mathf.Clamp(health, 0f, maxHealth);
+        hunger = Mathf.Clamp(hunger, 0f, maxHunger);
+        thirst = Mathf.Clamp(thirst, 0f, maxThirst);
         stamina = Mathf.Clamp(stamina, 0f, maxStamina);
         oxygen = Mathf.Clamp(oxygen, 0f, maxOxygen);
+
+        hungerDrainPerSecond = Mathf.Max(0f, hungerDrainPerSecond);
+        thirstDrainPerSecond = Mathf.Max(0f, thirstDrainPerSecond);
 
         oxygenThrusterDrainPerSecond = Mathf.Max(0f, oxygenThrusterDrainPerSecond);
         oxygenDrainPerSecondInSpace = Mathf.Max(0f, oxygenDrainPerSecondInSpace);
@@ -313,6 +347,8 @@ public class CC_CharacterValues : MonoBehaviour
     public void RefreshUI(bool triggerAppear = true)
     {
         float h01 = (maxHealth <= 0f) ? 0f : (health / maxHealth);
+        float hu01 = (maxHunger <= 0f) ? 0f : (hunger / maxHunger);
+        float t01 = (maxThirst <= 0f) ? 0f : (thirst / maxThirst);
         float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
         float o01 = (maxOxygen <= 0f) ? 0f : (oxygen / maxOxygen);
         float e01 = (expToNextLevel <= 0) ? 0f : Mathf.Clamp01((float)exp / expToNextLevel);
@@ -320,6 +356,16 @@ public class CC_CharacterValues : MonoBehaviour
         if (healthUI != null)
         {
             for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].SetFill(h01, triggerAppear); } }
+        }
+
+        if (hungerUI != null)
+        {
+            for (int i = 0; i < hungerUI.Length; i++) { if (hungerUI[i] != null) { hungerUI[i].SetFill(hu01, triggerAppear); } }
+        }
+
+        if (thirstUI != null)
+        {
+            for (int i = 0; i < thirstUI.Length; i++) { if (thirstUI[i] != null) { thirstUI[i].SetFill(t01, triggerAppear); } }
         }
 
         if (staminaUI != null)
@@ -341,6 +387,8 @@ public class CC_CharacterValues : MonoBehaviour
     void InitUI()
     {
         float h01 = (maxHealth <= 0f) ? 0f : (health / maxHealth);
+        float hu01 = (maxHunger <= 0f) ? 0f : (hunger / maxHunger);
+        float t01 = (maxThirst <= 0f) ? 0f : (thirst / maxThirst);
         float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
         float o01 = (maxOxygen <= 0f) ? 0f : (oxygen / maxOxygen);
         float e01 = (expToNextLevel <= 0) ? 0f : Mathf.Clamp01((float)exp / expToNextLevel);
@@ -348,6 +396,16 @@ public class CC_CharacterValues : MonoBehaviour
         if (healthUI != null)
         {
             for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].Init(h01); } }
+        }
+
+        if (hungerUI != null)
+        {
+            for (int i = 0; i < hungerUI.Length; i++) { if (hungerUI[i] != null) { hungerUI[i].Init(hu01); } }
+        }
+
+        if (thirstUI != null)
+        {
+            for (int i = 0; i < thirstUI.Length; i++) { if (thirstUI[i] != null) { thirstUI[i].Init(t01); } }
         }
 
         if (staminaUI != null)
@@ -371,6 +429,16 @@ public class CC_CharacterValues : MonoBehaviour
         if (healthUI != null)
         {
             for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].Tick(); } }
+        }
+
+        if (hungerUI != null)
+        {
+            for (int i = 0; i < hungerUI.Length; i++) { if (hungerUI[i] != null) { hungerUI[i].Tick(); } }
+        }
+
+        if (thirstUI != null)
+        {
+            for (int i = 0; i < thirstUI.Length; i++) { if (thirstUI[i] != null) { thirstUI[i].Tick(); } }
         }
 
         if (staminaUI != null)
@@ -434,6 +502,139 @@ public class CC_CharacterValues : MonoBehaviour
         SetHealth(maxHealth * Mathf.Clamp01(healthPercent), true);
         RefreshUI();
         UpdateDeathScreenState();
+    }
+
+    // Hunger
+    public void SetHunger(float value, bool clamp = true)
+    {
+        hunger = clamp ? Mathf.Clamp(value, 0f, maxHunger) : value;
+        RefreshUI();
+    }
+
+    public void AddHunger(float amount)
+    {
+        SetHunger(hunger + amount, true);
+    }
+
+    public void RemoveHunger(float amount)
+    {
+        SetHunger(hunger - Mathf.Abs(amount), true);
+    }
+
+    public void SetMaxHunger(float value, bool refill = false)
+    {
+        maxHunger = Mathf.Max(0f, value);
+        if (refill) { hunger = maxHunger; }
+        else { hunger = Mathf.Clamp(hunger, 0f, maxHunger); }
+
+        RefreshUI();
+    }
+
+    // Call once per frame to drain hunger.
+    public void TickHunger(bool drain = true)
+    {
+        hungerDrainDelay = Mathf.Clamp(hungerDrainDelay, 0f, maxHungerDrainDelay);
+        if (hungerDrainDelay > 0)
+        {
+            return;
+        }
+        if (!drain)
+        {
+            return;
+        }
+
+        DrainHunger(hungerDrainPerSecond * Time.deltaTime);
+    }
+
+    public void DrainHunger(float amount)
+    {
+        SetHunger(hunger - amount, true);
+    }
+
+    public bool HasHunger(float min = 0.01f)
+    {
+        return hunger > min;
+    }
+
+    public void AddHungerDelay(float delay)
+    {
+        hungerDrainDelay += delay;
+        StartCoroutine(TickHungerDelay());
+    }
+
+    private IEnumerator TickHungerDelay() 
+    {
+        while (hungerDrainDelay > 0) 
+        {
+            hungerDrainDelay -= Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    // Thirst
+    public void SetThirst(float value, bool clamp = true)
+    {
+        thirst = clamp ? Mathf.Clamp(value, 0f, maxThirst) : value;
+        RefreshUI();
+    }
+
+    public void AddThirst(float amount)
+    {
+        SetThirst(thirst + amount, true);
+    }
+
+    public void RemoveThirst(float amount)
+    {
+        SetThirst(thirst - Mathf.Abs(amount), true);
+    }
+
+    public void SetMaxThirst(float value, bool refill = false)
+    {
+        maxThirst = Mathf.Max(0f, value);
+        if (refill) { thirst = maxThirst; }
+        else { thirst = Mathf.Clamp(thirst, 0f, maxThirst); }
+
+        RefreshUI();
+    }
+
+    // Call once per frame to drain thirst.
+    public void TickThirst(bool drain = true)
+    {
+        thirstDrainDelay = Mathf.Clamp(thirstDrainDelay, 0f, maxThirstDrainDelay);
+        if (thirstDrainDelay > 0) 
+        {
+            return; 
+        }
+        if (!drain)
+        {
+            return;
+        }
+
+        DrainThirst(thirstDrainPerSecond * Time.deltaTime);
+    }
+
+    public void DrainThirst(float amount)
+    {
+        SetThirst(thirst - amount, true);
+    }
+
+    public bool HasThirst(float min = 0.01f)
+    {
+        return thirst > min;
+    }
+    public void AddThirstDelay(float delay)
+    {
+        thirstDrainDelay += delay;
+        StartCoroutine(TickThirstDelay());
+    }
+
+    private IEnumerator TickThirstDelay()
+    {
+        while (thirstDrainDelay > 0)
+        {
+            thirstDrainDelay -= Time.deltaTime;
+            yield return null;
+        }
     }
 
     // Stamina
@@ -709,6 +910,8 @@ public class CC_CharacterValues : MonoBehaviour
         isDead = false;
 
         health = maxHealth;
+        hunger = maxHunger;
+        thirst = maxThirst;
         stamina = maxStamina;
         oxygen = maxOxygen;
 
@@ -725,6 +928,8 @@ public class CC_CharacterValues : MonoBehaviour
     // Utility
     public void SetAll(
         float newHealth, float newMaxHealth,
+        float newHunger, float newMaxHunger,
+        float newThirst, float newMaxThirst,
         float newStamina, float newMaxStamina,
         float newOxygen, float newMaxOxygen,
         int newLevel, int newExp
@@ -732,6 +937,12 @@ public class CC_CharacterValues : MonoBehaviour
     {
         SetMaxHealth(newMaxHealth, false);
         SetHealth(newHealth, true);
+
+        SetMaxHunger(newMaxHunger, false);
+        SetHunger(newHunger, true);
+
+        SetMaxThirst(newMaxThirst, false);
+        SetThirst(newThirst, true);
 
         SetMaxStamina(newMaxStamina, false);
         SetStamina(newStamina, true);

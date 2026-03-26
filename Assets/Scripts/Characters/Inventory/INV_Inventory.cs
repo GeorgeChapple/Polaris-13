@@ -13,8 +13,8 @@ using UnityEngine.UI;
 
 // TODO:
 // redo grid generation to be set up in here via cell space size --
-// hotbar works like item stays in inventory but is hotkeyed, makes inventory management more of a challenge
-//
+// hotbar works like item stays in inventory but is hotkeyed, makes inventory management more of a challenge --
+// this should hold chest logic too, network inventory will pull whats in there from host with item instance and grid space to set up grid properly
 public class INV_Inventory : MonoBehaviour
 {
     [Header("Inventory Menu")]
