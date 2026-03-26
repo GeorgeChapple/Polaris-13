@@ -8,13 +8,24 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Inventory/Item")]
 public class INV_Item : ScriptableObject
 {
+
     [Header("Info")]
     [SerializeField] private string itemID;
     [SerializeField] private string m_name;
     [SerializeField] private string description;
+    public enum ObjectType { Item, Consumable, Weapon, Tool, Resource, Placeable };
+    public ObjectType objectType = ObjectType.Item;
 
     [Header("Specs")]
     [SerializeField] private float durability;
+    [SerializeField] private float hungerReplenish;
+    [SerializeField] private float hungerDrainDelay;
+    [SerializeField] private float thirstReplenish;
+    [SerializeField] private float thirstDrainDelay;
+
+    [Header("Probability")]
+    [SerializeField, Min(0)] private int chanceOfSpawnInChest = 0;
+    [SerializeField, Min(0)] private int chanceOfSpawnAsDebris = 0;
 
     [Header("Stack")]
     [SerializeField] private bool stackable;
@@ -82,14 +93,19 @@ public class INV_Item : ScriptableObject
     [Tooltip("Fallback size (only used if inventorySpaceShape is empty). Grid size in cells (X = width, Y = height).")]
     [SerializeField] private Vector2 inventorySpace = new Vector2(1, 1);
 
-    public enum ObjectType { Item, Consumable, Weapon, Tool, Resource, Placeable };
-    public ObjectType objectType = ObjectType.Item;
-
     // getters
     public string ItemID => itemID;
     public string Name => m_name;
     public string Description => description;
+
     public float Durability => durability;
+    public float HungerReplenish => hungerReplenish;
+    public float HungerDrainDelay => hungerDrainDelay;
+    public float ThirstReplenish => thirstReplenish;
+    public float ThirstDrainDelay => thirstDrainDelay;
+
+    public int ChanceOfSpawnInChest => chanceOfSpawnInChest;
+    public int ChanceOfSpawnAsDebris => chanceOfSpawnAsDebris;
 
     public bool Stackable => stackable;
     public int MaxStack => stackable ? Mathf.Max(1, maxStack) : 1;

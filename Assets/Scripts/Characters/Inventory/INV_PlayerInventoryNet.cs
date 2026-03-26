@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,6 +11,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 {
     [Header("Refs")]
     [SerializeField] private INV_Inventory inventory;
+    [SerializeField] private CC_CharacterValues characterValues;
 
     [Header("Equipped Item")]
     [SerializeField] private Transform equippedItemRoot;
@@ -256,6 +256,28 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         RequestUseEquippedItemRpc();
     }
+    public void RequestUseItemInInventory(string itemId)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            Debug.LogError("RequestUseItemInInventory called with empty itemId.", this);
+            return;
+        }
+
+        if (!IsOwner)
+        {
+            Debug.LogWarning("Only the owner can request use of the equipped item.", this);
+            return;
+        }
+
+        if (IsServer)
+        {
+            UseItemInInventory_Server(itemId);
+            return;
+        }
+
+        RequestUseItemInInventoryRpc(itemId);
+    }
 
     public void RequestCraftItem(string itemId)
     {
@@ -341,6 +363,18 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         UseEquippedItem_Server();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestUseItemInInventoryRpc(string itemId, RpcParams rpcParams = default)
+    {
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+        if (OwnerClientId != senderClientId)
+        {
+            Debug.LogWarning($"Client {senderClientId} tried to use item in player inventory owned by {OwnerClientId}.", this);
+            return;
+        }
+        UseItemInInventory_Server(itemId);
     }
 
     [Rpc(SendTo.Server)]
@@ -445,6 +479,28 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         if (!foundUsable)
         {
             Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components.", replicatedEquippedVisual);
+        }
+    }
+    private void UseItemInInventory_Server(string itemId)
+    {
+        if (!IsServer)
+        {
+            Debug.LogWarning("UseItemInInventory_Server called while not on server.", this);
+            return;
+        }
+
+        INV_Item usedItem = INV_ItemDatabase.Instance != null
+            ? INV_ItemDatabase.Instance.GetItemById(itemId)
+            : null;
+
+        bool removed = inventory.RemoveItemAmount(itemId, 1);
+
+        if (removed)
+        {
+            //use here
+            characterValues.AddHunger(usedItem.HungerReplenish);
+            characterValues.AddThirst(usedItem.ThirstReplenish);
+            return;
         }
     }
 

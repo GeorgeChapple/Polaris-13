@@ -15,7 +15,14 @@ MonoBehaviour:
   itemID: testitem1
   m_name: Test Item
   description: Test Item for debugging purposes
+  objectType: 2
   durability: 0
+  hungerReplenish: 20
+  hungerDrainDelay: 0
+  thirstReplenish: 5
+  thirstDrainDelay: 0
+  chanceOfSpawnInChest: 0
+  chanceOfSpawnAsDebris: 0
   stackable: 1
   maxStack: 3
   craftable: 1
@@ -41,4 +48,3 @@ MonoBehaviour:
   - ++
   - +-
   inventorySpace: {x: 2, y: 1}
-  objectType: 2
