@@ -256,6 +256,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         RequestUseEquippedItemRpc();
     }
+
     public void RequestUseItemInInventory(string itemId)
     {
         if (string.IsNullOrWhiteSpace(itemId))
@@ -471,6 +472,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         {
             if (behaviours[i] is IUsableItem usableItem)
             {
+                usableItem.WireUp(gameObject, itemId);
                 usableItem.OnUse();
                 foundUsable = true;
             }
@@ -481,6 +483,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components.", replicatedEquippedVisual);
         }
     }
+
     private void UseItemInInventory_Server(string itemId)
     {
         if (!IsServer)
