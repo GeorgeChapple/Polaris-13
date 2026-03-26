@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -158,6 +159,7 @@ public class CC_CharacterValues : MonoBehaviour
     [Header("Hunger Settings")]
     public float hungerDrainPerSecond = 0.25f;
     [SerializeField, Min(0)] private float hungerDrainDelay = 0f;
+    [SerializeField] private float maxHungerDrainDelay = 120f;
 
     [Header("Thirst")]
     public float maxThirst = 100f;
@@ -166,6 +168,7 @@ public class CC_CharacterValues : MonoBehaviour
     [Header("Thirst Settings")]
     public float thirstDrainPerSecond = 0.4f;
     [SerializeField, Min(0)] private float thirstDrainDelay = 0f;
+    [SerializeField] private float maxThirstDrainDelay = 120f;
 
     [Header("Oxygen")]
     public float maxOxygen = 100f;
@@ -530,6 +533,11 @@ public class CC_CharacterValues : MonoBehaviour
     // Call once per frame to drain hunger.
     public void TickHunger(bool drain = true)
     {
+        hungerDrainDelay = Mathf.Clamp(hungerDrainDelay, 0f, maxHungerDrainDelay);
+        if (hungerDrainDelay > 0)
+        {
+            return;
+        }
         if (!drain)
         {
             return;
@@ -546,6 +554,21 @@ public class CC_CharacterValues : MonoBehaviour
     public bool HasHunger(float min = 0.01f)
     {
         return hunger > min;
+    }
+
+    public void AddHungerDelay(float delay)
+    {
+        hungerDrainDelay += delay;
+        StartCoroutine(TickHungerDelay());
+    }
+
+    private IEnumerator TickHungerDelay() 
+    {
+        while (hungerDrainDelay > 0) 
+        {
+            hungerDrainDelay -= Time.deltaTime;
+            yield return null;
+        }
     }
 
     // Thirst
@@ -577,6 +600,11 @@ public class CC_CharacterValues : MonoBehaviour
     // Call once per frame to drain thirst.
     public void TickThirst(bool drain = true)
     {
+        thirstDrainDelay = Mathf.Clamp(thirstDrainDelay, 0f, maxThirstDrainDelay);
+        if (thirstDrainDelay > 0) 
+        {
+            return; 
+        }
         if (!drain)
         {
             return;
@@ -593,6 +621,20 @@ public class CC_CharacterValues : MonoBehaviour
     public bool HasThirst(float min = 0.01f)
     {
         return thirst > min;
+    }
+    public void AddThirstDelay(float delay)
+    {
+        thirstDrainDelay += delay;
+        StartCoroutine(TickThirstDelay());
+    }
+
+    private IEnumerator TickThirstDelay()
+    {
+        while (thirstDrainDelay > 0)
+        {
+            thirstDrainDelay -= Time.deltaTime;
+            yield return null;
+        }
     }
 
     // Stamina

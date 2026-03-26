@@ -920,7 +920,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 4413220172885515415}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99998486
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1354,7 +1354,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.00047656213}
+  m_AnchoredPosition: {x: 0, y: 0.00008664441}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7933735975570430747
@@ -4827,9 +4827,9 @@ MonoBehaviour:
   topClamp: 90
   bottomClamp: -90
   enableCameraBobbing: 1
-  bobFrequency: 1.6
-  bobAmplitude: 0.01
-  bobSideAmplitude: 0.01
+  bobFrequency: 1.5
+  bobAmplitude: 0.008
+  bobSideAmplitude: 0.004
   bobSharpness: 6
   sprintBobMult: 1.5
   crouchBobMult: 0.5
@@ -4886,10 +4886,12 @@ MonoBehaviour:
   hunger: 100
   hungerDrainPerSecond: 0.25
   hungerDrainDelay: 0
+  maxHungerDrainDelay: 120
   maxThirst: 100
   thirst: 100
   thirstDrainPerSecond: 0.4
   thirstDrainDelay: 0
+  maxThirstDrainDelay: 120
   maxOxygen: 100
   oxygen: 100
   oxygenDrainPerSecondInSpace: 1
@@ -4897,7 +4899,7 @@ MonoBehaviour:
   oxygenRegenPerSecond: 40
   oxygenRegenDelay: 1
   oxygenDepletedRegenDelay: 3
-  groundThrusterOxygenDrainMult: 1.5
+  groundThrusterOxygenDrainMult: 3
   spaceMoveOxygenDrainMult: 1
   spaceStabiliseOxygenDrainMult: 0.5
   deathRespawnDelay: 3

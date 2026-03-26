@@ -501,7 +501,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         if (removed)
         {
             //use here
+            characterValues.AddHungerDelay(usedItem.HungerDrainDelay);
             characterValues.AddHunger(usedItem.HungerReplenish);
+
+            characterValues.AddThirstDelay(usedItem.ThirstDrainDelay);
             characterValues.AddThirst(usedItem.ThirstReplenish);
             return;
         }
