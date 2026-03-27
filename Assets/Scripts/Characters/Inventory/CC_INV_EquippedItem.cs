@@ -29,83 +29,106 @@ public class CC_INV_EquippedItem : MonoBehaviour
 
     public void SetVisualVisible(bool isVisible)
     {
-        if (cachedRenderers == null || cachedRenderers.Length == 0)
-        {
-            cachedRenderers = GetComponentsInChildren<Renderer>(true);
-        }
+        CacheRenderers();
 
         for (int i = 0; i < cachedRenderers.Length; i++)
         {
-            if (cachedRenderers[i] == null) { continue; }
+            if (cachedRenderers[i] == null)
+            {
+                continue;
+            }
+
             cachedRenderers[i].enabled = isVisible;
         }
     }
 
     private void ApplyVisuals()
     {
-        if (item == null) { return; }
+        if (item == null)
+        {
+            return;
+        }
+
+        gameObject.name = $"Equipped_{item.Name}";
 
         if (item.ApplyEquippedPrefabVisuals)
         {
             EnsureVisualSetup();
-
-            if (meshFilter != null)
-            {
-                meshFilter.sharedMesh = item.Mesh;
-            }
-
-            if (meshRenderer != null)
-            {
-                meshRenderer.sharedMaterial = item.Material;
-            }
-
-            if (visualRoot != null)
-            {
-                visualRoot.localPosition = item.EquippedMeshOffset;
-                visualRoot.localRotation = Quaternion.Euler(item.EquippedMeshRotation);
-                visualRoot.localScale = Vector3.one * item.EquippedMeshScale;
-            }
+            ApplyItemMeshVisuals();
         }
 
-        cachedRenderers = GetComponentsInChildren<Renderer>(true);
-
-        gameObject.name = $"Equipped_{item.Name}";
+        CacheRenderers();
         SetVisualVisible(true);
+    }
+
+    private void ApplyItemMeshVisuals()
+    {
+        if (meshFilter != null)
+        {
+            meshFilter.sharedMesh = item.Mesh;
+        }
+
+        if (meshRenderer != null)
+        {
+            meshRenderer.sharedMaterial = item.Material;
+            meshRenderer.enabled = item.Mesh != null && item.Material != null;
+        }
+
+        if (visualRoot != null)
+        {
+            visualRoot.localPosition = item.EquippedMeshOffset;
+            visualRoot.localRotation = Quaternion.Euler(item.EquippedMeshRotation);
+            visualRoot.localScale = Vector3.one * Mathf.Max(0f, item.EquippedMeshScale);
+        }
     }
 
     private void EnsureVisualSetup()
     {
         if (visualRoot == null)
         {
-            Transform found = transform.Find("VisualRoot");
-            if (found != null)
-            {
-                visualRoot = found;
-            }
-            else
-            {
-                GameObject go = new GameObject("VisualRoot");
-                visualRoot = go.transform;
-                visualRoot.SetParent(transform, false);
-            }
+            visualRoot = FindOrCreateVisualRoot();
         }
 
         if (meshFilter == null)
         {
-            meshFilter = visualRoot.GetComponent<MeshFilter>();
-            if (meshFilter == null)
-            {
-                meshFilter = visualRoot.gameObject.AddComponent<MeshFilter>();
-            }
+            meshFilter = GetOrAddComponent<MeshFilter>(visualRoot.gameObject);
         }
 
         if (meshRenderer == null)
         {
-            meshRenderer = visualRoot.GetComponent<MeshRenderer>();
-            if (meshRenderer == null)
-            {
-                meshRenderer = visualRoot.gameObject.AddComponent<MeshRenderer>();
-            }
+            meshRenderer = GetOrAddComponent<MeshRenderer>(visualRoot.gameObject);
         }
+    }
+
+    private Transform FindOrCreateVisualRoot()
+    {
+        Transform found = transform.Find("VisualRoot");
+        if (found != null)
+        {
+            return found;
+        }
+
+        GameObject go = new GameObject("VisualRoot");
+        go.transform.SetParent(transform, false);
+        return go.transform;
+    }
+
+    private void CacheRenderers()
+    {
+        if (cachedRenderers == null || cachedRenderers.Length == 0)
+        {
+            cachedRenderers = GetComponentsInChildren<Renderer>(true);
+        }
+    }
+
+    private T GetOrAddComponent<T>(GameObject target) where T : Component
+    {
+        T comp = target.GetComponent<T>();
+        if (comp != null)
+        {
+            return comp;
+        }
+
+        return target.AddComponent<T>();
     }
 }

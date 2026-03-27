@@ -23,10 +23,8 @@ public class INV_CraftingInteract : MonoBehaviour
         {
             crafting = interactor.GetComponentInChildren<INV_Crafting>();
         }
-
         if (crafting == null)
         {
-            Debug.LogWarning("Could not find INV_Crafting on interactor.", interactor);
             return;
         }
 

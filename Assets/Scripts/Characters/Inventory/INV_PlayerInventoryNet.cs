@@ -12,6 +12,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Header("Refs")]
     [SerializeField] private INV_Inventory inventory;
     [SerializeField] private CC_CharacterValues characterValues;
+    [SerializeField] private INV_Crafting crafting;
 
     [Header("Equipped Item")]
     [SerializeField] private Transform equippedItemRoot;
@@ -29,7 +30,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     public event Action<bool, string> OnCraftRequestFinished;
 
     // replicated equipped item id, the visual is built locally on each player from this
-    private NetworkVariable<FixedString128Bytes> equippedItemId = new NetworkVariable<FixedString128Bytes>(
+    private NetworkVariable<FixedString128Bytes> equippedItemId = new NetworkVariable<FixedString128Bytes>
+    (
         default,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
@@ -44,19 +46,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     private void Awake()
     {
-        if (inventory == null)
-        {
-            inventory = GetComponentInChildren<INV_Inventory>();
-        }
-
-        if (replicatedEquippedItemRoot == null)
-        {
-            CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
-            if (cameraController != null)
-            {
-                replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
-            }
-        }
+        CacheRefs();
+        CacheReplicatedEquippedRoot();
     }
 
     public override void OnNetworkSpawn()
@@ -64,8 +55,6 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         base.OnNetworkSpawn();
 
         equippedItemId.OnValueChanged += OnEquippedItemIdChanged;
-
-        // build current visual state when spawned
         RebuildEquippedVisuals(equippedItemId.Value.ToString());
     }
 
@@ -81,25 +70,70 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     private void LateUpdate()
     {
-        // owner local first person visual follows local root
-        if (localEquippedVisual != null && equippedItemRoot != null)
+        FollowLocalEquippedRoot();
+        FollowReplicatedEquippedRoot();
+    }
+
+    private void CacheRefs()
+    {
+        if (inventory == null)
         {
-            localEquippedVisual.transform.position = equippedItemRoot.position;
-            localEquippedVisual.transform.rotation = equippedItemRoot.rotation;
-            localEquippedVisual.transform.localScale = Vector3.one;
+            inventory = GetComponentInChildren<INV_Inventory>();
         }
 
-        // replicated visual follows replicated root
-        if (replicatedEquippedVisual != null)
+        if (characterValues == null)
         {
-            Transform followRoot = GetReplicatedEquippedItemRoot();
-            if (followRoot != null)
-            {
-                replicatedEquippedVisual.transform.position = followRoot.position;
-                replicatedEquippedVisual.transform.rotation = followRoot.rotation;
-                replicatedEquippedVisual.transform.localScale = Vector3.one;
-            }
+            characterValues = GetComponent<CC_CharacterValues>();
         }
+
+        if (crafting == null)
+        {
+            crafting = GetComponentInChildren<INV_Crafting>();
+        }
+    }
+
+    private void CacheReplicatedEquippedRoot()
+    {
+        if (replicatedEquippedItemRoot != null)
+        {
+            return;
+        }
+
+        CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
+        if (cameraController != null)
+        {
+            replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
+        }
+    }
+
+    private void FollowLocalEquippedRoot()
+    {
+        if (localEquippedVisual == null || equippedItemRoot == null)
+        {
+            return;
+        }
+
+        localEquippedVisual.transform.position = equippedItemRoot.position;
+        localEquippedVisual.transform.rotation = equippedItemRoot.rotation;
+        localEquippedVisual.transform.localScale = Vector3.one;
+    }
+
+    private void FollowReplicatedEquippedRoot()
+    {
+        if (replicatedEquippedVisual == null)
+        {
+            return;
+        }
+
+        Transform followRoot = GetReplicatedEquippedItemRoot();
+        if (followRoot == null)
+        {
+            return;
+        }
+
+        replicatedEquippedVisual.transform.position = followRoot.position;
+        replicatedEquippedVisual.transform.rotation = followRoot.rotation;
+        replicatedEquippedVisual.transform.localScale = Vector3.one;
     }
 
     private void OnEquippedItemIdChanged(FixedString128Bytes oldValue, FixedString128Bytes newValue)
@@ -107,73 +141,91 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RebuildEquippedVisuals(newValue.ToString());
     }
 
+    // local sync rpcs
     [Rpc(SendTo.SpecifiedInParams)]
     public void AddItemLocalRpc(string itemId, RpcParams rpcParams = default)
     {
-        if (inventory == null)
-        {
-            inventory = GetComponentInChildren<INV_Inventory>();
-        }
+        CacheRefs();
 
-        if (inventory == null)
+        if (inventory == null || string.IsNullOrWhiteSpace(itemId))
         {
-            Debug.LogError("INV_PlayerInventoryNet could not find INV_Inventory.", this);
             return;
         }
 
-        INV_Item item = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
-
+        INV_Item item = GetItemById(itemId);
         if (item == null)
         {
-            Debug.LogError($"Could not resolve item id '{itemId}' from INV_ItemDatabase.", this);
             return;
         }
 
-        bool added = inventory.TryAddItem(item);
-        if (!added)
+        inventory.TryAddItem(item);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void AddItemAmountLocalRpc(string itemId, int amount, RpcParams rpcParams = default)
+    {
+        CacheRefs();
+
+        if (inventory == null || string.IsNullOrWhiteSpace(itemId) || amount <= 0)
         {
-            Debug.LogWarning($"Client inventory could not add item '{itemId}'.", this);
+            return;
         }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < amount; i++)
+        {
+            inventory.TryAddItem(item);
+        }
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void AddItemAtCellLocalRpc(string itemId, int amount, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
+    {
+        CacheRefs();
+
+        if (inventory == null || string.IsNullOrWhiteSpace(itemId) || amount <= 0)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        inventory.TryAddItemAtCell
+        (
+            item,
+            new Vector2Int(cellX, cellY),
+            (INV_Inventory.ItemInstance.Rotation)rotation,
+            amount
+        );
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
     private void CraftResultLocalRpc(bool succeeded, string craftedItemId, RpcParams rpcParams = default)
     {
-        if (inventory == null)
-        {
-            inventory = GetComponentInChildren<INV_Inventory>();
-        }
+        CacheRefs();
 
         if (inventory == null)
         {
-            Debug.LogError("INV_PlayerInventoryNet could not find INV_Inventory.", this);
             OnCraftRequestFinished?.Invoke(false, craftedItemId);
             return;
         }
 
         if (succeeded)
         {
-            INV_Item craftedItem = INV_ItemDatabase.Instance != null
-                ? INV_ItemDatabase.Instance.GetItemById(craftedItemId)
-                : null;
+            INV_Item craftedItem = GetItemById(craftedItemId);
 
             if (craftedItem != null)
             {
-                // remove crafting requirements locally
-                for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
-                {
-                    INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
-                    if (req == null || req.item == null || req.amount <= 0)
-                    {
-                        continue;
-                    }
-
-                    inventory.RemoveItemAmount(req.item.ItemID, req.amount);
-                }
-
-                // then add crafted result locally
+                RemoveCraftRequirementsLocally(craftedItem);
                 inventory.TryAddItem(craftedItem);
             }
         }
@@ -181,24 +233,144 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         OnCraftRequestFinished?.Invoke(succeeded, craftedItemId);
     }
 
-    // Called by local inventory UI
+    private void RemoveCraftRequirementsLocally(INV_Item craftedItem)
+    {
+        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            if (req?.item == null || req.amount <= 0)
+            {
+                continue;
+            }
+
+            inventory.RemoveItemAmount(req.item.ItemID, req.amount);
+        }
+    }
+
+    // public requests
     public void RequestDropItem(string itemId)
     {
         if (string.IsNullOrWhiteSpace(itemId))
         {
-            Debug.LogError("RequestDropItem called with empty itemId.", this);
             return;
         }
 
-        // host can process immediately
         if (IsServer)
         {
             SpawnDroppedItem_Server(itemId);
             return;
         }
 
-        // client asks server to spawn it
         RequestDropItemRpc(itemId);
+    }
+
+    public void RequestStoreItemInOpenChest(string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
+    {
+        if (string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null || inventory.ActiveChest == null)
+        {
+            return;
+        }
+
+        NetworkObject chestNetObj = inventory.ActiveChest.NetworkObject;
+        if (chestNetObj == null)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            StoreItemInChest_Server(inventory.ActiveChest, itemId, quantity, chestCell, rotation);
+            return;
+        }
+
+        RequestStoreItemInChestRpc
+        (
+            new NetworkObjectReference(chestNetObj),
+            itemId,
+            quantity,
+            chestCell.x,
+            chestCell.y,
+            (int)rotation
+        );
+    }
+
+    public void RequestMoveChestItemInOpenChest(int chestItemIndex, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
+    {
+        if (chestItemIndex < 0)
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null || inventory.ActiveChest == null)
+        {
+            return;
+        }
+
+        NetworkObject chestNetObj = inventory.ActiveChest.NetworkObject;
+        if (chestNetObj == null)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            MoveChestItem_Server(inventory.ActiveChest, chestItemIndex, chestCell, rotation);
+            return;
+        }
+
+        RequestMoveChestItemRpc
+        (
+            new NetworkObjectReference(chestNetObj),
+            chestItemIndex,
+            chestCell.x,
+            chestCell.y,
+            (int)rotation
+        );
+    }
+
+    public void RequestTakeChestItemFromOpenChest(int chestItemIndex, Vector2Int inventoryCell, INV_Inventory.ItemInstance.Rotation rotation)
+    {
+        if (chestItemIndex < 0)
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null || inventory.ActiveChest == null)
+        {
+            return;
+        }
+
+        NetworkObject chestNetObj = inventory.ActiveChest.NetworkObject;
+        if (chestNetObj == null)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            TakeChestItem_Server(inventory.ActiveChest, chestItemIndex, inventoryCell, rotation);
+            return;
+        }
+
+        RequestTakeChestItemRpc
+        (
+            new NetworkObjectReference(chestNetObj),
+            chestItemIndex,
+            inventoryCell.x,
+            inventoryCell.y,
+            (int)rotation
+        );
     }
 
     public void RequestEquipItem(string itemId)
@@ -209,7 +381,6 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        // owner should always build their local only first person visual immediately
         if (IsOwner)
         {
             ShowLocalEquippedVisual(itemId);
@@ -244,7 +415,6 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         if (!IsOwner)
         {
-            Debug.LogWarning("Only the owner can request use of the equipped item.", this);
             return;
         }
 
@@ -259,15 +429,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     public void RequestUseItemInInventory(string itemId)
     {
-        if (string.IsNullOrWhiteSpace(itemId))
+        if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
         {
-            Debug.LogError("RequestUseItemInInventory called with empty itemId.", this);
-            return;
-        }
-
-        if (!IsOwner)
-        {
-            Debug.LogWarning("Only the owner can request use of the equipped item.", this);
             return;
         }
 
@@ -282,14 +445,22 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     public void RequestCraftItem(string itemId)
     {
-        if (string.IsNullOrWhiteSpace(itemId))
+        if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
         {
             return;
         }
 
-        if (!IsOwner)
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
         {
-            Debug.LogWarning("Only the owner can request crafting.", this);
+            return;
+        }
+
+        CacheRefs();
+
+        // local validation first so clients can craft even if server-side inventory copy is not fully mirrored yet
+        if (crafting != null && !crafting.CanCraftItemRightNow(item))
+        {
             return;
         }
 
@@ -302,19 +473,12 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestCraftItemRpc(itemId);
     }
 
+    // server rpc entry points
     [Rpc(SendTo.Server)]
     private void RequestDropItemRpc(string itemId, RpcParams rpcParams = default)
     {
-        if (string.IsNullOrWhiteSpace(itemId))
+        if (!IsSenderOwner(rpcParams) || string.IsNullOrWhiteSpace(itemId))
         {
-            Debug.LogWarning("RequestDropItemRpc received empty itemId.", this);
-            return;
-        }
-
-        ulong senderClientId = rpcParams.Receive.SenderClientId;
-        if (OwnerClientId != senderClientId)
-        {
-            Debug.LogWarning($"Client {senderClientId} tried to drop from player owned by {OwnerClientId}.", this);
             return;
         }
 
@@ -322,18 +486,64 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    private void RequestEquipItemRpc(string itemId, RpcParams rpcParams = default)
+    private void RequestStoreItemInChestRpc(NetworkObjectReference chestRef, string itemId, int quantity, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
     {
-        if (string.IsNullOrWhiteSpace(itemId))
+        if (!IsSenderOwner(rpcParams))
         {
-            Debug.LogWarning("RequestEquipItemRpc received empty itemId.", this);
             return;
         }
 
-        ulong senderClientId = rpcParams.Receive.SenderClientId;
-        if (OwnerClientId != senderClientId)
+        if (!TryGetChestFromRef(chestRef, out INV_Chest chest))
         {
-            Debug.LogWarning($"Client {senderClientId} tried to equip from player owned by {OwnerClientId}.", this);
+            return;
+        }
+
+        StoreItemInChest_Server(chest, itemId, quantity, new Vector2Int(cellX, cellY), (INV_Inventory.ItemInstance.Rotation)rotation);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestMoveChestItemRpc(NetworkObjectReference chestRef, int chestItemIndex, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        if (!TryGetChestFromRef(chestRef, out INV_Chest chest))
+        {
+            return;
+        }
+
+        MoveChestItem_Server(chest, chestItemIndex, new Vector2Int(cellX, cellY), (INV_Inventory.ItemInstance.Rotation)rotation);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestTakeChestItemRpc(NetworkObjectReference chestRef, int chestItemIndex, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        if (!TryGetChestFromRef(chestRef, out INV_Chest chest))
+        {
+            return;
+        }
+
+        TakeChestItem_Server
+        (
+            chest,
+            chestItemIndex,
+            new Vector2Int(cellX, cellY),
+            (INV_Inventory.ItemInstance.Rotation)rotation
+        );
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestEquipItemRpc(string itemId, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams) || string.IsNullOrWhiteSpace(itemId))
+        {
             return;
         }
 
@@ -343,10 +553,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Rpc(SendTo.Server)]
     private void RequestClearEquippedItemRpc(RpcParams rpcParams = default)
     {
-        ulong senderClientId = rpcParams.Receive.SenderClientId;
-        if (OwnerClientId != senderClientId)
+        if (!IsSenderOwner(rpcParams))
         {
-            Debug.LogWarning($"Client {senderClientId} tried to clear equip from player owned by {OwnerClientId}.", this);
             return;
         }
 
@@ -356,10 +564,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Rpc(SendTo.Server)]
     private void RequestUseEquippedItemRpc(RpcParams rpcParams = default)
     {
-        ulong senderClientId = rpcParams.Receive.SenderClientId;
-        if (OwnerClientId != senderClientId)
+        if (!IsSenderOwner(rpcParams))
         {
-            Debug.LogWarning($"Client {senderClientId} tried to use equip from player owned by {OwnerClientId}.", this);
             return;
         }
 
@@ -369,54 +575,74 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Rpc(SendTo.Server)]
     private void RequestUseItemInInventoryRpc(string itemId, RpcParams rpcParams = default)
     {
-        ulong senderClientId = rpcParams.Receive.SenderClientId;
-        if (OwnerClientId != senderClientId)
+        if (!IsSenderOwner(rpcParams))
         {
-            Debug.LogWarning($"Client {senderClientId} tried to use item in player inventory owned by {OwnerClientId}.", this);
             return;
         }
+
         UseItemInInventory_Server(itemId);
     }
 
     [Rpc(SendTo.Server)]
     private void RequestCraftItemRpc(string itemId, RpcParams rpcParams = default)
     {
-        if (string.IsNullOrWhiteSpace(itemId))
+        if (!IsSenderOwner(rpcParams) || string.IsNullOrWhiteSpace(itemId))
         {
             return;
         }
 
-        ulong senderClientId = rpcParams.Receive.SenderClientId;
-        if (OwnerClientId != senderClientId)
+        INV_Item craftedItem = GetItemById(itemId);
+        if (craftedItem == null)
         {
-            Debug.LogWarning($"Client {senderClientId} tried to craft on player owned by {OwnerClientId}.", this);
+            NotifyCraftResult(false, itemId);
+            return;
+        }
+
+        // if the server-side inventory copy is not in sync for this remote client yet,
+        // trust the request path and let the owner apply the result locally through CraftResultLocalRpc.
+        if (!IsOwner)
+        {
+            NotifyCraftResult(true, itemId);
             return;
         }
 
         CraftItem_Server(itemId);
     }
 
+    private bool IsSenderOwner(RpcParams rpcParams)
+    {
+        return OwnerClientId == rpcParams.Receive.SenderClientId;
+    }
+
+    private bool TryGetChestFromRef(NetworkObjectReference chestRef, out INV_Chest chest)
+    {
+        chest = null;
+
+        if (!chestRef.TryGet(out NetworkObject chestNetObj) || chestNetObj == null)
+        {
+            return false;
+        }
+
+        chest = chestNetObj.GetComponent<INV_Chest>();
+        return chest != null;
+    }
+
+    private INV_Item GetItemById(string itemId)
+    {
+        return INV_ItemDatabase.Instance != null ? INV_ItemDatabase.Instance.GetItemById(itemId) : null;
+    }
+
+    // equipped item
     private void EquipItem_Server(string itemId)
     {
         if (!IsServer)
         {
-            Debug.LogWarning("EquipItem_Server called while not on server.", this);
             return;
         }
 
-        INV_Item item = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
-
-        if (item == null)
+        INV_Item item = GetItemById(itemId);
+        if (item == null || item.EquippedPrefab == null)
         {
-            Debug.LogError($"Could not resolve equipped item id '{itemId}' from INV_ItemDatabase.", this);
-            return;
-        }
-
-        if (item.EquippedPrefab == null)
-        {
-            Debug.LogError($"Item '{item.Name}' is missing EquippedPrefab.", item);
             return;
         }
 
@@ -432,7 +658,6 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         if (!IsServer)
         {
-            Debug.LogWarning("ClearEquippedItem_Server called while not on server.", this);
             return;
         }
 
@@ -448,20 +673,12 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         if (!IsServer)
         {
-            Debug.LogWarning("UseEquippedItem_Server called while not on server.", this);
             return;
         }
 
         string itemId = equippedItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId))
+        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
         {
-            Debug.LogWarning("Tried to use equipped item, but no item is equipped.", this);
-            return;
-        }
-
-        if (replicatedEquippedVisual == null)
-        {
-            Debug.LogWarning("Server has no authoritative equipped visual to use.", this);
             return;
         }
 
@@ -470,51 +687,32 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] is IUsableItem usableItem)
+            if (behaviours[i] is not IUsableItem usableItem)
             {
-                usableItem.WireUp(gameObject, itemId);
-                usableItem.OnUse();
-                foundUsable = true;
+                continue;
             }
+
+            usableItem.WireUp(gameObject, itemId);
+            usableItem.OnUse();
+            foundUsable = true;
         }
 
-        if (!foundUsable)
+        if (!foundUsable && logEquippedItem)
         {
             Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components.", replicatedEquippedVisual);
         }
     }
 
+    // inventory item use / crafting
     private void UseItemInInventory_Server(string itemId)
     {
         if (!IsServer)
         {
-            Debug.LogWarning("UseItemInInventory_Server called while not on server.", this);
             return;
         }
 
-        INV_Item usedItem = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
-
-        if (usedItem.objectType != INV_Item.ObjectType.Consumable) { return; }
-
-        bool removed = inventory.RemoveItemAmount(itemId, 1);
-
-        if (removed)
-        {
-            //use here
-            characterValues.AddHungerDelay(usedItem.HungerDrainDelay);
-            characterValues.AddHunger(usedItem.HungerReplenish);
-
-            characterValues.AddThirstDelay(usedItem.ThirstDrainDelay);
-            characterValues.AddThirst(usedItem.ThirstReplenish);
-            return;
-        }
-    }
-
-    private void CraftItem_Server(string itemId)
-    {
-        if (!IsServer)
+        INV_Item usedItem = GetItemById(itemId);
+        if (usedItem == null || usedItem.objectType != INV_Item.ObjectType.Consumable)
         {
             return;
         }
@@ -526,201 +724,445 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (inventory == null)
         {
-            NotifyCraftResult(false, itemId);
             return;
         }
 
-        INV_Item craftedItem = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
+        bool removed = inventory.RemoveItemAmount(itemId, 1);
+        if (!removed)
+        {
+            return;
+        }
 
-        if (craftedItem == null)
+        if (characterValues != null)
+        {
+            characterValues.AddHungerDelay(usedItem.HungerDrainDelay);
+            characterValues.AddHunger(usedItem.HungerReplenish);
+            characterValues.AddThirstDelay(usedItem.ThirstDrainDelay);
+            characterValues.AddThirst(usedItem.ThirstReplenish);
+        }
+    }
+
+    private void CraftItem_Server(string itemId)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null)
         {
             NotifyCraftResult(false, itemId);
             return;
         }
 
-        if (!craftedItem.Craftable)
+        INV_Item craftedItem = GetItemById(itemId);
+        if (craftedItem == null || !craftedItem.Craftable)
         {
             NotifyCraftResult(false, itemId);
             return;
         }
 
-        // first validate all requirements exist
-        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        if (!HasAllCraftRequirements(craftedItem))
         {
-            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
-            if (req == null || req.item == null || req.amount <= 0)
-            {
-                continue;
-            }
-
-            if (!inventory.HasItemAmount(req.item.ItemID, req.amount))
-            {
-                NotifyCraftResult(false, itemId);
-                return;
-            }
+            NotifyCraftResult(false, itemId);
+            return;
         }
 
-        // check output can be added before we remove requirements
         if (!inventory.CanAddItem(craftedItem))
         {
             NotifyCraftResult(false, itemId);
             return;
         }
 
-        // remove requirements now
-        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        if (!RemoveCraftRequirementsServer(craftedItem))
         {
-            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
-            if (req == null || req.item == null || req.amount <= 0)
-            {
-                continue;
-            }
-
-            if (!inventory.RemoveItemAmount(req.item.ItemID, req.amount))
-            {
-                // failed removing, restore anything already removed
-                for (int r = 0; r < i; r++)
-                {
-                    INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[r];
-                    if (restoreReq == null || restoreReq.item == null || restoreReq.amount <= 0)
-                    {
-                        continue;
-                    }
-
-                    for (int a = 0; a < restoreReq.amount; a++)
-                    {
-                        inventory.TryAddItem(restoreReq.item);
-                    }
-                }
-
-                NotifyCraftResult(false, itemId);
-                return;
-            }
-        }
-
-        // then add crafted item
-        bool added = inventory.TryAddItem(craftedItem);
-        if (!added)
-        {
-            // unexpected fail after remove, restore requirements
-            for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
-            {
-                INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[i];
-                if (restoreReq == null || restoreReq.item == null || restoreReq.amount <= 0)
-                {
-                    continue;
-                }
-
-                for (int a = 0; a < restoreReq.amount; a++)
-                {
-                    inventory.TryAddItem(restoreReq.item);
-                }
-            }
-
             NotifyCraftResult(false, itemId);
             return;
         }
 
-        NotifyCraftResult(true, itemId);
+        if (inventory.TryAddItem(craftedItem))
+        {
+            NotifyCraftResult(true, itemId);
+            return;
+        }
+
+        RestoreCraftRequirements(craftedItem);
+        NotifyCraftResult(false, itemId);
+    }
+
+    private bool HasAllCraftRequirements(INV_Item craftedItem)
+    {
+        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            if (req?.item == null || req.amount <= 0)
+            {
+                continue;
+            }
+
+            if (!inventory.HasItemAmount(req.item.ItemID, req.amount))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool RemoveCraftRequirementsServer(INV_Item craftedItem)
+    {
+        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            if (req?.item == null || req.amount <= 0)
+            {
+                continue;
+            }
+
+            if (inventory.RemoveItemAmount(req.item.ItemID, req.amount))
+            {
+                continue;
+            }
+
+            RestoreCraftRequirementsUpToIndex(craftedItem, i);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void RestoreCraftRequirementsUpToIndex(INV_Item craftedItem, int endExclusive)
+    {
+        for (int r = 0; r < endExclusive; r++)
+        {
+            INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[r];
+            if (restoreReq?.item == null || restoreReq.amount <= 0)
+            {
+                continue;
+            }
+
+            for (int a = 0; a < restoreReq.amount; a++)
+            {
+                inventory.TryAddItem(restoreReq.item);
+            }
+        }
+    }
+
+    private void RestoreCraftRequirements(INV_Item craftedItem)
+    {
+        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[i];
+            if (restoreReq?.item == null || restoreReq.amount <= 0)
+            {
+                continue;
+            }
+
+            for (int a = 0; a < restoreReq.amount; a++)
+            {
+                inventory.TryAddItem(restoreReq.item);
+            }
+        }
     }
 
     private void NotifyCraftResult(bool succeeded, string craftedItemId)
     {
         if (IsOwner)
         {
-            // host / local owner already has the server side inventory instance changed
             OnCraftRequestFinished?.Invoke(succeeded, craftedItemId);
             return;
         }
 
-        CraftResultLocalRpc(
-            succeeded,
-            craftedItemId,
-            RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
-        );
+        CraftResultLocalRpc(succeeded, craftedItemId, RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
     }
 
-    private void RebuildEquippedVisuals(string itemId)
+    // chest
+    private void StoreItemInChest_Server(INV_Chest chest, string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        // owner local first person visual
+        if (!IsServer || chest == null || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        // host player uses the real shared inventory instance on server
         if (IsOwner)
         {
-            if (string.IsNullOrWhiteSpace(itemId))
+            if (!inventory.HasItemAmount(itemId, quantity))
             {
-                ClearLocalEquippedVisual();
+                chest.RefreshViewer();
+                return;
             }
-            else
+
+            if (!chest.TryStoreItemData(itemId, quantity, chestCell, rotation))
             {
-                ShowLocalEquippedVisual(itemId);
+                chest.RefreshViewer();
+                return;
+            }
+
+            if (inventory.RemoveItemAmount(itemId, quantity))
+            {
+                chest.RefreshViewer();
+                return;
+            }
+
+            chest.TryRemoveLastStoredItem();
+            chest.RefreshViewer();
+            return;
+        }
+
+        // remote client inventory is handled locally on the owner,
+        // server only mutates chest data and refreshes the viewer snapshot
+        if (!chest.TryStoreItemData(itemId, quantity, chestCell, rotation))
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        chest.RefreshViewer();
+    }
+
+    private void MoveChestItem_Server(INV_Chest chest, int chestItemIndex, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
+    {
+        if (!IsServer || chest == null)
+        {
+            return;
+        }
+
+        chest.TryMoveItemData(chestItemIndex, chestCell, rotation);
+        chest.RefreshViewer();
+    }
+
+    private void TakeChestItem_Server(INV_Chest chest, int chestItemIndex, Vector2Int inventoryCell, INV_Inventory.ItemInstance.Rotation rotation)
+    {
+        if (!IsServer || chest == null)
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null)
+        {
+            return;
+        }
+
+        INV_Chest.ChestItemData data;
+        if (!chest.TryGetItemData(chestItemIndex, out data))
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        INV_Item item = GetItemById(data.itemId);
+        if (item == null)
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        int amount = Mathf.Max(1, data.quantity);
+
+        // host player uses the real shared inventory instance on server
+        if (IsOwner)
+        {
+            bool added = inventory.TryAddItemAtCell(item, inventoryCell, rotation, amount);
+            if (!added)
+            {
+                chest.RefreshViewer();
+                return;
+            }
+
+            if (!chest.TryRemoveItemAt(chestItemIndex))
+            {
+                chest.RefreshViewer();
+                return;
+            }
+
+            chest.RefreshViewer();
+            return;
+        }
+
+        // remote client inventory is handled locally on the owner,
+        // server only removes from chest and tells the owner to add it locally at exact cell
+        if (!chest.TryRemoveItemAt(chestItemIndex))
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        AddItemAtCellLocalRpc
+        (
+            item.ItemID,
+            amount,
+            inventoryCell.x,
+            inventoryCell.y,
+            (int)rotation,
+            RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
+        );
+
+        chest.RefreshViewer();
+    }
+
+    // world drop
+    private void SpawnDroppedItem_Server(string itemId)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null || inventory.ItemPrefab == null || inventory.dropItemTransform == null)
+        {
+            return;
+        }
+
+        GameObject drop = CreateDropObject();
+        if (drop == null)
+        {
+            return;
+        }
+
+        if (!SetupDropObject(drop, item))
+        {
+            Destroy(drop);
+            return;
+        }
+
+        ApplyDropPhysics(drop);
+    }
+
+    private GameObject CreateDropObject()
+    {
+        Vector3 dropPoint = inventory.dropItemTransform.position;
+        Quaternion dropRotation = inventory.dropItemTransform.rotation;
+        return Instantiate(inventory.ItemPrefab, dropPoint, dropRotation);
+    }
+
+    private bool SetupDropObject(GameObject drop, INV_Item item)
+    {
+        INV_ItemDrop dropHandler = drop.GetComponent<INV_ItemDrop>();
+        if (dropHandler != null)
+        {
+            dropHandler.Init(item);
+
+            InteractableObject interactable = dropHandler.GetComponent<InteractableObject>();
+            if (interactable != null)
+            {
+                interactable.RewireInteractListeners();
             }
         }
-        else
+
+        NetworkObject netObj = drop.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            return false;
+        }
+
+        netObj.Spawn();
+        return true;
+    }
+
+    private void ApplyDropPhysics(GameObject drop)
+    {
+        Rigidbody rb = drop.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            return;
+        }
+
+        rb.WakeUp();
+        rb.linearVelocity = inventory.dropItemTransform.forward * testThrowPower;
+        rb.angularVelocity = Vector3.one * UnityEngine.Random.Range(-testThrowTorque, testThrowTorque);
+    }
+
+    // equipped visuals
+    private void RebuildEquippedVisuals(string itemId)
+    {
+        RebuildOwnerEquippedVisual(itemId);
+        RebuildReplicatedEquippedVisual(itemId);
+    }
+
+    private void RebuildOwnerEquippedVisual(string itemId)
+    {
+        if (!IsOwner)
         {
             ClearLocalEquippedVisual();
+            return;
         }
 
-        // replicated / authority visual
-        // exists on the server for authority
-        // exists on non owners for third person visuals
-        bool shouldHaveReplicatedVisual = IsServer || !IsOwner;
-
-        if (shouldHaveReplicatedVisual)
+        if (string.IsNullOrWhiteSpace(itemId))
         {
-            if (string.IsNullOrWhiteSpace(itemId))
-            {
-                ClearReplicatedEquippedVisual();
-            }
-            else
-            {
-                ShowReplicatedEquippedVisual(itemId);
-            }
+            ClearLocalEquippedVisual();
+            return;
         }
-        else
+
+        ShowLocalEquippedVisual(itemId);
+    }
+
+    private void RebuildReplicatedEquippedVisual(string itemId)
+    {
+        bool shouldHaveReplicatedVisual = IsServer || !IsOwner;
+        if (!shouldHaveReplicatedVisual)
         {
             ClearReplicatedEquippedVisual();
+            return;
         }
+
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            ClearReplicatedEquippedVisual();
+            return;
+        }
+
+        ShowReplicatedEquippedVisual(itemId);
     }
 
     private void ShowLocalEquippedVisual(string itemId)
     {
-        if (!IsOwner) { return; }
-        if (equippedItemRoot == null)
+        if (!IsOwner || equippedItemRoot == null)
         {
-            Debug.LogError("Missing equippedItemRoot for local equipped visual.", this);
             return;
         }
 
-        INV_Item item = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
-
-        if (item == null)
+        INV_Item item = GetItemById(itemId);
+        if (item == null || item.EquippedPrefab == null)
         {
-            Debug.LogError($"Could not resolve equipped item id '{itemId}' from INV_ItemDatabase.", this);
-            return;
-        }
-
-        if (item.EquippedPrefab == null)
-        {
-            Debug.LogError($"Item '{item.Name}' is missing EquippedPrefab.", item);
             return;
         }
 
         ClearLocalEquippedVisual();
 
-        localEquippedVisual = Instantiate(item.EquippedPrefab, equippedItemRoot);
-        localEquippedVisual.name = $"LocalEquipped_{item.Name}";
-        localEquippedVisual.transform.localPosition = Vector3.zero;
-        localEquippedVisual.transform.localRotation = Quaternion.identity;
-        localEquippedVisual.transform.localScale = Vector3.one;
-
-        NetworkObject localNetObj = localEquippedVisual.GetComponent<NetworkObject>();
-        if (localNetObj != null)
+        localEquippedVisual = InstantiateEquippedVisual(item, equippedItemRoot, $"LocalEquipped_{item.Name}");
+        if (localEquippedVisual == null)
         {
-            Destroy(localNetObj);
+            return;
         }
+
+        RemoveNetworkObjectIfPresent(localEquippedVisual);
 
         CC_INV_EquippedItem equippedItem = localEquippedVisual.GetComponent<CC_INV_EquippedItem>();
         if (equippedItem != null)
@@ -736,58 +1178,52 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         Transform followRoot = GetReplicatedEquippedItemRoot();
         if (followRoot == null)
         {
-            Debug.LogError("Could not find a replicated equipped item root.", this);
             return;
         }
 
-        INV_Item item = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
-
-        if (item == null)
+        INV_Item item = GetItemById(itemId);
+        if (item == null || item.EquippedPrefab == null)
         {
-            Debug.LogError($"Could not resolve equipped item id '{itemId}' from INV_ItemDatabase.", this);
-            return;
-        }
-
-        if (item.EquippedPrefab == null)
-        {
-            Debug.LogError($"Item '{item.Name}' is missing EquippedPrefab.", item);
             return;
         }
 
         ClearReplicatedEquippedVisual();
 
-        replicatedEquippedVisual = Instantiate(item.EquippedPrefab, followRoot);
-        replicatedEquippedVisual.name = $"ReplicatedEquipped_{item.Name}";
-        replicatedEquippedVisual.transform.localPosition = Vector3.zero;
-        replicatedEquippedVisual.transform.localRotation = Quaternion.identity;
-        replicatedEquippedVisual.transform.localScale = Vector3.one;
-
-        NetworkObject replicatedNetObj = replicatedEquippedVisual.GetComponent<NetworkObject>();
-        if (replicatedNetObj != null)
+        replicatedEquippedVisual = InstantiateEquippedVisual(item, followRoot, $"ReplicatedEquipped_{item.Name}");
+        if (replicatedEquippedVisual == null)
         {
-            Destroy(replicatedNetObj);
+            return;
         }
+
+        RemoveNetworkObjectIfPresent(replicatedEquippedVisual);
 
         CC_INV_EquippedItem equippedItem = replicatedEquippedVisual.GetComponent<CC_INV_EquippedItem>();
         if (equippedItem != null)
         {
             equippedItem.Init(item, false);
-
-            // host needs this object for server authority,
-            // but should not see it as the first person local visual is used instead
-            if (IsServer && IsOwner)
-            {
-                equippedItem.SetVisualVisible(false);
-            }
-            else
-            {
-                equippedItem.SetVisualVisible(true);
-            }
+            equippedItem.SetVisualVisible(!(IsServer && IsOwner));
         }
 
         replicatedEquippedVisual.SetActive(true);
+    }
+
+    private GameObject InstantiateEquippedVisual(INV_Item item, Transform parent, string objectName)
+    {
+        GameObject go = Instantiate(item.EquippedPrefab, parent);
+        go.name = objectName;
+        go.transform.localPosition = Vector3.zero;
+        go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
+        return go;
+    }
+
+    private void RemoveNetworkObjectIfPresent(GameObject target)
+    {
+        NetworkObject netObj = target.GetComponent<NetworkObject>();
+        if (netObj != null)
+        {
+            Destroy(netObj);
+        }
     }
 
     private void ClearLocalEquippedVisual()
@@ -795,8 +1231,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         if (localEquippedVisual != null)
         {
             Destroy(localEquippedVisual);
-            localEquippedVisual = null;
         }
+
+        localEquippedVisual = null;
     }
 
     private void ClearReplicatedEquippedVisual()
@@ -804,8 +1241,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         if (replicatedEquippedVisual != null)
         {
             Destroy(replicatedEquippedVisual);
-            replicatedEquippedVisual = null;
         }
+
+        replicatedEquippedVisual = null;
     }
 
     private Transform GetReplicatedEquippedItemRoot()
@@ -823,91 +1261,6 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         return transform;
-    }
-
-    private void SpawnDroppedItem_Server(string itemId)
-    {
-        if (!IsServer)
-        {
-            Debug.LogWarning("SpawnDroppedItem_Server called while not on server.", this);
-            return;
-        }
-
-        if (inventory == null)
-        {
-            inventory = GetComponentInChildren<INV_Inventory>();
-        }
-
-        if (inventory == null)
-        {
-            Debug.LogError("INV_PlayerInventoryNet could not find INV_Inventory.", this);
-            return;
-        }
-
-        INV_Item item = INV_ItemDatabase.Instance != null
-            ? INV_ItemDatabase.Instance.GetItemById(itemId)
-            : null;
-
-        if (item == null)
-        {
-            Debug.LogError($"Could not resolve item id '{itemId}' from INV_ItemDatabase.", this);
-            return;
-        }
-
-        if (inventory.ItemPrefab == null || inventory.dropItemTransform == null)
-        {
-            Debug.LogError("Inventory is missing itemPrefab or dropItemTransform.", this);
-            return;
-        }
-
-        Vector3 dropPoint = inventory.dropItemTransform.position;
-        Quaternion dropRotation = inventory.dropItemTransform.rotation;
-
-        GameObject drop = Instantiate(inventory.ItemPrefab, dropPoint, dropRotation);
-        if (drop == null)
-        {
-            Debug.LogError("Failed to instantiate dropped item prefab.", this);
-            return;
-        }
-
-        INV_ItemDrop dropHandler = drop.GetComponent<INV_ItemDrop>();
-        if (dropHandler != null)
-        {
-            dropHandler.Init(item);
-
-            InteractableObject interactable = dropHandler.GetComponent<InteractableObject>();
-            if (interactable != null)
-            {
-                interactable.RewireInteractListeners();
-            }
-        }
-        else
-        {
-            Debug.LogError("Dropped item prefab is missing INV_ItemDrop!", drop);
-        }
-
-        NetworkObject netObj = drop.GetComponent<NetworkObject>();
-        if (netObj == null)
-        {
-            Debug.LogError("Dropped item prefab is missing NetworkObject!", drop);
-            Destroy(drop);
-            return;
-        }
-
-        Rigidbody rb = drop.GetComponent<Rigidbody>();
-
-        netObj.Spawn();
-
-        if (rb != null)
-        {
-            rb.WakeUp();
-
-            Vector3 throwVelocity = inventory.dropItemTransform.forward * testThrowPower;
-            Vector3 randomTorque = Vector3.one * UnityEngine.Random.Range(-testThrowTorque, testThrowTorque);
-
-            rb.linearVelocity = throwVelocity;
-            rb.angularVelocity = randomTorque;
-        }
     }
 
     public string GetEquippedItemId()
