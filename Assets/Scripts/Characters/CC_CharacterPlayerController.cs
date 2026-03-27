@@ -1,6 +1,6 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Unity.Netcode;
 using UnityEngine.UI;
 
 // Made by: Jason Lodge
@@ -368,10 +368,17 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
 
         // use item in inventory (consume)
-        if (input.interact && !useInInvHeld) 
+        if (input.interact && !useInInvHeld)
         {
             useInInvHeld = true;
-            inventoryNet.RequestUseItemInInventory(inventory.hoverItem.Instance.data.ItemID);
+
+            if (inventory.hoverItem != null &&
+                inventory.hoverItem.Instance != null &&
+                inventory.hoverItem.Instance.data != null &&
+                !inventory.hoverItem.Instance.isChestItem)
+            {
+                inventoryNet.RequestUseItemInInventory(inventory.hoverItem.Instance.data.ItemID);
+            }
         }
         else if (!input.interact && useInInvHeld)
         {
@@ -445,7 +452,10 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             // assign that hovered item into the slot.
             if (monitoringMenuOpen && inventory != null && inventory.hoverItem != null)
             {
-                hotBar.AssignHoverItemToSlot(slotIndex);
+                if (!inventory.hoverItem.Instance.isChestItem)
+                {
+                    hotBar.AssignHoverItemToSlot(slotIndex);
+                }
             }
             else
             {
@@ -566,6 +576,12 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             monitoringMenuRoot.SetActive(state);
         }
 
+        // make sure chest visuals are cleaned up when the menu closes
+        if (!state && inventory != null)
+        {
+            inventory.CloseChestView();
+        }
+
         // when opening inventory, force pause closed
         if (state && pauseMenuRoot != null)
         {
@@ -672,6 +688,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (interactMenu != null && interactMenu.IsOpen())
         {
             interactMenu.CloseMenu(false);
+        }
+
+        if (inventory != null)
+        {
+            inventory.CloseChestView();
         }
 
         SetInMenu(false);

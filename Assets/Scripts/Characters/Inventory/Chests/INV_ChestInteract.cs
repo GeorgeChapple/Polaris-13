@@ -6,6 +6,17 @@ using UnityEngine;
 // on itself to set up and open the inventory with the chest inventory.
 public class INV_ChestInteract : MonoBehaviour
 {
+    private INV_Chest chest;
+
+    private void Awake()
+    {
+        chest = GetComponent<INV_Chest>();
+        if (chest == null)
+        {
+            chest = GetComponentInParent<INV_Chest>();
+        }
+    }
+
     public void OnInteractedWith(GameObject interactor)
     {
         if (interactor == null)
@@ -13,15 +24,17 @@ public class INV_ChestInteract : MonoBehaviour
             return;
         }
 
-        INV_Chest chest = interactor.GetComponent<INV_Chest>();
         if (chest == null)
         {
-            chest = interactor.GetComponentInChildren<INV_Chest>();
+            chest = GetComponent<INV_Chest>();
+            if (chest == null)
+            {
+                chest = GetComponentInParent<INV_Chest>();
+            }
         }
 
         if (chest == null)
         {
-            Debug.LogWarning("Could not find INV_Chest on interactor.", interactor);
             return;
         }
 

@@ -446,6 +446,42 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         Camera uiCam = eventData.pressEventCamera;
 
+        // chest item flow
+        if (itemInst.isChestItem)
+        {
+            if (inv.TryTakeChestItemToInventoryFromScreenPoint(itemInst, eventData.position, uiCam))
+            {
+                inv.heldItem = null;
+                return;
+            }
+
+            bool movedChest = inv.TryMoveChestItemFromScreenPoint(itemInst, eventData.position, uiCam);
+            if (!movedChest)
+            {
+                inv.RestoreItemToCellAndRotation(itemInst, startCell, startRotation);
+
+                startAnchoredPos = rt.anchoredPosition;
+                itemInst.cell = startCell;
+                itemInst.rotation = startRotation;
+            }
+            else
+            {
+                startCell = itemInst.cell;
+                startRotation = itemInst.rotation;
+                startAnchoredPos = rt.anchoredPosition;
+            }
+
+            inv.heldItem = null;
+            return;
+        }
+
+        // player inventory item flow
+        if (inv.TryStoreHeldItemInOpenChestFromScreenPoint(itemInst, eventData.position, uiCam))
+        {
+            inv.heldItem = null;
+            return;
+        }
+
         bool moved = inv.TryMoveItemFromScreenPoint(itemInst, eventData.position, uiCam);
         if (!moved)
         {

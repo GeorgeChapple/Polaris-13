@@ -9,30 +9,23 @@ using UnityEngine.UI;
 // Sets up a grid for inventory spaces, any item added goes through multiple checks before finally snapping to a spot on the grid
 // grid is its own object and uses grid layout group to align grid spaces
 // then items are instantiated into another object using the grid space top left corner world positions into local
-// grid doesnt get generated again, as we can just keep it there toggled off using set active for gameobject in player controller
-
-// TODO:
-// redo grid generation to be set up in here via cell space size --
-// hotbar works like item stays in inventory but is hotkeyed, makes inventory management more of a challenge --
-// this should hold chest logic too, network inventory will pull whats in there from host with item instance and grid space to set up grid properly
+// player inventory and chest inventory both use the same internal grid setup / placement functions now
 public class INV_Inventory : MonoBehaviour
 {
     [Header("Inventory Menu")]
     [Tooltip("Make sure the inventory menu root is active, so we can set up the grid then close the menu after.")]
     [SerializeField] private RectTransform inventoryMenuRoot;
-    [Tooltip("Grid parent with GridLayoutGroup.")]
-    [SerializeField] private RectTransform gridRoot;
-    [Tooltip("Parent all item instances will be under.")]
-    [SerializeField] private RectTransform itemGridRoot;
 
-    [Header("Grid")]
-    [Tooltip("Max amount of spaces in inventory height wise.")]
-    [SerializeField] private int inventoryGridMaxHeight = 4;
-    [Tooltip("Max amount of spaces in inventory width wise.")]
-    [SerializeField] private int inventoryGridMaxWidth = 10;
+    [Header("Player Inventory Grid")]
+    [SerializeField] private GridRefs playerGrid = new GridRefs();
 
+    [Header("Chest Inventory Grid")]
+    [SerializeField] private GridRefs chestGrid = new GridRefs();
+
+    [Header("Grid Shared Settings")]
     [Tooltip("Size of the grid space we will use to set the size of the grid holding object.")]
     [SerializeField] private int inventoryGridSpaceSize = 40;
+
     [Tooltip("Spacing between grid slots")]
     [SerializeField] private Vector2 inventoryGridSpacing = new Vector2(2, 2);
 
@@ -53,36 +46,51 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private INV_ItemHoverTooltip hoverTooltip;
     [SerializeField] private float hoverTooltipDelay = 0.4f;
 
-    private INV_ItemUI lastHoverItem;
-    private float hoverTimer;
-
     [Tooltip("Transform we will spawn dropped items from.")]
     public Transform dropItemTransform;
 
     [Header("Debug")]
     [SerializeField] private bool logPlacement;
 
+    private INV_ItemUI lastHoverItem;
+    private float hoverTimer;
+
     // runtime
-    private bool gridGenerated;
     public INV_ItemUI heldItem;
     public INV_ItemUI hoverItem;
 
-    private GridLayoutGroup gridLayoutGroup;
     private Vector2 cellSize;
+    private GridRuntime playerRuntime = new GridRuntime();
+    private GridRuntime chestRuntime = new GridRuntime();
 
-    // cell transforms
-    private RectTransform[,] cellRects;
+    // currently opened chest for this player
+    private INV_Chest activeChest;
 
-    // grid occupancy
-    private InventoryGridSpace[,] spaces;
-
-    // item instances
-    [SerializeField] private List<ItemInstance> items = new List<ItemInstance>();
-    public List<ItemInstance> Items => items;
+    public List<ItemInstance> Items => playerRuntime.items;
+    public INV_Chest ActiveChest => activeChest;
     public GameObject ItemPrefab => itemPrefab;
     public Vector2 CellSize => cellSize;
-    public Vector2 GridSpacing => gridLayoutGroup != null ? gridLayoutGroup.spacing : inventoryGridSpacing;
+    public Vector2 GridSpacing => inventoryGridSpacing;
     public GameObject OccupiedSpacePrefab => occupiedSpacePrefab;
+
+    [System.Serializable]
+    public class GridRefs
+    {
+        [Tooltip("Optional root object for this panel. Chest uses this so it can be toggled on/off.")]
+        public GameObject panelRoot;
+
+        [Tooltip("Grid parent with GridLayoutGroup.")]
+        public RectTransform gridRoot;
+
+        [Tooltip("Parent all item instances will be under.")]
+        public RectTransform itemRoot;
+
+        [Tooltip("Max amount of spaces in inventory height wise.")]
+        public int maxHeight = 4;
+
+        [Tooltip("Max amount of spaces in inventory width wise.")]
+        public int maxWidth = 10;
+    }
 
     [System.Serializable]
     public class InventoryGridSpace
@@ -100,7 +108,7 @@ public class INV_Inventory : MonoBehaviour
         // rectangular size in cells for UI and bounds
         public Vector2Int size;
 
-        public enum Rotation { Up, Right, Down, Left };
+        public enum Rotation { Up, Right, Down, Left }
         public Rotation rotation;
 
         // where the item is placed
@@ -122,12 +130,37 @@ public class INV_Inventory : MonoBehaviour
         // ui
         public RectTransform ui;
         public INV_ItemUI uiHandler;
+
+        // runtime
+        public bool isChestItem;
+        public int chestItemIndex = -1;
+    }
+
+    private class GridRuntime
+    {
+        public bool generated;
+        public GridLayoutGroup layout;
+        public RectTransform[,] cellRects;
+        public InventoryGridSpace[,] spaces;
+        public readonly List<ItemInstance> items = new List<ItemInstance>();
     }
 
     private void Start()
     {
-        GenerateGrid();
-        if (inventoryMenuRoot != null) { inventoryMenuRoot.gameObject.SetActive(false); }
+        cellSize = new Vector2(inventoryGridSpaceSize, inventoryGridSpaceSize);
+
+        GenerateGrid(playerGrid, playerRuntime);
+        GenerateGrid(chestGrid, chestRuntime);
+
+        if (inventoryMenuRoot != null)
+        {
+            inventoryMenuRoot.gameObject.SetActive(false);
+        }
+
+        if (chestGrid.panelRoot != null)
+        {
+            chestGrid.panelRoot.SetActive(false);
+        }
     }
 
     private void Update()
@@ -139,6 +172,11 @@ public class INV_Inventory : MonoBehaviour
             lastHoverItem = null;
             hoverTimer = 0f;
 
+            if (activeChest != null)
+            {
+                CloseChestView();
+            }
+
             if (hoverTooltip != null)
             {
                 hoverTooltip.HideImmediate();
@@ -147,104 +185,106 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        if (inventoryMenuRoot.gameObject.activeInHierarchy)
-        {
-            // update all items when inventory menu open
-            foreach (ItemInstance item in items)
-            {
-                item.uiHandler.ApplyUpdatedVisuals();
-            }
-        }
+        RefreshRuntimeVisuals(playerRuntime);
+        RefreshRuntimeVisuals(chestRuntime);
 
-        // hover detection
         UpdateHoverItem();
-
-        // tooltip
         UpdateHoverTooltip();
     }
 
-    // generates the grid to use for inventory
-    private void GenerateGrid()
+    private void RefreshRuntimeVisuals(GridRuntime runtime)
     {
-        if (gridGenerated) { return; }
-        if (gridRoot == null || gridCellPrefab == null)
+        for (int i = 0; i < runtime.items.Count; i++)
         {
-            Debug.LogWarning("Inventory missing grid references.");
-            return;
-        }
-
-        gridLayoutGroup = gridRoot.GetComponent<GridLayoutGroup>();
-        if (gridLayoutGroup == null)
-        {
-            Debug.LogWarning("Inventory gridRoot needs GridLayoutGroup.");
-            return;
-        }
-
-        // apply spacing and cell size
-        gridLayoutGroup.spacing = inventoryGridSpacing;
-        cellSize = new Vector2(inventoryGridSpaceSize, inventoryGridSpaceSize);
-        gridLayoutGroup.cellSize = cellSize;
-
-        // set grid size based on our grid size and spacing as one space multiplied by out height and width respectively
-        gridRoot.sizeDelta = new Vector2
-            ((inventoryGridSpaceSize + inventoryGridSpacing.x) * inventoryGridMaxWidth,
-            (inventoryGridSpaceSize + inventoryGridSpacing.y) * inventoryGridMaxHeight);
-
-        // remove last spacing added height and width so it sits flush with the edge
-        gridRoot.sizeDelta -= inventoryGridSpacing;
-
-        // vice versa
-        itemGridRoot.sizeDelta = new Vector2
-            ((inventoryGridSpaceSize + inventoryGridSpacing.x) * inventoryGridMaxWidth,
-            (inventoryGridSpaceSize + inventoryGridSpacing.y) * inventoryGridMaxHeight);
-
-        itemGridRoot.sizeDelta -= inventoryGridSpacing;
-
-        spaces = new InventoryGridSpace[inventoryGridMaxWidth, inventoryGridMaxHeight];
-        cellRects = new RectTransform[inventoryGridMaxWidth, inventoryGridMaxHeight];
-
-        // clear existing children if any
-        for (int i = gridRoot.childCount - 1; i >= 0; i--)
-        {
-            Destroy(gridRoot.GetChild(i).gameObject);
-        }
-
-        // generates all spaces
-        for (int y = 0; y < inventoryGridMaxHeight; y++)
-        {
-            for (int x = 0; x < inventoryGridMaxWidth; x++)
+            ItemInstance item = runtime.items[i];
+            if (item?.uiHandler == null)
             {
-                GameObject cell = Instantiate(gridCellPrefab, gridRoot);
-                cell.name = $"Cell_X:{x},Y:{y}";
+                continue;
+            }
 
-                RectTransform rt = cell.GetComponent<RectTransform>();
-                cellRects[x, y] = rt;
+            item.uiHandler.ApplyUpdatedVisuals();
+        }
+    }
 
-                InventoryGridSpace s = new InventoryGridSpace();
-                s.position = new Vector2Int(x, y);
-                s.isOccupied = false;
-                s.occupyingItem = null;
+    // generates a grid to use for this inventory type
+    private void GenerateGrid(GridRefs refs, GridRuntime runtime)
+    {
+        if (runtime.generated || refs.gridRoot == null || refs.itemRoot == null || gridCellPrefab == null)
+        {
+            return;
+        }
 
-                spaces[x, y] = s;
+        runtime.layout = refs.gridRoot.GetComponent<GridLayoutGroup>();
+        if (runtime.layout == null)
+        {
+            return;
+        }
+
+        runtime.layout.spacing = inventoryGridSpacing;
+        runtime.layout.cellSize = cellSize;
+
+        Vector2 fullSize = new Vector2
+        (
+            (inventoryGridSpaceSize + inventoryGridSpacing.x) * refs.maxWidth,
+            (inventoryGridSpaceSize + inventoryGridSpacing.y) * refs.maxHeight
+        ) - inventoryGridSpacing;
+
+        refs.gridRoot.sizeDelta = fullSize;
+        refs.itemRoot.sizeDelta = fullSize;
+
+        refs.itemRoot.pivot = new Vector2(0f, 1f);
+        refs.itemRoot.anchorMin = new Vector2(0f, 1f);
+        refs.itemRoot.anchorMax = new Vector2(0f, 1f);
+
+        runtime.spaces = new InventoryGridSpace[refs.maxWidth, refs.maxHeight];
+        runtime.cellRects = new RectTransform[refs.maxWidth, refs.maxHeight];
+
+        for (int i = refs.gridRoot.childCount - 1; i >= 0; i--)
+        {
+            Destroy(refs.gridRoot.GetChild(i).gameObject);
+        }
+
+        for (int y = 0; y < refs.maxHeight; y++)
+        {
+            for (int x = 0; x < refs.maxWidth; x++)
+            {
+                GameObject cell = Instantiate(gridCellPrefab, refs.gridRoot);
+                cell.name = $"{refs.gridRoot.name}_Cell_X:{x},Y:{y}";
+
+                runtime.cellRects[x, y] = cell.GetComponent<RectTransform>();
+                runtime.spaces[x, y] = new InventoryGridSpace
+                {
+                    position = new Vector2Int(x, y),
+                    isOccupied = false,
+                    occupyingItem = null
+                };
             }
         }
 
-        // make sure the roots are consistent with top left pivot
-        if (itemGridRoot != null)
-        {
-            itemGridRoot.pivot = new Vector2(0f, 1f);
-            itemGridRoot.anchorMin = new Vector2(0f, 1f);
-            itemGridRoot.anchorMax = new Vector2(0f, 1f);
-        }
-
-        gridGenerated = true;
+        runtime.generated = true;
     }
 
-    // makes sure grid is setup correctly before attempting to update it
-    private void EnsureGrid()
+    // makes sure the correct grid is generated before we do anything with it
+    private void EnsureGrid(bool chest)
     {
-        if (gridGenerated) { return; }
-        GenerateGrid();
+        if (chest)
+        {
+            GenerateGrid(chestGrid, chestRuntime);
+        }
+        else
+        {
+            GenerateGrid(playerGrid, playerRuntime);
+        }
+    }
+
+    private GridRefs GetRefs(bool chest)
+    {
+        return chest ? chestGrid : playerGrid;
+    }
+
+    private GridRuntime GetRuntime(bool chest)
+    {
+        return chest ? chestRuntime : playerRuntime;
     }
 
     // pickup, add, move items
@@ -252,14 +292,16 @@ public class INV_Inventory : MonoBehaviour
     // used by drop/pickup scripts
     public bool TryAddItem(INV_Item item)
     {
-        EnsureGrid();
-        if (item == null) { return false; }
+        EnsureGrid(false);
+
+        if (item == null)
+        {
+            return false;
+        }
 
         // try stack identical items first
         if (TryStackItem(item, 1))
         {
-            if (logPlacement) { Debug.Log($"INV, Stacked: {item.Name}"); }
-
             INV_HotBar hotBar = GetComponent<INV_HotBar>();
             if (hotBar != null)
             {
@@ -269,32 +311,35 @@ public class INV_Inventory : MonoBehaviour
             return true;
         }
 
-        // create instance first so we can use its shape
+        // create a fresh instance and look for first available spot
         ItemInstance inst;
-        if (!CreateItemInstance(item, out inst)) { return false; }
+        if (!CreateItemInstance(item, false, -1, out inst))
+        {
+            return false;
+        }
 
-        // try find a spot that can fit it
         Vector2Int cell;
-        if (!LookForOccupyableSpace(inst, out cell))
+        if (!LookForOccupyableSpace(playerRuntime, playerGrid, inst, out cell))
         {
-            if (logPlacement) { Debug.Log($"INV, No space for: {item.Name}"); }
+            if (inst.ui != null)
+            {
+                Destroy(inst.ui.gameObject);
+            }
 
-            // cleanup if we failed
-            if (inst.ui != null) { Destroy(inst.ui.gameObject); }
-            items.Remove(inst);
+            playerRuntime.items.Remove(inst);
             return false;
         }
 
-        // place
-        if (!TryPlaceItemAtCell(cell.x, cell.y, inst, false))
+        if (!TryPlaceItemAtCell(playerRuntime, playerGrid, cell.x, cell.y, inst, false))
         {
-            // shouldnt happen since we already searched, but just in case
-            if (inst.ui != null) { Destroy(inst.ui.gameObject); }
-            items.Remove(inst);
+            if (inst.ui != null)
+            {
+                Destroy(inst.ui.gameObject);
+            }
+
+            playerRuntime.items.Remove(inst);
             return false;
         }
-
-        if (logPlacement) { Debug.Log($"INV, Added: {item.Name} at {cell}"); }
 
         INV_HotBar hotBar2 = GetComponent<INV_HotBar>();
         if (hotBar2 != null)
@@ -302,146 +347,311 @@ public class INV_Inventory : MonoBehaviour
             hotBar2.RefreshAllVisuals();
         }
 
+        if (logPlacement)
+        {
+            Debug.Log($"INV, Added: {item.Name} at {cell}");
+        }
+
         return true;
     }
 
-    // called by INV_ItemUI on drop
-    public bool TryMoveItemFromScreenPoint(ItemInstance item, Vector2 screenPoint, Camera uiCamera)
+    // used when we want to add an item to a specific target cell instead of first free space
+    public bool TryAddItemAtCell(INV_Item item, Vector2Int cell, ItemInstance.Rotation rotation, int quantity = 1)
     {
-        EnsureGrid();
-        if (item == null || item.ui == null) { return false; }
+        EnsureGrid(false);
 
-        Vector2Int cell;
-        if (!TryGetCellFromScreenPoint(screenPoint, uiCamera, out cell))
+        if (item == null || quantity <= 0)
         {
             return false;
         }
 
-        // try place at that cell
-        return TryPlaceItemAtCell(cell.x, cell.y, item, true);
+        // stacked items still use normal stacking first
+        if (item.Stackable)
+        {
+            int remaining = quantity;
+
+            while (remaining > 0)
+            {
+                if (TryStackItem(item, 1))
+                {
+                    remaining--;
+                    continue;
+                }
+
+                ItemInstance newInst;
+                if (!CreateItemInstance(item, false, -1, out newInst))
+                {
+                    return false;
+                }
+
+                newInst.quantity = 1;
+                newInst.rotation = rotation;
+
+                BuildShapeForInstance(newInst, rotation);
+                RebuildItemUISize(newInst);
+
+                if (!TryPlaceItemAtCell(playerRuntime, playerGrid, cell.x, cell.y, newInst, false))
+                {
+                    if (newInst.ui != null)
+                    {
+                        Destroy(newInst.ui.gameObject);
+                    }
+
+                    playerRuntime.items.Remove(newInst);
+                    return false;
+                }
+
+                remaining--;
+            }
+
+            return true;
+        }
+
+        // non stackables create one instance per amount
+        for (int i = 0; i < quantity; i++)
+        {
+            ItemInstance inst;
+            if (!CreateItemInstance(item, false, -1, out inst))
+            {
+                return false;
+            }
+
+            inst.rotation = rotation;
+            BuildShapeForInstance(inst, rotation);
+            RebuildItemUISize(inst);
+
+            if (!TryPlaceItemAtCell(playerRuntime, playerGrid, cell.x, cell.y, inst, false))
+            {
+                if (inst.ui != null)
+                {
+                    Destroy(inst.ui.gameObject);
+                }
+
+                playerRuntime.items.Remove(inst);
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    // used by INV_ItemUI for snap back
+    public bool CanAddItem(INV_Item item)
+    {
+        EnsureGrid(false);
+
+        if (item == null)
+        {
+            return false;
+        }
+
+        // first see if it can stack
+        if (item.Stackable)
+        {
+            for (int i = 0; i < playerRuntime.items.Count; i++)
+            {
+                ItemInstance inst = playerRuntime.items[i];
+                if (inst?.data == null)
+                {
+                    continue;
+                }
+
+                if (inst.data.ItemID != item.ItemID || !inst.data.Stackable)
+                {
+                    continue;
+                }
+
+                if (inst.quantity < item.MaxStack)
+                {
+                    return true;
+                }
+            }
+        }
+
+        // otherwise test whether a fresh instance would fit anywhere
+        ItemInstance temp = new ItemInstance
+        {
+            data = item,
+            rotation = ItemInstance.Rotation.Up,
+            quantity = 1
+        };
+
+        BuildShapeForInstance(temp, ItemInstance.Rotation.Up);
+
+        Vector2Int foundCell;
+        return LookForOccupyableSpace(playerRuntime, playerGrid, temp, out foundCell);
+    }
+
+    // called by INV_ItemUI when an item is dropped from screen point onto the player grid
+    public bool TryMoveItemFromScreenPoint(ItemInstance item, Vector2 screenPoint, Camera uiCamera)
+    {
+        if (item == null || item.ui == null)
+        {
+            return false;
+        }
+
+        Vector2Int cell;
+        if (!TryGetCellFromScreenPoint(playerRuntime, playerGrid, screenPoint, uiCamera, out cell))
+        {
+            return false;
+        }
+
+        return TryPlaceItemAtCell(playerRuntime, playerGrid, cell.x, cell.y, item, true);
+    }
+
+    // called by INV_ItemUI when a chest item is moved inside the chest grid
+    public bool TryMoveChestItemFromScreenPoint(ItemInstance item, Vector2 screenPoint, Camera uiCamera)
+    {
+        if (item == null || item.ui == null || !item.isChestItem)
+        {
+            return false;
+        }
+
+        // preview items have no real chest index yet, so do not allow interaction with them
+        if (item.chestItemIndex < 0)
+        {
+            return false;
+        }
+
+        Vector2Int cell;
+        if (!TryGetCellFromScreenPoint(chestRuntime, chestGrid, screenPoint, uiCamera, out cell))
+        {
+            return false;
+        }
+
+        if (!TryPlaceItemAtCell(chestRuntime, chestGrid, cell.x, cell.y, item, true))
+        {
+            return false;
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net != null)
+        {
+            net.RequestMoveChestItemInOpenChest(item.chestItemIndex, cell, item.rotation);
+        }
+
+        return true;
+    }
+
     public Vector2 GetAnchoredPosForCell(int gridX, int gridY)
     {
-        EnsureGrid();
+        return GetAnchoredPosForCell(playerRuntime, playerGrid, gridX, gridY);
+    }
 
-        gridX = Mathf.Clamp(gridX, 0, inventoryGridMaxWidth - 1);
-        gridY = Mathf.Clamp(gridY, 0, inventoryGridMaxHeight - 1);
+    public Vector2 GetAnchoredPosForChestCell(int gridX, int gridY)
+    {
+        return GetAnchoredPosForCell(chestRuntime, chestGrid, gridX, gridY);
+    }
 
-        RectTransform cell = cellRects[gridX, gridY];
-        if (cell == null) { return Vector2.zero; }
+    // gets the anchored position for the target cell inside the chosen grid
+    private Vector2 GetAnchoredPosForCell(GridRuntime runtime, GridRefs refs, int gridX, int gridY)
+    {
+        EnsureGrid(refs == chestGrid);
 
-        // convert gridRoot local position to itemGridRoot local position
-        Vector3 world = cell.TransformPoint(cell.rect.center);
-        Vector3 local = itemGridRoot.InverseTransformPoint(world);
+        gridX = Mathf.Clamp(gridX, 0, refs.maxWidth - 1);
+        gridY = Mathf.Clamp(gridY, 0, refs.maxHeight - 1);
 
-        // because item pivots are top left, need the cell's top left corner, not the center
+        RectTransform cell = runtime.cellRects[gridX, gridY];
+        if (cell == null)
+        {
+            return Vector2.zero;
+        }
+
         Vector3[] corners = new Vector3[4];
         cell.GetWorldCorners(corners);
+
         Vector3 topLeftWorld = corners[1];
-        Vector3 topLeftLocal = itemGridRoot.InverseTransformPoint(topLeftWorld);
+        Vector3 topLeftLocal = refs.itemRoot.InverseTransformPoint(topLeftWorld);
 
         return new Vector2(topLeftLocal.x, topLeftLocal.y);
     }
 
     // snaps an items rect so the correct corner matches the target cell anchored position
-    // vertical uses top-left, horizontal uses bottom-left
     private void SnapItemToTopLeft(ItemInstance item, Vector2 targetCellTopLeftAnchored)
     {
-        if (item == null || item.ui == null) { return; }
+        if (item?.ui == null)
+        {
+            return;
+        }
 
         RectTransform rect = item.ui;
-
-        // keep these consistent for snapping
         rect.pivot = new Vector2(0f, 1f);
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(0f, 1f);
 
-        // get the rect corners in local space (relative to its pivot/transform)
         Vector3[] corners = new Vector3[4];
         rect.GetLocalCorners(corners);
 
-        Vector2 offset = corners[1];
-        rect.anchoredPosition = targetCellTopLeftAnchored + offset;
+        rect.anchoredPosition = targetCellTopLeftAnchored + (Vector2)corners[1];
     }
 
-    // placement
-    private bool TryPlaceItemAtCell(int gridX, int gridY, ItemInstance item, bool clearOld)
+    // tries to place an item at the given grid cell
+    private bool TryPlaceItemAtCell(GridRuntime runtime, GridRefs refs, int gridX, int gridY, ItemInstance item, bool clearOld)
     {
-        if (item == null) { return false; }
-
-        // bounds and occupancy check
-        if (!CheckSpaceOccupyable(gridX, gridY, item, item))
+        if (item == null)
         {
-            if (logPlacement) { Debug.Log($"INV, Blocked placement at ({gridX},{gridY}) for {item.data.Name}"); }
             return false;
         }
 
-        // clear old occupied spaces so moving works
-        if (clearOld)
+        if (!CheckSpaceOccupyable(runtime, refs, gridX, gridY, item, item))
         {
-            ClearItemOccupancy(item);
+            return false;
         }
 
-        // occupy new spaces
-        OccupySpaces(gridX, gridY, item);
+        if (clearOld)
+        {
+            ClearItemOccupancy(runtime, refs, item);
+        }
 
-        // snap ui
-        Vector2 anchored = GetAnchoredPosForCell(gridX, gridY);
-        SnapItemToTopLeft(item, anchored);
+        OccupySpaces(runtime, gridX, gridY, item);
 
-        // remember placed cell
+        SnapItemToTopLeft(item, GetAnchoredPosForCell(runtime, refs, gridX, gridY));
         item.cell = new Vector2Int(gridX, gridY);
-
         return true;
     }
 
-    private void OccupySpaces(int gridX, int gridY, ItemInstance item)
+    private void OccupySpaces(GridRuntime runtime, int gridX, int gridY, ItemInstance item)
     {
-        // only occupy offsets that are marked + in the shape
         for (int i = 0; i < item.occupiedOffsets.Count; i++)
         {
             Vector2Int off = item.occupiedOffsets[i];
-
-            int x = gridX + off.x;
-            int y = gridY + off.y;
-
-            InventoryGridSpace s = spaces[x, y];
+            InventoryGridSpace s = runtime.spaces[gridX + off.x, gridY + off.y];
             s.isOccupied = true;
             s.occupyingItem = item;
         }
     }
 
-    private void ClearItemOccupancy(ItemInstance item)
+    private void ClearItemOccupancy(GridRuntime runtime, GridRefs refs, ItemInstance item)
     {
-        for (int y = 0; y < inventoryGridMaxHeight; y++)
+        for (int y = 0; y < refs.maxHeight; y++)
         {
-            for (int x = 0; x < inventoryGridMaxWidth; x++)
+            for (int x = 0; x < refs.maxWidth; x++)
             {
-                InventoryGridSpace s = spaces[x, y];
-                if (s.occupyingItem == item)
+                InventoryGridSpace s = runtime.spaces[x, y];
+                if (s.occupyingItem != item)
                 {
-                    s.isOccupied = false;
-                    s.occupyingItem = null;
+                    continue;
                 }
+
+                s.isOccupied = false;
+                s.occupyingItem = null;
             }
         }
     }
 
-    // checks if item can occupy space, called by dropped item using interact
-    private bool LookForOccupyableSpace(ItemInstance item, out Vector2Int foundCell)
+    // searches the grid top left to bottom right for a valid placement spot
+    private bool LookForOccupyableSpace(GridRuntime runtime, GridRefs refs, ItemInstance item, out Vector2Int foundCell)
     {
-        // scan top left to bottom right
-        for (int y = 0; y < inventoryGridMaxHeight; y++)
+        for (int y = 0; y < refs.maxHeight; y++)
         {
-            for (int x = 0; x < inventoryGridMaxWidth; x++)
+            for (int x = 0; x < refs.maxWidth; x++)
             {
-                if (CheckSpaceOccupyable(x, y, item, null))
+                if (!CheckSpaceOccupyable(runtime, refs, x, y, item, null))
                 {
-                    foundCell = new Vector2Int(x, y);
-                    return true;
+                    continue;
                 }
+
+                foundCell = new Vector2Int(x, y);
+                return true;
             }
         }
 
@@ -449,31 +659,43 @@ public class INV_Inventory : MonoBehaviour
         return false;
     }
 
-    private bool CheckSpaceOccupyable(int gridX, int gridY, ItemInstance itemToPlace, ItemInstance ignoreItem)
+    // checks if the given item shape can fit at the target cell
+    private bool CheckSpaceOccupyable(GridRuntime runtime, GridRefs refs, int gridX, int gridY, ItemInstance itemToPlace, ItemInstance ignoreItem)
     {
-        if (itemToPlace == null) { return false; }
-        if (itemToPlace.size.x <= 0 || itemToPlace.size.y <= 0) { return false; }
+        if (itemToPlace == null || itemToPlace.size.x <= 0 || itemToPlace.size.y <= 0)
+        {
+            return false;
+        }
 
-        // bounds first use bounding box size so we don't set outside grid
-        if (gridX < 0 || gridY < 0) { return false; }
-        if (gridX + itemToPlace.size.x > inventoryGridMaxWidth) { return false; }
-        if (gridY + itemToPlace.size.y > inventoryGridMaxHeight) { return false; }
+        if (gridX < 0 || gridY < 0)
+        {
+            return false;
+        }
 
-        // occupancy check
-        // only check occupied offsets
+        if (gridX + itemToPlace.size.x > refs.maxWidth)
+        {
+            return false;
+        }
+
+        if (gridY + itemToPlace.size.y > refs.maxHeight)
+        {
+            return false;
+        }
+
         for (int i = 0; i < itemToPlace.occupiedOffsets.Count; i++)
         {
             Vector2Int off = itemToPlace.occupiedOffsets[i];
+            InventoryGridSpace s = runtime.spaces[gridX + off.x, gridY + off.y];
 
-            int x = gridX + off.x;
-            int y = gridY + off.y;
+            if (!s.isOccupied)
+            {
+                continue;
+            }
 
-            InventoryGridSpace s = spaces[x, y];
-
-            if (!s.isOccupied) { continue; }
-
-            // allow overlap with itself when moving
-            if (ignoreItem != null && s.occupyingItem == ignoreItem) { continue; }
+            if (ignoreItem != null && s.occupyingItem == ignoreItem)
+            {
+                continue;
+            }
 
             return false;
         }
@@ -481,59 +703,55 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
-    // creates iteminstance to use in inventory
-    private bool CreateItemInstance(INV_Item item, out ItemInstance instance)
+    // creates a new item instance under either the player grid or chest grid
+    private bool CreateItemInstance(INV_Item item, bool isChestItem, int chestItemIndex, out ItemInstance instance)
     {
+        GridRefs refs = GetRefs(isChestItem);
+        GridRuntime runtime = GetRuntime(isChestItem);
+
         instance = null;
 
-        if (itemUIPrefab == null || itemGridRoot == null)
+        if (itemUIPrefab == null || refs.itemRoot == null)
         {
-            Debug.LogWarning("Inventory missing item UI references.");
             return false;
         }
 
-        GameObject go = Instantiate(itemUIPrefab, itemGridRoot);
-        go.name = $"ItemUI_{item.Name}";
+        GameObject go = Instantiate(itemUIPrefab, refs.itemRoot);
+        go.name = isChestItem ? $"ChestItemUI_{item.Name}" : $"ItemUI_{item.Name}";
 
         RectTransform rt = go.GetComponent<RectTransform>();
         INV_ItemUI ui = go.GetComponent<INV_ItemUI>();
 
         if (rt == null || ui == null)
         {
-            Debug.LogWarning("Item UI prefab needs RectTransform + INV_ItemUI.");
             Destroy(go);
             return false;
         }
 
-        ItemInstance inst = new ItemInstance();
-        inst.data = item;
-        inst.rotation = ItemInstance.Rotation.Up;
-        inst.quantity = 1;
+        ItemInstance inst = new ItemInstance
+        {
+            data = item,
+            rotation = ItemInstance.Rotation.Up,
+            quantity = 1,
+            isChestItem = isChestItem,
+            chestItemIndex = chestItemIndex,
+            ui = rt,
+            uiHandler = ui
+        };
 
-        // build occupancy offsets from the item shape
         BuildShapeForInstance(inst, ItemInstance.Rotation.Up);
 
-        // enforce top left pivot/anchors for consistent snapping
         rt.pivot = new Vector2(0f, 1f);
         rt.anchorMin = new Vector2(0f, 1f);
         rt.anchorMax = new Vector2(0f, 1f);
 
-        inst.ui = rt;
-        inst.uiHandler = ui;
-
-        // init ui handler
         ui.Init(this, inst);
-
-        // apply correct UI size
         RebuildItemUISize(inst);
 
-        if (inst.uiHandler != null)
-        {
-            inst.uiHandler.RebuildOccupiedSpaceVisuals();
-            inst.uiHandler.ApplyUpdatedVisuals();
-        }
+        inst.uiHandler.RebuildOccupiedSpaceVisuals();
+        inst.uiHandler.ApplyUpdatedVisuals();
 
-        items.Add(inst);
+        runtime.items.Add(inst);
         instance = inst;
         return true;
     }
@@ -564,28 +782,27 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        // normalize width/height
         int h = shape.Count;
         int w = 0;
+
         for (int i = 0; i < shape.Count; i++)
         {
-            if (string.IsNullOrEmpty(shape[i])) { continue; }
-            w = Mathf.Max(w, shape[i].Length);
+            if (!string.IsNullOrEmpty(shape[i]))
+            {
+                w = Mathf.Max(w, shape[i].Length);
+            }
         }
 
-        // save original shape size
         inst.shapeSize = new Vector2Int(Mathf.Max(1, w), Mathf.Max(1, h));
 
-        // collect + cells in up orientation first
         List<Vector2Int> raw = new List<Vector2Int>();
         for (int y = 0; y < h; y++)
         {
-            string row = shape[y];
-            if (string.IsNullOrEmpty(row)) { row = ""; }
+            string row = string.IsNullOrEmpty(shape[y]) ? "" : shape[y];
 
             for (int x = 0; x < w; x++)
             {
-                char c = (x < row.Length) ? row[x] : '-';
+                char c = x < row.Length ? row[x] : '-';
                 if (c == '+')
                 {
                     raw.Add(new Vector2Int(x, y));
@@ -603,27 +820,17 @@ public class INV_Inventory : MonoBehaviour
         int width = baseSize.x;
         int height = baseSize.y;
 
-        int turns = 0;
-        switch (rot)
-        {
-            case ItemInstance.Rotation.Up: turns = 0; break;
-            case ItemInstance.Rotation.Right: turns = 1; break;
-            case ItemInstance.Rotation.Down: turns = 2; break;
-            case ItemInstance.Rotation.Left: turns = 3; break;
-        }
+        int turns = rot == ItemInstance.Rotation.Up ? 0 :
+                    rot == ItemInstance.Rotation.Right ? 1 :
+                    rot == ItemInstance.Rotation.Down ? 2 : 3;
 
-        // rotate clockwise in 90 degree steps
         for (int t = 0; t < turns; t++)
         {
             List<Vector2Int> next = new List<Vector2Int>(rotated.Count);
 
             for (int i = 0; i < rotated.Count; i++)
             {
-                Vector2Int p = rotated[i];
-
-                // clockwise rotate inside current bounds
-                Vector2Int r = new Vector2Int(p.y, width - 1 - p.x);
-                next.Add(r);
+                next.Add(new Vector2Int(rotated[i].y, width - 1 - rotated[i].x));
             }
 
             rotated = next;
@@ -633,7 +840,12 @@ public class INV_Inventory : MonoBehaviour
             height = oldWidth;
         }
 
-        // normalize back to 0 based offsets just in case
+        if (rotated.Count == 0)
+        {
+            inst.size = Vector2Int.one;
+            return;
+        }
+
         int minX = int.MaxValue;
         int minY = int.MaxValue;
         int maxX = int.MinValue;
@@ -642,16 +854,26 @@ public class INV_Inventory : MonoBehaviour
         for (int i = 0; i < rotated.Count; i++)
         {
             Vector2Int p = rotated[i];
-            if (p.x < minX) { minX = p.x; }
-            if (p.y < minY) { minY = p.y; }
-            if (p.x > maxX) { maxX = p.x; }
-            if (p.y > maxY) { maxY = p.y; }
-        }
 
-        if (rotated.Count == 0)
-        {
-            inst.size = Vector2Int.one;
-            return;
+            if (p.x < minX)
+            {
+                minX = p.x;
+            }
+
+            if (p.y < minY)
+            {
+                minY = p.y;
+            }
+
+            if (p.x > maxX)
+            {
+                maxX = p.x;
+            }
+
+            if (p.y > maxY)
+            {
+                maxY = p.y;
+            }
         }
 
         for (int i = 0; i < rotated.Count; i++)
@@ -666,12 +888,13 @@ public class INV_Inventory : MonoBehaviour
     // recalculates the UI size from instance.size so rotation can update it too
     private void RebuildItemUISize(ItemInstance inst)
     {
-        if (inst == null || inst.ui == null) { return; }
+        if (inst?.ui == null)
+        {
+            return;
+        }
 
-        Vector2 spacing = gridLayoutGroup != null ? gridLayoutGroup.spacing : Vector2.zero;
-
-        float w = (inst.size.x * cellSize.x) + Mathf.Max(0, inst.size.x - 1) * spacing.x;
-        float h = (inst.size.y * cellSize.y) + Mathf.Max(0, inst.size.y - 1) * spacing.y;
+        float w = (inst.size.x * cellSize.x) + Mathf.Max(0, inst.size.x - 1) * inventoryGridSpacing.x;
+        float h = (inst.size.y * cellSize.y) + Mathf.Max(0, inst.size.y - 1) * inventoryGridSpacing.y;
 
         inst.ui.sizeDelta = new Vector2(w, h);
 
@@ -683,25 +906,33 @@ public class INV_Inventory : MonoBehaviour
 
     private bool TryStackItem(INV_Item item, int amount)
     {
-        if (item == null) { return false; }
-        if (amount <= 0) { return false; }
-        if (!item.Stackable) { return false; }
+        if (item == null || amount <= 0 || !item.Stackable)
+        {
+            return false;
+        }
 
         int maxStack = item.MaxStack;
 
-        for (int i = 0; i < items.Count; i++)
+        for (int i = 0; i < playerRuntime.items.Count; i++)
         {
-            ItemInstance inst = items[i];
-            if (inst == null || inst.data == null) { continue; }
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst?.data == null)
+            {
+                continue;
+            }
 
-            if (inst.data.ItemID != item.ItemID) { continue; }
-            if (!inst.data.Stackable) { continue; }
-            if (inst.quantity >= maxStack) { continue; }
+            if (inst.data.ItemID != item.ItemID || !inst.data.Stackable || inst.quantity >= maxStack)
+            {
+                continue;
+            }
 
             int room = maxStack - inst.quantity;
             int add = Mathf.Min(room, amount);
 
-            if (add <= 0) { continue; }
+            if (add <= 0)
+            {
+                continue;
+            }
 
             inst.quantity += add;
 
@@ -716,17 +947,18 @@ public class INV_Inventory : MonoBehaviour
         return false;
     }
 
-    // drop logic
-    private bool TryGetCellFromScreenPoint(Vector2 screenPoint, Camera uiCamera, out Vector2Int cell)
+    // figures out which cell the mouse is currently over for the chosen grid
+    private bool TryGetCellFromScreenPoint(GridRuntime runtime, GridRefs refs, Vector2 screenPoint, Camera uiCamera, out Vector2Int cell)
     {
-        // find which cell rect contains the mouse
-        // inventory isnt big so looping through each should be fine
-        for (int y = 0; y < inventoryGridMaxHeight; y++)
+        for (int y = 0; y < refs.maxHeight; y++)
         {
-            for (int x = 0; x < inventoryGridMaxWidth; x++)
+            for (int x = 0; x < refs.maxWidth; x++)
             {
-                RectTransform c = cellRects[x, y];
-                if (c == null) { continue; }
+                RectTransform c = runtime.cellRects[x, y];
+                if (c == null)
+                {
+                    continue;
+                }
 
                 if (RectTransformUtility.RectangleContainsScreenPoint(c, screenPoint, uiCamera))
                 {
@@ -743,45 +975,50 @@ public class INV_Inventory : MonoBehaviour
     // Hover tracking
     private void UpdateHoverItem()
     {
-        // if you're dragging something, hover is not used
-        if (heldItem != null)
+        if (heldItem != null || Mouse.current == null)
         {
             hoverItem = null;
             return;
         }
 
-        if (Mouse.current == null)
-        {
-            hoverItem = null;
-            return;
-        }
-
-        // read mouse position
         Vector2 mouse = Mouse.current.position.ReadValue();
         Camera uiCam = Camera.main;
 
         INV_ItemUI found = null;
         int bestSibling = int.MinValue;
 
-        // check every item occupied space for mouse hit. choose the top most in hierarchy.
-        for (int i = 0; i < items.Count; i++)
-        {
-            ItemInstance inst = items[i];
-            if (inst == null || inst.ui == null || inst.uiHandler == null) { continue; }
-
-            if (inst.uiHandler.IsScreenPointOverOccupiedSpace(mouse, uiCam))
-            {
-                int sib = inst.ui.GetSiblingIndex();
-                if (sib >= bestSibling)
-                {
-                    bestSibling = sib;
-                    found = inst.uiHandler;
-                }
-            }
-        }
+        FindTopHoveredItem(playerRuntime, mouse, uiCam, ref found, ref bestSibling);
+        FindTopHoveredItem(chestRuntime, mouse, uiCam, ref found, ref bestSibling);
 
         hoverItem = found;
     }
+
+    private void FindTopHoveredItem(GridRuntime runtime, Vector2 mouse, Camera uiCam, ref INV_ItemUI found, ref int bestSibling)
+    {
+        for (int i = 0; i < runtime.items.Count; i++)
+        {
+            ItemInstance inst = runtime.items[i];
+            if (inst?.ui == null || inst.uiHandler == null)
+            {
+                continue;
+            }
+
+            if (!inst.uiHandler.IsScreenPointOverOccupiedSpace(mouse, uiCam))
+            {
+                continue;
+            }
+
+            int sib = inst.ui.GetSiblingIndex();
+            if (sib < bestSibling)
+            {
+                continue;
+            }
+
+            bestSibling = sib;
+            found = inst.uiHandler;
+        }
+    }
+
     private void UpdateHoverTooltip()
     {
         if (hoverTooltip == null)
@@ -789,7 +1026,6 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        // dont show while dragging
         if (heldItem != null)
         {
             hoverTooltip.HideImmediate();
@@ -798,7 +1034,7 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
-        if (hoverItem == null || hoverItem.Instance == null || hoverItem.Instance.data == null)
+        if (hoverItem?.Instance?.data == null)
         {
             hoverTooltip.HideImmediate();
             lastHoverItem = null;
@@ -815,7 +1051,6 @@ public class INV_Inventory : MonoBehaviour
         }
 
         hoverTimer += Time.deltaTime;
-
         if (hoverTimer < hoverTooltipDelay)
         {
             return;
@@ -828,39 +1063,28 @@ public class INV_Inventory : MonoBehaviour
     // Rotate held item
     public bool RotateItem()
     {
-        // rotate should work via object being held
-        if (heldItem == null) { return false; }
-
-        ItemInstance inst = heldItem.Instance;
-        if (inst == null || inst.ui == null) { return false; }
-
-        // clear current occupied spaces before trying new shape
-        ClearItemOccupancy(inst);
-
-        // cycle through 4 orientations
-        switch (inst.rotation)
+        if (heldItem == null)
         {
-            case ItemInstance.Rotation.Up:
-                inst.rotation = ItemInstance.Rotation.Right;
-                break;
-
-            case ItemInstance.Rotation.Right:
-                inst.rotation = ItemInstance.Rotation.Down;
-                break;
-
-            case ItemInstance.Rotation.Down:
-                inst.rotation = ItemInstance.Rotation.Left;
-                break;
-
-            default:
-                inst.rotation = ItemInstance.Rotation.Up;
-                break;
+            return false;
         }
 
-        // rebuild offsets and bounding size from shape for that rotation
-        BuildShapeForInstance(inst, inst.rotation);
+        ItemInstance inst = heldItem.Instance;
+        if (inst?.ui == null)
+        {
+            return false;
+        }
 
-        // rebuild UI size to match new size
+        GridRuntime runtime = inst.isChestItem ? chestRuntime : playerRuntime;
+        GridRefs refs = inst.isChestItem ? chestGrid : playerGrid;
+
+        ClearItemOccupancy(runtime, refs, inst);
+
+        inst.rotation = inst.rotation == ItemInstance.Rotation.Up ? ItemInstance.Rotation.Right :
+                        inst.rotation == ItemInstance.Rotation.Right ? ItemInstance.Rotation.Down :
+                        inst.rotation == ItemInstance.Rotation.Down ? ItemInstance.Rotation.Left :
+                        ItemInstance.Rotation.Up;
+
+        BuildShapeForInstance(inst, inst.rotation);
         RebuildItemUISize(inst);
 
         if (inst.uiHandler != null)
@@ -868,26 +1092,42 @@ public class INV_Inventory : MonoBehaviour
             inst.uiHandler.ApplyUpdatedVisuals();
         }
 
-        if (logPlacement) { Debug.Log($"INV, Rotated held item: {inst.data.Name}, size: {inst.size}, rotation: {inst.rotation}"); }
+        if (inst.isChestItem)
+        {
+            INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+            if (net != null && inst.chestItemIndex >= 0)
+            {
+                net.RequestMoveChestItemInOpenChest(inst.chestItemIndex, inst.cell, inst.rotation);
+            }
+        }
+
+        if (logPlacement && inst.data != null)
+        {
+            Debug.Log($"INV, Rotated held item: {inst.data.Name}");
+        }
+
         return true;
     }
 
     public bool DropHoverItem()
     {
-        if (hoverItem == null) { return false; }
-
-        ItemInstance inst = hoverItem.Instance;
-        if (inst == null) { return false; }
-
-        // cache item id before we destroy local ui/state
-        string itemId = inst.data != null ? inst.data.ItemID : string.Empty;
-        if (string.IsNullOrWhiteSpace(itemId))
+        if (hoverItem == null)
         {
-            Debug.LogError("Cannot drop item with empty ItemID.");
             return false;
         }
 
-        // if stacked, drop one and keep the rest
+        ItemInstance inst = hoverItem.Instance;
+        if (inst == null || inst.isChestItem)
+        {
+            return false;
+        }
+
+        string itemId = inst.data != null ? inst.data.ItemID : string.Empty;
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return false;
+        }
+
         if (inst.quantity > 1)
         {
             inst.quantity--;
@@ -900,7 +1140,6 @@ public class INV_Inventory : MonoBehaviour
             INV_PlayerInventoryNet netInvStack = GetComponentInParent<INV_PlayerInventoryNet>();
             if (netInvStack == null)
             {
-                Debug.LogError("Could not find INV_PlayerInventoryNet in parent.");
                 hoverItem = null;
                 return false;
             }
@@ -910,47 +1149,92 @@ public class INV_Inventory : MonoBehaviour
             return true;
         }
 
-        // clear hotbar refs before we remove the item
+        RemoveLocalPlayerItemInstance(inst);
+
+        INV_PlayerInventoryNet netInv = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (netInv == null)
+        {
+            hoverItem = null;
+            return false;
+        }
+
+        netInv.RequestDropItem(itemId);
+        hoverItem = null;
+        return true;
+    }
+
+    private void RemoveLocalPlayerItemInstance(ItemInstance inst)
+    {
+        if (inst == null)
+        {
+            return;
+        }
+
         INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
         if (hotBar != null)
         {
             hotBar.ClearReferencesToItem(inst);
         }
 
-        // remove from grid and list
-        ClearItemOccupancy(inst);
-        items.Remove(inst);
+        ClearItemOccupancy(playerRuntime, playerGrid, inst);
+        playerRuntime.items.Remove(inst);
 
-        // destroy UI
         if (inst.ui != null)
         {
             Destroy(inst.ui.gameObject);
         }
+    }
 
-        // ask player net bridge to spawn the world drop on server
-        INV_PlayerInventoryNet netInv = GetComponentInParent<INV_PlayerInventoryNet>();
-        if (netInv == null)
+    private void RemoveLocalChestItemInstance(ItemInstance inst)
+    {
+        if (inst == null)
         {
-            Debug.LogError("Could not find INV_PlayerInventoryNet in parent.");
-            hoverItem = null;
-            return false;
+            return;
         }
 
-        netInv.RequestDropItem(itemId);
+        ClearItemOccupancy(chestRuntime, chestGrid, inst);
+        chestRuntime.items.Remove(inst);
 
-        hoverItem = null;
-        return true;
+        if (inst.ui != null)
+        {
+            Destroy(inst.ui.gameObject);
+        }
+    }
+
+    public bool RemoveLocalChestVisualByIndex(int chestItemIndex)
+    {
+        for (int i = 0; i < chestRuntime.items.Count; i++)
+        {
+            ItemInstance inst = chestRuntime.items[i];
+            if (inst == null)
+            {
+                continue;
+            }
+
+            if (inst.chestItemIndex != chestItemIndex)
+            {
+                continue;
+            }
+
+            RemoveLocalChestItemInstance(inst);
+            return true;
+        }
+
+        return false;
     }
 
     public void RestoreItemToCellAndRotation(ItemInstance item, Vector2Int cell, ItemInstance.Rotation rotation)
     {
-        EnsureGrid();
-        if (item == null || item.ui == null) { return; }
+        if (item?.ui == null)
+        {
+            return;
+        }
 
-        // clear whatever state it currently has
-        ClearItemOccupancy(item);
+        GridRuntime runtime = item.isChestItem ? chestRuntime : playerRuntime;
+        GridRefs refs = item.isChestItem ? chestGrid : playerGrid;
 
-        // restore shape / rotation
+        ClearItemOccupancy(runtime, refs, item);
+
         item.rotation = rotation;
         BuildShapeForInstance(item, item.rotation);
         RebuildItemUISize(item);
@@ -960,14 +1244,228 @@ public class INV_Inventory : MonoBehaviour
             item.uiHandler.ApplyUpdatedVisuals();
         }
 
-        // restore occupied spaces
-        OccupySpaces(cell.x, cell.y, item);
-
-        // restore snap position
-        Vector2 anchored = GetAnchoredPosForCell(cell.x, cell.y);
-        SnapItemToTopLeft(item, anchored);
-
+        OccupySpaces(runtime, cell.x, cell.y, item);
+        SnapItemToTopLeft(item, GetAnchoredPosForCell(runtime, refs, cell.x, cell.y));
         item.cell = cell;
+    }
+
+    // chest setup / teardown
+    public void OpenChestView(INV_Chest chest, List<INV_Chest.ChestItemData> snapshot)
+    {
+        EnsureGrid(true);
+
+        activeChest = chest;
+
+        if (chestGrid.panelRoot != null)
+        {
+            chestGrid.panelRoot.SetActive(true);
+        }
+
+        ClearChestView();
+
+        if (snapshot == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < snapshot.Count; i++)
+        {
+            CreateChestVisualFromSnapshot(snapshot[i], i);
+        }
+    }
+
+    public void CloseChestView()
+    {
+        INV_Chest closingChest = activeChest;
+
+        ClearChestView();
+        activeChest = null;
+
+        if (chestGrid.panelRoot != null)
+        {
+            chestGrid.panelRoot.SetActive(false);
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (closingChest != null && net != null && net.IsOwner)
+        {
+            closingChest.RequestCloseChestRpc();
+        }
+    }
+
+    private void ClearChestView()
+    {
+        for (int y = 0; y < chestGrid.maxHeight; y++)
+        {
+            for (int x = 0; x < chestGrid.maxWidth; x++)
+            {
+                if (chestRuntime.spaces == null)
+                {
+                    continue;
+                }
+
+                chestRuntime.spaces[x, y].isOccupied = false;
+                chestRuntime.spaces[x, y].occupyingItem = null;
+            }
+        }
+
+        for (int i = chestRuntime.items.Count - 1; i >= 0; i--)
+        {
+            ItemInstance inst = chestRuntime.items[i];
+            if (inst?.ui != null)
+            {
+                Destroy(inst.ui.gameObject);
+            }
+        }
+
+        chestRuntime.items.Clear();
+    }
+
+    private ItemInstance CreateChestVisualFromSnapshot(INV_Chest.ChestItemData data, int chestItemIndex)
+    {
+        if (data == null || string.IsNullOrWhiteSpace(data.itemId))
+        {
+            return null;
+        }
+
+        INV_Item item = INV_ItemDatabase.Instance != null ? INV_ItemDatabase.Instance.GetItemById(data.itemId) : null;
+        if (item == null)
+        {
+            return null;
+        }
+
+        ItemInstance inst;
+        if (!CreateItemInstance(item, true, chestItemIndex, out inst))
+        {
+            return null;
+        }
+
+        inst.quantity = Mathf.Max(1, data.quantity);
+        inst.rotation = (ItemInstance.Rotation)data.rotation;
+
+        BuildShapeForInstance(inst, inst.rotation);
+        RebuildItemUISize(inst);
+
+        if (inst.uiHandler != null)
+        {
+            inst.uiHandler.RebuildOccupiedSpaceVisuals();
+            inst.uiHandler.ApplyUpdatedVisuals();
+        }
+
+        TryPlaceItemAtCell(chestRuntime, chestGrid, data.cellX, data.cellY, inst, false);
+        return inst;
+    }
+
+    public void AddLocalChestVisualPreview(string itemId, int quantity, Vector2Int cell, ItemInstance.Rotation rotation)
+    {
+        INV_Chest.ChestItemData preview = new INV_Chest.ChestItemData
+        {
+            itemId = itemId,
+            quantity = quantity,
+            cellX = cell.x,
+            cellY = cell.y,
+            rotation = (int)rotation
+        };
+
+        CreateChestVisualFromSnapshot(preview, -1);
+    }
+
+    // called by item ui when releasing drag over the chest panel
+    public bool TryStoreHeldItemInOpenChestFromScreenPoint(ItemInstance item, Vector2 screenPoint, Camera uiCamera)
+    {
+        EnsureGrid(true);
+
+        if (activeChest == null || item == null || item.isChestItem)
+        {
+            return false;
+        }
+
+        if (item.data == null)
+        {
+            return false;
+        }
+
+        Vector2Int chestCell;
+        if (!TryGetCellFromScreenPoint(chestRuntime, chestGrid, screenPoint, uiCamera, out chestCell))
+        {
+            return false;
+        }
+
+        if (!CheckSpaceOccupyable(chestRuntime, chestGrid, chestCell.x, chestCell.y, item, null))
+        {
+            return false;
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net == null)
+        {
+            return false;
+        }
+
+        string itemId = item.data.ItemID;
+        int quantity = Mathf.Max(1, item.quantity);
+        ItemInstance.Rotation rotation = item.rotation;
+
+        // host uses the real server path directly, so no local prediction
+        if (net.IsServer)
+        {
+            net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+            return true;
+        }
+
+        // client predicts locally because server does not own the real inventory state for remote players
+        RemoveLocalPlayerItemInstance(item);
+        AddLocalChestVisualPreview(itemId, quantity, chestCell, rotation);
+
+        net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+        return true;
+    }
+
+    // called by item ui when releasing a chest item over the player inventory
+    public bool TryTakeChestItemToInventoryFromScreenPoint(ItemInstance item, Vector2 screenPoint, Camera uiCamera)
+    {
+        if (activeChest == null || item == null || !item.isChestItem)
+        {
+            return false;
+        }
+
+        if (item.chestItemIndex < 0)
+        {
+            return false;
+        }
+
+        if (item.data == null)
+        {
+            return false;
+        }
+
+        Vector2Int inventoryCell;
+        if (!TryGetCellFromScreenPoint(playerRuntime, playerGrid, screenPoint, uiCamera, out inventoryCell))
+        {
+            return false;
+        }
+
+        if (!CheckSpaceOccupyable(playerRuntime, playerGrid, inventoryCell.x, inventoryCell.y, item, null))
+        {
+            return false;
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net == null)
+        {
+            return false;
+        }
+
+        // host uses the real server path directly, so no local prediction
+        if (net.IsServer)
+        {
+            net.RequestTakeChestItemFromOpenChest(item.chestItemIndex, inventoryCell, item.rotation);
+            return true;
+        }
+
+        // client waits for exact-cell local add rpc + chest refresh
+        net.RequestTakeChestItemFromOpenChest(item.chestItemIndex, inventoryCell, item.rotation);
+        return true;
     }
 
     // crafting
@@ -980,12 +1478,13 @@ public class INV_Inventory : MonoBehaviour
 
         int total = 0;
 
-        for (int i = 0; i < items.Count; i++)
+        for (int i = 0; i < playerRuntime.items.Count; i++)
         {
-            ItemInstance inst = items[i];
-            if (inst == null || inst.data == null) { continue; }
-
-            if (inst.data.ItemID != itemId) { continue; }
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst?.data == null || inst.data.ItemID != itemId)
+            {
+                continue;
+            }
 
             total += Mathf.Max(1, inst.quantity);
         }
@@ -995,55 +1494,33 @@ public class INV_Inventory : MonoBehaviour
 
     public bool HasItemAmount(string itemId, int amount)
     {
-        if (string.IsNullOrWhiteSpace(itemId)) { return false; }
-        if (amount <= 0) { return true; }
-
-        return GetItemCount(itemId) >= amount;
-    }
-
-    public bool CanAddItem(INV_Item item)
-    {
-        EnsureGrid();
-        if (item == null) { return false; }
-
-        // stacking first
-        if (item.Stackable)
+        if (string.IsNullOrWhiteSpace(itemId))
         {
-            int maxStack = item.MaxStack;
-
-            for (int i = 0; i < items.Count; i++)
-            {
-                ItemInstance inst = items[i];
-                if (inst == null || inst.data == null) { continue; }
-
-                if (inst.data.ItemID != item.ItemID) { continue; }
-                if (!inst.data.Stackable) { continue; }
-                if (inst.quantity < maxStack)
-                {
-                    return true;
-                }
-            }
+            return false;
         }
 
-        // otherwise see if a fresh instance could fit
-        ItemInstance temp = new ItemInstance();
-        temp.data = item;
-        temp.rotation = ItemInstance.Rotation.Up;
-        temp.quantity = 1;
+        if (amount <= 0)
+        {
+            return true;
+        }
 
-        BuildShapeForInstance(temp, ItemInstance.Rotation.Up);
-
-        Vector2Int foundCell;
-        return LookForOccupyableSpace(temp, out foundCell);
+        return GetItemCount(itemId) >= amount;
     }
 
     // used by crafting
     public bool RemoveItemAmount(string itemId, int amount)
     {
-        EnsureGrid();
+        EnsureGrid(false);
 
-        if (string.IsNullOrWhiteSpace(itemId)) { return false; }
-        if (amount <= 0) { return true; }
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return false;
+        }
+
+        if (amount <= 0)
+        {
+            return true;
+        }
 
         if (!HasItemAmount(itemId, amount))
         {
@@ -1052,12 +1529,13 @@ public class INV_Inventory : MonoBehaviour
 
         int remaining = amount;
 
-        for (int i = items.Count - 1; i >= 0; i--)
+        for (int i = playerRuntime.items.Count - 1; i >= 0; i--)
         {
-            ItemInstance inst = items[i];
-            if (inst == null || inst.data == null) { continue; }
-
-            if (inst.data.ItemID != itemId) { continue; }
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst?.data == null || inst.data.ItemID != itemId)
+            {
+                continue;
+            }
 
             int take = Mathf.Min(inst.quantity, remaining);
             inst.quantity -= take;
@@ -1071,8 +1549,8 @@ public class INV_Inventory : MonoBehaviour
                     hotBar.ClearReferencesToItem(inst);
                 }
 
-                ClearItemOccupancy(inst);
-                items.RemoveAt(i);
+                ClearItemOccupancy(playerRuntime, playerGrid, inst);
+                playerRuntime.items.RemoveAt(i);
 
                 if (inst.ui != null)
                 {
@@ -1084,16 +1562,18 @@ public class INV_Inventory : MonoBehaviour
                 inst.uiHandler.ApplyUpdatedVisuals();
             }
 
-            if (remaining <= 0)
+            if (remaining > 0)
             {
-                INV_HotBar hotBar = GetComponent<INV_HotBar>();
-                if (hotBar != null)
-                {
-                    hotBar.RefreshAllVisuals();
-                }
-
-                return true;
+                continue;
             }
+
+            INV_HotBar hotBar2 = GetComponent<INV_HotBar>();
+            if (hotBar2 != null)
+            {
+                hotBar2.RefreshAllVisuals();
+            }
+
+            return true;
         }
 
         return remaining <= 0;

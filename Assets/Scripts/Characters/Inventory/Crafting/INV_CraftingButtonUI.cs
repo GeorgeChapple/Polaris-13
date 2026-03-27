@@ -26,6 +26,19 @@ public class INV_CraftingButtonUI : MonoBehaviour
         crafting = craftingRef;
         item = itemRef;
 
+        ApplyText(requirementString);
+        ApplyMeshVisuals();
+
+        if (button != null)
+        {
+            button.interactable = interactable;
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(OnPressed);
+        }
+    }
+
+    private void ApplyText(string requirementString)
+    {
         if (itemNameText != null)
         {
             itemNameText.SetText(item != null ? item.Name : "Null Item");
@@ -35,34 +48,32 @@ public class INV_CraftingButtonUI : MonoBehaviour
         {
             requirementsText.SetText(requirementString);
         }
+    }
 
+    private void ApplyMeshVisuals()
+    {
         if (meshFilter != null)
         {
             meshFilter.sharedMesh = item != null ? item.Mesh : null;
         }
 
-        if (meshRenderer != null)
+        if (meshRenderer == null)
         {
-            if (item != null && item.Material != null)
-            {
-                meshRenderer.sharedMaterial = item.Material;
-                meshRenderer.enabled = item.Mesh != null;
-                meshRenderer.transform.localPosition = item.CraftingMeshOffset;
-                meshRenderer.transform.localRotation = Quaternion.Euler(item.CraftingMeshRotation);
-                meshRenderer.transform.localScale = Vector3.one * item.CraftingMeshScale;
-            }
-            else
-            {
-                meshRenderer.enabled = false;
-            }
+            return;
         }
 
-        if (button != null)
+        bool validVisual = item != null && item.Mesh != null && item.Material != null;
+
+        meshRenderer.enabled = validVisual;
+        if (!validVisual)
         {
-            button.interactable = interactable;
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(OnPressed);
+            return;
         }
+
+        meshRenderer.sharedMaterial = item.Material;
+        meshRenderer.transform.localPosition = item.CraftingMeshOffset;
+        meshRenderer.transform.localRotation = Quaternion.Euler(item.CraftingMeshRotation);
+        meshRenderer.transform.localScale = Vector3.one * Mathf.Max(0f, item.CraftingMeshScale);
     }
 
     private void OnPressed()

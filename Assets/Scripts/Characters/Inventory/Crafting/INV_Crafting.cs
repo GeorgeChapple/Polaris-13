@@ -65,20 +65,18 @@ public class INV_Crafting : MonoBehaviour
     {
         openedFromCraftingStation = fromCraftingStation;
 
-        // set up lists
-        SetupCraftingLists();
+        RebuildCraftingView();
 
-        // set up buttons
-        SetupCraftingButtons();
-
-        if (fromCraftingStation)
+        if (fromCraftingStation && playerController != null)
         {
-            // open inventory menu root
-            if (playerController != null)
-            {
-                playerController.SetMonitoringMenu(true, false);
-            }
+            playerController.SetMonitoringMenu(true, false);
         }
+    }
+
+    public void RebuildCraftingView()
+    {
+        SetupCraftingLists();
+        SetupCraftingButtons();
     }
 
     public void SetupCraftingLists()
@@ -91,22 +89,14 @@ public class INV_Crafting : MonoBehaviour
             return;
         }
 
-        foreach (var item in INV_ItemDatabase.Instance.Items)
+        foreach (INV_Item item in INV_ItemDatabase.Instance.Items)
         {
-            if (item == null)
+            if (item == null || !item.Craftable)
             {
                 continue;
             }
 
-            // only items actually marked craftable appear in the list
-            if (!item.Craftable)
-            {
-                continue;
-            }
-
-            bool canCraft = CanCraftItemRightNow(item);
-
-            if (canCraft)
+            if (CanCraftItemRightNow(item))
             {
                 craftables.Add(item);
             }
@@ -123,28 +113,29 @@ public class INV_Crafting : MonoBehaviour
 
         if (craftingContentRoot == null || craftingButtonPrefab == null)
         {
-            Debug.LogWarning("INV_Crafting is missing crafting ui refs.", this);
             return;
         }
 
-        // craftables first
-        for (int i = 0; i < craftables.Count; i++)
-        {
-            CreateButton(craftables[i], true);
-        }
-
-        // then unavailable craftables
-        for (int i = 0; i < nonCraftables.Count; i++)
-        {
-            CreateButton(nonCraftables[i], false);
-        }
+        SpawnButtonsForList(craftables, true);
+        SpawnButtonsForList(nonCraftables, false);
 
         ExpandContentRoot();
     }
 
+    private void SpawnButtonsForList(List<INV_Item> items, bool interactable)
+    {
+        for (int i = 0; i < items.Count; i++)
+        {
+            CreateButton(items[i], interactable);
+        }
+    }
+
     private void CreateButton(INV_Item item, bool interactable)
     {
-        if (item == null) { return; }
+        if (item == null || craftingContentRoot == null || craftingButtonPrefab == null)
+        {
+            return;
+        }
 
         GameObject go = Instantiate(craftingButtonPrefab, craftingContentRoot);
         go.name = $"CraftButton_{item.Name}";
@@ -152,13 +143,11 @@ public class INV_Crafting : MonoBehaviour
         INV_CraftingButtonUI buttonUi = go.GetComponent<INV_CraftingButtonUI>();
         if (buttonUi == null)
         {
-            Debug.LogWarning("Crafting button prefab needs INV_CraftingButtonUI.", go);
             Destroy(go);
             return;
         }
 
-        buttonUi.Init(this, item, interactable, GetRequirementText(item));
-
+        buttonUi.Init(this, item, interactable, BuildRequirementText(item));
         spawnedButtons.Add(buttonUi);
     }
 
@@ -174,7 +163,10 @@ public class INV_Crafting : MonoBehaviour
 
         spawnedButtons.Clear();
 
-        if (craftingContentRoot == null) { return; }
+        if (craftingContentRoot == null)
+        {
+            return;
+        }
 
         for (int i = craftingContentRoot.childCount - 1; i >= 0; i--)
         {
@@ -190,14 +182,16 @@ public class INV_Crafting : MonoBehaviour
         }
 
         float totalHeight = 0f;
-
         VerticalLayoutGroup layoutGroup = craftingContentRoot.GetComponent<VerticalLayoutGroup>();
         float spacing = layoutGroup != null ? layoutGroup.spacing : 0f;
 
         for (int i = 0; i < craftingContentRoot.childCount; i++)
         {
             RectTransform child = craftingContentRoot.GetChild(i) as RectTransform;
-            if (child == null) { continue; }
+            if (child == null)
+            {
+                continue;
+            }
 
             totalHeight += child.sizeDelta.y;
 
@@ -216,23 +210,25 @@ public class INV_Crafting : MonoBehaviour
 
     public void TryCraftItem(INV_Item item)
     {
-        if (item == null) { return; }
-        if (inventoryNet == null) { return; }
+        if (item == null || inventoryNet == null)
+        {
+            return;
+        }
 
         inventoryNet.RequestCraftItem(item.ItemID);
     }
 
     private void OnCraftRequestFinished(bool success, string craftedItemId)
     {
-        // rebuild after every craft result so buttons update
-        SetupCraftingLists();
-        SetupCraftingButtons();
+        RebuildCraftingView();
     }
 
-    private bool CanCraftItemRightNow(INV_Item item)
+    public bool CanCraftItemRightNow(INV_Item item)
     {
-        if (item == null) { return false; }
-        if (inventory == null) { return false; }
+        if (item == null || inventory == null)
+        {
+            return false;
+        }
 
         if (!item.CanCraftAnywhere && !openedFromCraftingStation)
         {
@@ -242,30 +238,21 @@ public class INV_Crafting : MonoBehaviour
         for (int i = 0; i < item.CraftingRequirements.Count; i++)
         {
             INV_Item.CraftingStack req = item.CraftingRequirements[i];
-            if (req == null || req.item == null || req.amount <= 0)
+            if (req?.item == null || req.amount <= 0)
             {
                 continue;
             }
 
-            int currentCount = inventory.GetItemCount(req.item.ItemID);
-
-            if (currentCount < req.amount)
+            if (inventory.GetItemCount(req.item.ItemID) < req.amount)
             {
-                Debug.Log($"Craft check failed for {item.Name}: needs {req.amount}x {req.item.Name}, only found {currentCount}.", this);
                 return false;
             }
         }
 
-        if (!inventory.CanAddItem(item))
-        {
-            Debug.Log($"Craft check failed for {item.Name}: no room in inventory for crafted item.", this);
-            return false;
-        }
-
-        return true;
+        return inventory.CanAddItem(item);
     }
 
-    private string GetRequirementText(INV_Item item)
+    private string BuildRequirementText(INV_Item item)
     {
         if (item == null)
         {
@@ -279,26 +266,23 @@ public class INV_Crafting : MonoBehaviour
 
         if (item.CraftingRequirements == null || item.CraftingRequirements.Count == 0 || !item.Craftable)
         {
-            return "Uncraftable. If you see this, I messed up somewhere.";
+            return "Uncraftable";
         }
 
-        string text = "";
+        List<string> lines = new List<string>();
 
         for (int i = 0; i < item.CraftingRequirements.Count; i++)
         {
             INV_Item.CraftingStack req = item.CraftingRequirements[i];
-            if (req == null || req.item == null) { continue; }
+            if (req?.item == null)
+            {
+                continue;
+            }
 
             int currentAmount = inventory != null ? inventory.GetItemCount(req.item.ItemID) : 0;
-
-            text += $"{req.item.Name} {currentAmount}/{req.amount}";
-
-            if (i < item.CraftingRequirements.Count - 1)
-            {
-                text += "\n";
-            }
+            lines.Add($"{req.item.Name} {currentAmount}/{req.amount}");
         }
 
-        return text;
+        return string.Join("\n", lines);
     }
 }
