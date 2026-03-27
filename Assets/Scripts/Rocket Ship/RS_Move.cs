@@ -1,9 +1,10 @@
+using Unity.Netcode;
 using UnityEngine;
 
 // Made by: George Chapple, Jason Lodge
 // Summary: we're not actually moving the ship, we're going to be moving all of the stuff inside the parent
 
-public class RS_Move : MonoBehaviour
+public class RS_Move : NetworkBehaviour
 {
     [Header("References")]
     public GameObject globalParent;
@@ -28,6 +29,17 @@ public class RS_Move : MonoBehaviour
     [SerializeField] private Vector3 anchorPoint = Vector3.zero;
 
     private Vector2 controllerDir = Vector2.zero; // max of 1 on both axis positive and negative
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (!IsServer)
+        {
+            enabled = false;
+            return;
+        }
+    }
 
     void Update()
     {
