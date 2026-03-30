@@ -28,7 +28,6 @@ public class CC_PlayerInputManager : MonoBehaviour
     public bool monitoringMenu;
     public bool rotateItem;
     public bool dropItem;
-    public bool dropHeldItem;
     public float hotBar;
 
     [Header("Hotbar Slot Values")]
@@ -48,7 +47,6 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void OnUseItemPrimary(InputValue value) { UseItemPrimary(value.isPressed); }
     public void OnRotateItem(InputValue value) { RotateItemInput(value.isPressed); }
     public void OnDropItem(InputValue value) { DropItemInput(value.isPressed); }
-    public void OnDropHeldItem(InputValue value) { DropHeldItemInput(value.isPressed); }
     public void OnPause(InputValue value) { PauseInput(value.isPressed); }
     public void OnMonitoringMenu(InputValue value) { MonitoringMenuInput(value.isPressed); }
     public void OnHotbar(InputValue value) { HotbarInput(value.Get<float>()); }
@@ -69,7 +67,6 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void UseItemPrimary(bool newUseItemPrimaryState) { useItemPrimary = newUseItemPrimaryState; }
     public void RotateItemInput(bool newRotateItemState) { rotateItem = newRotateItemState; }
     public void DropItemInput(bool newDropItemState) { dropItem = newDropItemState; }
-    public void DropHeldItemInput(bool newDropHeldItemState) { dropHeldItem = newDropHeldItemState; }
     public void PauseInput(bool newPauseState) { pause = newPauseState; }
     public void MonitoringMenuInput(bool newInventoryState) { monitoringMenu = newInventoryState; }
     public void HotbarInput(float newHotBarState) { hotBar = newHotBarState; }

@@ -1,5 +1,5 @@
-using UnityEngine;
 using Unity.Netcode;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class CC_ClientPlayerControl : NetworkBehaviour
@@ -52,23 +52,27 @@ public class CC_ClientPlayerControl : NetworkBehaviour
 
     private void LateUpdate()
     {
-        if (!IsOwner) return;
+        if (!IsOwner)
+        {
+            return;
+        }
 
         UpdateInputRPC(
             m_PlayerInputManager.move, m_PlayerInputManager.look, m_PlayerInputManager.jump, m_PlayerInputManager.interact,
             m_PlayerInputManager.sprint, m_PlayerInputManager.crouch,
             m_PlayerInputManager.roll,
-            m_PlayerInputManager.pause, m_PlayerInputManager.monitoringMenu, m_PlayerInputManager.rotateItem, m_PlayerInputManager.dropItem, m_PlayerInputManager.dropHeldItem, m_PlayerInputManager.hotBar
+            m_PlayerInputManager.pause, m_PlayerInputManager.monitoringMenu, m_PlayerInputManager.rotateItem, m_PlayerInputManager.dropItem, m_PlayerInputManager.hotBar
         );
     }
 
-    [Rpc(target:SendTo.Server)]
+    [Rpc(target: SendTo.Server)]
     private void UpdateInputRPC(
-        Vector2 move, Vector2 look, bool jump, bool interact, 
+        Vector2 move, Vector2 look, bool jump, bool interact,
         bool sprint, bool crouch,
         float roll,
-        bool pause, bool inventory, bool rotateItem, bool dropItem, bool dropHeldItem, float hotbar
-    ) {
+        bool pause, bool inventory, bool rotateItem, bool dropItem, float hotbar
+    )
+    {
         // Character Input Values
         m_PlayerInputManager.MoveInput(move);
         m_PlayerInputManager.LookInput(look);
@@ -87,7 +91,7 @@ public class CC_ClientPlayerControl : NetworkBehaviour
         m_PlayerInputManager.MonitoringMenuInput(inventory);
         m_PlayerInputManager.RotateItemInput(rotateItem);
         m_PlayerInputManager.DropItemInput(dropItem);
-        m_PlayerInputManager.DropHeldItemInput(dropHeldItem);
+        //m_PlayerInputManager.DropHeldItemInput(dropHeldItem);
         m_PlayerInputManager.HotbarInput(hotbar);
     }
 }

@@ -2,12 +2,13 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // Made By: Jason Lodge
 // Summary: UI dragging handler for inventory items.
 
-public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
 {
     [Header("Occupied Space Visual")]
     [Tooltip("Root that will hold occupied space visuals behind the item.")]
@@ -86,6 +87,27 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         // initial cell, will be set when inventory places the item
         startCell = itemInst != null ? itemInst.cell : Vector2Int.zero;
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (inv == null || itemInst == null) { return; }
+        if (!IsScreenPointOverOccupiedSpace(eventData.position, eventData.pressEventCamera)) { return; }
+
+        bool shiftHeld = Keyboard.current != null && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
+
+        // shift click adds player inventory item into open chest
+        if (eventData.button == PointerEventData.InputButton.Left && shiftHeld)
+        {
+            if (!itemInst.isChestItem && inv.ActiveChest != null)
+            {
+                inv.TryQuickStoreItemInOpenChest(itemInst);
+                return;
+            }
+        }
+        if (eventData.button != PointerEventData.InputButton.Right) { return; }
+
+        inv.ShowContextMenuForItem(itemInst, eventData.position);
     }
 
     // called by inventory after rotation / rebuild
@@ -416,6 +438,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             return;
         }
 
+        inv.HideContextMenu();
         inv.heldItem = this;
 
         // prevent drop logic from seeing an old hover while dragging
@@ -445,6 +468,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         if (inv.heldItem != this) { return; }
 
         Camera uiCam = eventData.pressEventCamera;
+        bool shiftHeld = Keyboard.current != null && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
 
         // chest item flow
         if (itemInst.isChestItem)
@@ -452,6 +476,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             if (inv.TryTakeChestItemToInventoryFromScreenPoint(itemInst, eventData.position, uiCam))
             {
                 inv.heldItem = null;
+                inv.FlushPendingChestSnapshot();
                 return;
             }
 
@@ -472,11 +497,18 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             }
 
             inv.heldItem = null;
+            inv.FlushPendingChestSnapshot();
             return;
         }
 
         // player inventory item flow
-        if (inv.TryStoreHeldItemInOpenChestFromScreenPoint(itemInst, eventData.position, uiCam))
+        if (inv.TryStoreHeldItemInOpenChestFromScreenPoint(itemInst, eventData.position, uiCam, shiftHeld))
+        {
+            inv.heldItem = null;
+            return;
+        }
+
+        if (inv.TryMergeItemIntoHoveredStack(itemInst, eventData.position, uiCam))
         {
             inv.heldItem = null;
             return;
@@ -485,6 +517,13 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         bool moved = inv.TryMoveItemFromScreenPoint(itemInst, eventData.position, uiCam);
         if (!moved)
         {
+            // dragging outside inventory drops the stack
+            if (inv.DropItemInstanceToWorld(itemInst, true))
+            {
+                inv.heldItem = null;
+                return;
+            }
+
             // restore previous placed cell and previous rotation
             inv.RestoreItemToCellAndRotation(itemInst, startCell, startRotation);
 
