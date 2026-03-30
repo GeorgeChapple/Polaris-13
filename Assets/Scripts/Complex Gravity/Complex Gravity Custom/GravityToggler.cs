@@ -42,7 +42,7 @@ public class GravityToggler : NetworkBehaviour
     {
         if (shipField && IsServer)
         {
-            SP_SpaceJunk spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
+            SP_SpaceManager spaceManager = FindFirstObjectByType<SP_SpaceManager>();
             RS_Move rocket = FindFirstObjectByType<RS_Move>();
             if (gravityBody.useGravity)
             {

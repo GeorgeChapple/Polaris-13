@@ -12,8 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 619fee5ac8977a74fa53ea5bd99c4c0c, type: 3}
   m_Name: Default_Debris
   m_EditorClassIdentifier: 
+  spawnerName: Default_Spawner
   gizmoColour: {r: 0.1452893, g: 1, b: 0, a: 1}
   ignoreMaxDebris: 0
-  spawnbounds: {x: 0, y: 0, z: 100, w: 100}
+  maxDebris: 10
+  limited: 0
+  limit: 10
+  spawnbounds: {x: 0, y: 0, z: 50, w: 50}
   spawnTime: {x: 0.2, y: 0.3}
-  spawning: 0
+  spaceObjects:
+  - prefab: {fileID: 8565455247231493378, guid: 0da06c1e07ff9d54cb19d6a16b922aa6, type: 3}
+    probability: 10
+  - prefab: {fileID: 346594225879649834, guid: 9c9c1a89f49928e45915114827e789ff, type: 3}
+    probability: 20

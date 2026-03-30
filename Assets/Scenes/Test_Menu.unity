@@ -1200,14 +1200,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71a2d3737ae936249b2d30cdc0e033f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  maxDebris: 100
-  rocket: {fileID: 0}
-  spawners:
-  - {fileID: 11400000, guid: 618e5ee6909c13a47a595d6359a40e5c, type: 2}
-  - {fileID: 11400000, guid: 5a2bf374d0d0a3f478b80f1931d93f0b, type: 2}
-  foundObjects: []
-  spaceBounds: {x: 1000, y: 1000, z: 100}
 --- !u!4 &709164550
 Transform:
   m_ObjectHideFlags: 0
@@ -2163,8 +2155,8 @@ GameObject:
   - component: {fileID: 1257378901}
   - component: {fileID: 1257378900}
   - component: {fileID: 1257378899}
-  - component: {fileID: 1257378898}
   - component: {fileID: 1257378905}
+  - component: {fileID: 1257378898}
   m_Layer: 0
   m_Name: Rocket
   m_TagString: Rocket
@@ -2188,9 +2180,9 @@ MonoBehaviour:
   globalParent: {fileID: 0}
   worldPosition: {x: 0, y: 0, z: 0}
   worldDirection: {x: 0, y: 0, z: 0}
-  targetPosition: {x: 0, y: 0, z: 1000}
+  targetPosition: {x: 0, y: 0, z: 100000}
   speed: 0
-  targetSpeed: 1
+  targetSpeed: 5
   mode: 1
   speedChangeAmt: 5
   directionChangeSpeedMax: 5

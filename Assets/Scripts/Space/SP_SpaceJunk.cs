@@ -1,299 +1,161 @@
-using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
+using Unity.VisualScripting;
+using UnityEngine;
+
+// Script By : George Chapple
+// Summary   : Handles spawning and despawning of space objects
 
 public class SP_SpaceJunk : NetworkBehaviour
 {
-    [SerializeField] private int maxDebris = 20;
-    [HideInInspector] public RS_Move rocket; 
-    public List<SP_SpawnSettings> spawners = new List<SP_SpawnSettings>();
-    [HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
-    public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
-    public Vector3 spaceBounds = new Vector3(20, 20, 20);
+    [HideInInspector] public Quaternion junkRotation;
+    [HideInInspector] public Vector3 junkRotationRate;
+    [HideInInspector] public SP_Spawner spawner;
+    [SerializeField] private float scaleSpeed = 1;
+    [SerializeField] private Vector2 sizeSpread = new Vector2(0.7f, 1.3f);
+    [SerializeField] private GameObject destroyVFX;
+    private SP_SpaceManager spaceManager;
+    private bool scaling = false;
+    private bool destroyRequested = false;
+    private Rigidbody rb;
 
     private void Awake()
     {
         InitialiseComponents();
     }
 
-    public override void OnNetworkSpawn()
+    private void OnCollisionEnter(Collision collision)
     {
-        base.OnNetworkSpawn();
-
-        // only server controls junk spawning and movement
+        // Only server decides if junk gets destroyed
         if (!IsServer)
         {
-            enabled = false;
             return;
         }
 
+        if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
+        {
+            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
         InitialiseComponents();
     }
 
     private void InitialiseComponents()
     {
-        rocket = FindFirstObjectByType<RS_Move>(); 
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = this.AddComponent<Rigidbody>();
+        }
+
+        transform.localScale = Vector3.one * Random.Range(sizeSpread.x, sizeSpread.y);
+        spaceManager = FindFirstObjectByType<SP_SpaceManager>();
     }
 
+    private void Start()
+    {
+        StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
+        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
+        spaceManager.spawners[spawner]++;
+    }
+
+    // Update is called once per frame
     void Update()
     {
-        if (!IsServer) return;
-        if (rocket == null) return;
-
-        if (rocket.speed > 0.1f)
+        // only server decides if junk should despawn
+        if (!IsServer)
         {
-            SpawnSpaceObjects();
+            return;
         }
 
-        MoveDebris();
-
-        Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
-        foundObjects.Clear();
-
-        foreach (Collider col in colliders)
+        if (spaceManager != null && !spaceManager.foundObjects.Contains(this.gameObject))
         {
-            foundObjects.Add(col.gameObject);
+            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
+    }
 
-        CC_Movement[] players = FindObjectsByType<CC_Movement>(FindObjectsSortMode.None);
-        foreach (CC_Movement player in players)
+    private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)
+    {
+        if (!scaling)
         {
-            if (!foundObjects.Contains(player.gameObject))
+            if (destroy && spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
             {
-                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+                spaceManager.debris.Remove(this.gameObject);
+            }
+
+            scaling = true;
+            transform.localScale = start;
+            float t = 0;
+
+            while (t < 1)
+            {
+                t += Time.deltaTime / duration;
+                transform.localScale = Vector3.Lerp(start, end, Easing.Sine.Out(t));
+                yield return null;
+            }
+
+            transform.localScale = end;
+
+            if (destroy && !destroyRequested)
+            {
+                destroyRequested = true;
+                DestroyJunk();
+            }
+
+            scaling = false;
+        }
+    }
+
+    private void DestroyJunk()
+    {
+        // safety check
+        if (!IsServer)
+        {
+            return;
+        }
+
+        // spawn destroy VFX on server
+        if (destroyVFX != null)
+        {
+            GameObject vfxInstance = Instantiate(destroyVFX, transform.position, transform.rotation);
+            NetworkObject vfxNetObj = vfxInstance.GetComponent<NetworkObject>();
+
+            if (vfxNetObj != null && !vfxNetObj.IsSpawned)
+            {
+                vfxNetObj.Spawn();
             }
         }
-    }
 
-    private void SpawnSpaceObjects()
-    {
-        foreach (SP_SpawnSettings spawner in spawners)
+        spaceManager.spawners[spawner]--;
+
+        // despawn junk over network
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        if (netObj != null && netObj.IsSpawned)
         {
-            if ((debris.Count < maxDebris || spawner.ignoreMaxDebris) && !spawner.spawning)
-            {
-                StartCoroutine(WaitSpawnObject(spawner));
-            }
+            netObj.Despawn(true);
+        }
+        else
+        {
+            Destroy(this.gameObject);
         }
     }
-
-    private IEnumerator WaitSpawnObject(SP_SpawnSettings spawner)
+    public void RemoveFromSpaceManager()
     {
-        spawner.spawning = true;
-
-        float t = 0;
-        float w = Random.Range(spawner.spawnTime.x, spawner.spawnTime.y);
-        while (t < w)
+        if (spaceManager == null)
         {
-            t += Time.deltaTime;
-            yield return null;
+            spaceManager = FindFirstObjectByType<SP_SpaceManager>();
         }
 
-        int maxValue = 0;
-        foreach (SP_SpawnSettings.SpaceObject obj in spawner.spaceObjects)
+        if (spaceManager == null)
         {
-            maxValue += obj.probability; 
-            yield return null;
+            Debug.LogWarning("SP_Junk could not find SP_SpaceJunk.", this);
+            return;
         }
 
-
-        int randomValue = Random.Range(1, maxValue + 1);
-        int objectIndex = 0;
-        foreach (SP_SpawnSettings.SpaceObject obj in spawner.spaceObjects)
-        {
-            if (randomValue <= obj.probability)
-            {
-                break;
-            }
-            objectIndex++;
-            yield return null;
-        }
-
-        Vector2 spawnPosition = GetRandomSpawnPosition(spawner.spawnbounds);
-
-        GameObject newDebris = Instantiate(
-                    spawner.spaceObjects[objectIndex].prefab,
-                    new Vector3(
-                        spawnPosition.x,
-                        spawnPosition.y,
-                        spaceBounds.z / 2
-                    ),
-                    transform.rotation
-                );
-
-        newDebris.transform.eulerAngles = Vector3.back;
-
-        NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
-        if (netObj != null && !netObj.IsSpawned)
-        {
-            netObj.Spawn();
-        }
-
-        debris.Add(newDebris, rocket.worldDirection);
-
-        spawner.spawning = false;
-    }
-
-    private Vector2 GetRandomSpawnPosition(Vector4 bounds)
-    {
-        Vector2 pos = new Vector2();
-
-        pos.x = Random.Range(0, bounds.x / 2);
-        pos.y = Random.Range(0, bounds.y / 2);
-
-        pos.x = Mathf.Clamp(pos.x, bounds.z / 2, bounds.x);
-        pos.y = Mathf.Clamp(pos.y, bounds.w / 2, bounds.x);
-
-        int randomNegative = Random.Range(0, 2);
-        if (randomNegative == 0)
-        {
-            pos.x *= -1;
-        }
-        randomNegative = Random.Range(0, 2);
-        if (randomNegative == 0)
-        {
-            pos.y *= -1;
-        }
-
-        return pos;
-    }
-
-    private void MoveDebris()
-    {
-        List<GameObject> debrisObjects = new List<GameObject>(debris.Keys);
-
-        foreach (GameObject obj in debrisObjects)
-        {
-            if (obj == null) continue;
-
-            Rigidbody rb = obj.GetComponent<Rigidbody>();
-
-            if (rb == null) continue;
-
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
-            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
-        }
-    }
-
-    public void RemoveDebris(GameObject obj)
-    {
-        if (obj == null) { return; }
-
-        if (debris.ContainsKey(obj))
-        {
-            debris.Remove(obj);
-        }
-    }
-
-    private void SortProbabilities(SP_SpawnSettings spawner)
-    {
-        spawner.spaceObjects = MergeSort(spawner.spaceObjects);
-    }
-
-    private List<SP_SpawnSettings.SpaceObject> MergeSort(List<SP_SpawnSettings.SpaceObject> objects)
-    {
-        if (!objects.Any()) return new List<SP_SpawnSettings.SpaceObject>();
-
-        int mid = objects.Count / 2;
-
-        List<SP_SpawnSettings.SpaceObject> left = GetListSegment(objects, 0, mid);
-        List<SP_SpawnSettings.SpaceObject> right = GetListSegment(objects, mid + 1, objects.Count - 1);
-
-        if (left.Count > 1)
-        {
-            MergeSort(left);
-        }
-        if (right.Count > 1)
-        {
-            MergeSort(right);
-        }
-
-        MergeList(objects, left, right);
-
-        return objects;
-    }
-
-    private void MergeList(List<SP_SpawnSettings.SpaceObject> list, List<SP_SpawnSettings.SpaceObject> left, List<SP_SpawnSettings.SpaceObject> right)
-    {
-        int i, j, k;
-        i = j = k = 0;
-        SP_SpawnSettings.SpaceObject obj;
-
-        while (i < left.Count && j < right.Count)
-        {
-            if (left[i].probability >= right[j].probability)
-            {
-                obj = left[i++];
-            }
-            else
-            {
-                obj = right[j++];
-            }
-            list[k++] = obj;
-        }
-
-        while (i < left.Count)
-        {
-            list[k++] = left[i++];
-        }
-        while (j < right.Count)
-        {
-            list[k++] = left[j++];
-        }
-    }
-
-    private List<SP_SpawnSettings.SpaceObject> GetListSegment(List<SP_SpawnSettings.SpaceObject> list, int startIndex, int endIndex)
-    {
-        List<SP_SpawnSettings.SpaceObject> newList = new List<SP_SpawnSettings.SpaceObject>();
-        for (int i = startIndex; i <= endIndex;)
-        {
-            newList.Add(list[i]);
-        }
-        return newList;
-    }
-
-    private void OnDrawGizmos()
-    {
-        DrawBox(Vector3.zero, transform.rotation, spaceBounds, Color.red);
-        foreach (SP_SpawnSettings spawner in spawners)
-        {
-            if (spawner != null)
-            {
-                DrawBox(new Vector3(0, 0, spaceBounds.z / 2), transform.rotation, new Vector2(spawner.spawnbounds.x, spawner.spawnbounds.y), spawner.gizmoColour);
-                DrawBox(new Vector3(0, 0, spaceBounds.z / 2), transform.rotation, new Vector2(spawner.spawnbounds.z, spawner.spawnbounds.w), spawner.gizmoColour);
-            }
-        }
-    }
-
-    public void DrawBox(Vector3 pos, Quaternion rot, Vector3 scale, Color c)
-    {
-        Matrix4x4 m = new Matrix4x4();
-        m.SetTRS(pos, rot, scale);
-
-        var point1 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, 0.5f));
-        var point2 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, 0.5f));
-        var point3 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, -0.5f));
-        var point4 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, -0.5f));
-
-        var point5 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, 0.5f));
-        var point6 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, 0.5f));
-        var point7 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, -0.5f));
-        var point8 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, -0.5f));
-
-        Debug.DrawLine(point1, point2, c);
-        Debug.DrawLine(point2, point3, c);
-        Debug.DrawLine(point3, point4, c);
-        Debug.DrawLine(point4, point1, c);
-
-        Debug.DrawLine(point5, point6, c);
-        Debug.DrawLine(point6, point7, c);
-        Debug.DrawLine(point7, point8, c);
-        Debug.DrawLine(point8, point5, c);
-
-        Debug.DrawLine(point1, point5, c);
-        Debug.DrawLine(point2, point6, c);
-        Debug.DrawLine(point3, point7, c);
-        Debug.DrawLine(point4, point8, c);
+        spaceManager.RemoveDebris(gameObject);
     }
 }

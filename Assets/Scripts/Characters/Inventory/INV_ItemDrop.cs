@@ -248,7 +248,7 @@ public class INV_ItemDrop : NetworkBehaviour
         }
 
         // if this pickup is also space junk, remove it from the debris manager first
-        SP_Junk junk = GetComponent<SP_Junk>();
+        SP_SpaceJunk junk = GetComponent<SP_SpaceJunk>();
         if (junk != null)
         {
             junk.RemoveFromSpaceManager();
