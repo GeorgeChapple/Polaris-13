@@ -12,7 +12,6 @@ public class SP_SpaceJunk : NetworkBehaviour
     [HideInInspector] public Vector3 junkRotationRate;
     [HideInInspector] public SP_Spawner spawner;
     [SerializeField] private float scaleSpeed = 1;
-    [SerializeField] private Vector2 sizeSpread = new Vector2(0.7f, 1.3f);
     [SerializeField] private GameObject destroyVFX;
     private SP_SpaceManager spaceManager;
     private bool scaling = false;
@@ -52,7 +51,6 @@ public class SP_SpaceJunk : NetworkBehaviour
             rb = this.AddComponent<Rigidbody>();
         }
 
-        transform.localScale = Vector3.one * Random.Range(sizeSpread.x, sizeSpread.y);
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
     }
 

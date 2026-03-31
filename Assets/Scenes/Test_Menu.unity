@@ -1179,8 +1179,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 709164550}
-  - component: {fileID: 709164549}
   - component: {fileID: 709164551}
+  - component: {fileID: 709164552}
   m_Layer: 0
   m_Name: Space
   m_TagString: Untagged
@@ -1188,18 +1188,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &709164549
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 709164548}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 71a2d3737ae936249b2d30cdc0e033f1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &709164550
 Transform:
   m_ObjectHideFlags: 0
@@ -1237,6 +1225,26 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
+--- !u!114 &709164552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 709164548}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7240309ea854eb848b64572f973c1f6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxDebris: 20
+  rocket: {fileID: 0}
+  spawnerSettings:
+  - {fileID: 11400000, guid: 618e5ee6909c13a47a595d6359a40e5c, type: 2}
+  foundObjects: []
+  spaceBounds: {x: 20, y: 20, z: 100}
+  maxDebrisReached: 0
 --- !u!1 &773834361
 GameObject:
   m_ObjectHideFlags: 0

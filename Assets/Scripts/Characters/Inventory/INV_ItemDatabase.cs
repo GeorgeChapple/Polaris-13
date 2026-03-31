@@ -57,6 +57,15 @@ public class INV_ItemDatabase : ScriptableObject
         return item;
     }
 
+    public List<string> GetAllItemIds()
+    {
+        List<string> allIds = new List<string>();
+
+        foreach (var item in items) { allIds.Add(item.ItemID); }
+
+        return allIds;
+    }
+
     public bool ContainsItemId(string itemId)
     {
         return GetItemById(itemId) != null;
