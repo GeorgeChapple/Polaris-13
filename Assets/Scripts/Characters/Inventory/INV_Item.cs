@@ -1,20 +1,21 @@
-using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 // Made By: Jason Lodge
 // Summary: Data Holder for all items.
 [CreateAssetMenu(menuName = "Inventory/Item")]
 public class INV_Item : ScriptableObject
 {
-
     [Header("Info")]
     [SerializeField] private string itemID;
     [SerializeField] private string m_name;
     [SerializeField] private string description;
-    public enum ObjectType { Item, Consumable, Weapon, Tool, Resource, Placeable };
-    public ObjectType objectType = ObjectType.Item;
+
+    public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
+    [SerializeField] private ItemType itemType = ItemType.Item;
 
     [Header("Specs")]
     [SerializeField] private float durability;
@@ -37,7 +38,7 @@ public class INV_Item : ScriptableObject
     [SerializeField] private List<CraftingStack> craftingRequirements = new List<CraftingStack>();
     public List<CraftingStack> CraftingRequirements => craftingRequirements;
 
-    [Serializable]
+    [System.Serializable]
     public class CraftingStack
     {
         public INV_Item item;
@@ -97,6 +98,7 @@ public class INV_Item : ScriptableObject
     public string ItemID => itemID;
     public string Name => m_name;
     public string Description => description;
+    public ItemType ItemTypeVal => itemType;
 
     public float Durability => durability;
     public float HungerReplenish => hungerReplenish;
@@ -172,12 +174,8 @@ public class INV_Item : ScriptableObject
     // called by editor button, we dont want this in onvalidate as it would run after every character we type
     public void NormalizeInventoryShape()
     {
-        if (inventorySpaceShape == null)
-        {
-            inventorySpaceShape = new List<string>();
-        }
-
         // if empty, do nothing
+        if (inventorySpaceShape == null) { inventorySpaceShape = new List<string>(); }
         if (inventorySpaceShape.Count == 0) { return; }
 
         // find max width
@@ -201,20 +199,12 @@ public class INV_Item : ScriptableObject
             char[] chars = row.ToCharArray();
             for (int c = 0; c < chars.Length; c++)
             {
-                if (chars[c] != '+' && chars[c] != '-')
-                {
-                    chars[c] = '-';
-                }
+                if (chars[c] != '+' && chars[c] != '-') { chars[c] = '-'; }
             }
-
             row = new string(chars);
 
             // pad to max width
-            if (row.Length < maxW)
-            {
-                row = row.PadRight(maxW, '-');
-            }
-
+            if (row.Length < maxW) { row = row.PadRight(maxW, '-'); }
             inventorySpaceShape[i] = row;
         }
     }
@@ -222,6 +212,7 @@ public class INV_Item : ScriptableObject
 
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_Item))]
+[CanEditMultipleObjects]
 public class INV_ItemEditor : Editor
 {
     public override void OnInspectorGUI()
@@ -229,9 +220,6 @@ public class INV_ItemEditor : Editor
         serializedObject.Update();
 
         DrawDefaultInspector();
-
-        INV_Item item = (INV_Item)target;
-        if (item == null) { return; }
 
         EditorGUILayout.Space(8);
 
@@ -242,9 +230,19 @@ public class INV_ItemEditor : Editor
 
         if (GUILayout.Button("Normalize Inventory Shape"))
         {
-            Undo.RecordObject(item, "Normalize Inventory Shape");
-            item.NormalizeInventoryShape();
-            EditorUtility.SetDirty(item);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                INV_Item item = targets[i] as INV_Item;
+                if (item == null)
+                {
+                    continue;
+                }
+
+                Undo.RecordObject(item, "Normalize Inventory Shape");
+                item.NormalizeInventoryShape();
+                EditorUtility.SetDirty(item);
+            }
+
             AssetDatabase.SaveAssets();
         }
 

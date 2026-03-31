@@ -11,6 +11,7 @@ public class INV_Chest : NetworkBehaviour
     [System.Serializable]
     public class ChestItemData
     {
+        public string uniqueId;
         public string itemId;
         public int quantity = 1;
         public int cellX;
@@ -38,6 +39,8 @@ public class INV_Chest : NetworkBehaviour
     private readonly HashSet<ulong> viewingClientIds = new HashSet<ulong>();
 
     public IReadOnlyList<ChestItemData> Items => items;
+    public int GridHeight => chestGridMaxHeight;
+    public int GridWidth => chestGridMaxWidth;
 
     public void SetupEverything(GameObject player)
     {
@@ -120,7 +123,6 @@ public class INV_Chest : NetworkBehaviour
 
     public void RefreshViewer()
     {
-        // kept so the rest of your code doesnt need renaming
         RefreshAllViewers();
     }
 
@@ -232,6 +234,7 @@ public class INV_Chest : NetworkBehaviour
 
         ChestItemData data = new ChestItemData
         {
+            uniqueId = System.Guid.NewGuid().ToString(),
             itemId = itemId,
             quantity = quantity,
             cellX = cell.x,
@@ -239,7 +242,7 @@ public class INV_Chest : NetworkBehaviour
             rotation = (int)rotation
         };
 
-        if (!CanPlaceItemData(data, -1))
+        if (!CanPlaceItemData(data, null))
         {
             return false;
         }
@@ -248,16 +251,22 @@ public class INV_Chest : NetworkBehaviour
         return true;
     }
 
-    public bool TryMoveItemData(int index, Vector2Int cell, INV_Inventory.ItemInstance.Rotation rotation)
+    public bool TryMoveItemData(string uniqueId, Vector2Int cell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        if (!IsServer || index < 0 || index >= items.Count)
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId))
         {
             return false;
         }
 
-        ChestItemData current = items[index];
+        ChestItemData current = GetItemDataByUniqueId(uniqueId);
+        if (current == null)
+        {
+            return false;
+        }
+
         ChestItemData test = new ChestItemData
         {
+            uniqueId = current.uniqueId,
             itemId = current.itemId,
             quantity = current.quantity,
             cellX = cell.x,
@@ -265,7 +274,7 @@ public class INV_Chest : NetworkBehaviour
             rotation = (int)rotation
         };
 
-        if (!CanPlaceItemData(test, index))
+        if (!CanPlaceItemData(test, uniqueId))
         {
             return false;
         }
@@ -276,18 +285,24 @@ public class INV_Chest : NetworkBehaviour
         return true;
     }
 
-    public bool TryGetItemData(int index, out ChestItemData data)
+    public bool TryGetItemData(string uniqueId, out ChestItemData data)
     {
         data = null;
 
-        if (index < 0 || index >= items.Count)
+        if (string.IsNullOrWhiteSpace(uniqueId))
         {
             return false;
         }
 
-        ChestItemData src = items[index];
+        ChestItemData src = GetItemDataByUniqueId(uniqueId);
+        if (src == null)
+        {
+            return false;
+        }
+
         data = new ChestItemData
         {
+            uniqueId = src.uniqueId,
             itemId = src.itemId,
             quantity = src.quantity,
             cellX = src.cellX,
@@ -298,15 +313,26 @@ public class INV_Chest : NetworkBehaviour
         return true;
     }
 
-    public bool TryRemoveItemAt(int index)
+    public bool TryRemoveItem(string uniqueId)
     {
-        if (!IsServer || index < 0 || index >= items.Count)
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId))
         {
             return false;
         }
 
-        items.RemoveAt(index);
-        return true;
+        for (int i = 0; i < items.Count; i++)
+        {
+            ChestItemData item = items[i];
+            if (item == null || item.uniqueId != uniqueId)
+            {
+                continue;
+            }
+
+            items.RemoveAt(i);
+            return true;
+        }
+
+        return false;
     }
 
     public bool TryRemoveLastStoredItem()
@@ -318,6 +344,22 @@ public class INV_Chest : NetworkBehaviour
 
         items.RemoveAt(items.Count - 1);
         return true;
+    }
+
+    private ChestItemData GetItemDataByUniqueId(string uniqueId)
+    {
+        for (int i = 0; i < items.Count; i++)
+        {
+            ChestItemData item = items[i];
+            if (item == null || item.uniqueId != uniqueId)
+            {
+                continue;
+            }
+
+            return item;
+        }
+
+        return null;
     }
 
     private string BuildSnapshotJson()
@@ -346,7 +388,7 @@ public class INV_Chest : NetworkBehaviour
         return wrapper.items;
     }
 
-    private bool CanPlaceItemData(ChestItemData data, int ignoreIndex)
+    private bool CanPlaceItemData(ChestItemData data, string ignoreUniqueId)
     {
         if (data == null)
         {
@@ -391,13 +433,13 @@ public class INV_Chest : NetworkBehaviour
 
             for (int c = 0; c < items.Count; c++)
             {
-                if (c == ignoreIndex)
+                ChestItemData other = items[c];
+                if (other == null)
                 {
                     continue;
                 }
 
-                ChestItemData other = items[c];
-                if (other == null)
+                if (!string.IsNullOrWhiteSpace(ignoreUniqueId) && other.uniqueId == ignoreUniqueId)
                 {
                     continue;
                 }

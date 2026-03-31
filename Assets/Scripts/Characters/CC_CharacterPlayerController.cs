@@ -69,7 +69,6 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private bool monitoringMenuHeld;
     private bool rotateHeld;
     private bool dropHeld;
-    private bool dropHeldItemHeld;
     private bool useInInvHeld;
 
     private bool hotbarSlot1Held;
@@ -400,7 +399,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (input.dropItem && !dropHeld)
         {
             dropHeld = true;
-            inventory.DropHoverItem();
+            inventory.DropHeldOrHoverItem();
         }
         else if (!input.dropItem && dropHeld)
         {
@@ -431,14 +430,18 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         lastHotbarScrollDirection = scrollDirection;
 
         // drop currently selected hotbar item
-        if (input.dropHeldItem && !dropHeldItemHeld)
+        if (input.dropItem && !dropHeld)
         {
-            dropHeldItemHeld = true;
-            hotBar.DropSelectedItem();
+            dropHeld = true;
+
+            if (!monitoringMenuOpen)
+            {
+                hotBar.DropSelectedItem();
+            }
         }
-        else if (!input.dropHeldItem && dropHeldItemHeld)
+        else if (!input.dropItem && dropHeld && !monitoringMenuOpen)
         {
-            dropHeldItemHeld = false;
+            dropHeld = false;
         }
     }
 
@@ -532,6 +535,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         inMenu = state;
 
         // menu open then free cursor, menu close then lock cursor
+        if (!inMenu && inventory != null)
+        {
+            inventory.HideContextMenu();
+        }
+
         if (inMenu)
         {
             SetCursorLocked(false);
@@ -579,6 +587,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         // make sure chest visuals are cleaned up when the menu closes
         if (!state && inventory != null)
         {
+            inventory.HideContextMenu();
             inventory.CloseChestView();
         }
 
@@ -667,7 +676,6 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         monitoringMenuHeld = false;
         rotateHeld = false;
         dropHeld = false;
-        dropHeldItemHeld = false;
 
         hotbarSlot1Held = false;
         hotbarSlot2Held = false;

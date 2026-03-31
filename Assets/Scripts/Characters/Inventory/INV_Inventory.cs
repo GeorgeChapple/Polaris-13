@@ -46,6 +46,9 @@ public class INV_Inventory : MonoBehaviour
     [SerializeField] private INV_ItemHoverTooltip hoverTooltip;
     [SerializeField] private float hoverTooltipDelay = 0.4f;
 
+    [Header("Context Menu")]
+    [SerializeField] private INV_ItemContextMenu itemContextMenu;
+
     [Tooltip("Transform we will spawn dropped items from.")]
     public Transform dropItemTransform;
 
@@ -66,12 +69,28 @@ public class INV_Inventory : MonoBehaviour
     // currently opened chest for this player
     private INV_Chest activeChest;
 
+    // if a chest refresh comes in while dragging a chest item, hold it until drag ends
+    private List<INV_Chest.ChestItemData> pendingChestSnapshot;
+    private INV_Chest pendingChestSnapshotSource;
+
     public List<ItemInstance> Items => playerRuntime.items;
     public INV_Chest ActiveChest => activeChest;
     public GameObject ItemPrefab => itemPrefab;
     public Vector2 CellSize => cellSize;
     public Vector2 GridSpacing => inventoryGridSpacing;
     public GameObject OccupiedSpacePrefab => occupiedSpacePrefab;
+
+    public enum ContextActionType
+    {
+        Use,
+        DropOne,
+        DropStack,
+        AssignHotbar1,
+        AssignHotbar2,
+        AssignHotbar3,
+        AssignHotbar4,
+        AssignSelectedHotbar
+    }
 
     [System.Serializable]
     public class GridRefs
@@ -104,6 +123,7 @@ public class INV_Inventory : MonoBehaviour
     public class ItemInstance // used for saving items and inventory
     {
         public INV_Item data;
+        public string inventoryItemUniqueId;
 
         // rectangular size in cells for UI and bounds
         public Vector2Int size;
@@ -133,7 +153,7 @@ public class INV_Inventory : MonoBehaviour
 
         // runtime
         public bool isChestItem;
-        public int chestItemIndex = -1;
+        public string chestItemUniqueId;
     }
 
     private class GridRuntime
@@ -151,6 +171,12 @@ public class INV_Inventory : MonoBehaviour
 
         GenerateGrid(playerGrid, playerRuntime);
         GenerateGrid(chestGrid, chestRuntime);
+
+        if (itemContextMenu != null)
+        {
+            itemContextMenu.Init(this);
+            itemContextMenu.HideImmediate();
+        }
 
         if (inventoryMenuRoot != null)
         {
@@ -181,6 +207,11 @@ public class INV_Inventory : MonoBehaviour
             {
                 hoverTooltip.HideImmediate();
             }
+
+            HideContextMenu();
+
+            pendingChestSnapshot = null;
+            pendingChestSnapshotSource = null;
 
             return;
         }
@@ -313,7 +344,7 @@ public class INV_Inventory : MonoBehaviour
 
         // create a fresh instance and look for first available spot
         ItemInstance inst;
-        if (!CreateItemInstance(item, false, -1, out inst))
+        if (!CreateItemInstance(item, false, null, out inst))
         {
             return false;
         }
@@ -379,7 +410,7 @@ public class INV_Inventory : MonoBehaviour
                 }
 
                 ItemInstance newInst;
-                if (!CreateItemInstance(item, false, -1, out newInst))
+                if (!CreateItemInstance(item, false, null, out newInst))
                 {
                     return false;
                 }
@@ -411,7 +442,7 @@ public class INV_Inventory : MonoBehaviour
         for (int i = 0; i < quantity; i++)
         {
             ItemInstance inst;
-            if (!CreateItemInstance(item, false, -1, out inst))
+            if (!CreateItemInstance(item, false, null, out inst))
             {
                 return false;
             }
@@ -507,7 +538,7 @@ public class INV_Inventory : MonoBehaviour
         }
 
         // preview items have no real chest index yet, so do not allow interaction with them
-        if (item.chestItemIndex < 0)
+        if (string.IsNullOrWhiteSpace(item.chestItemUniqueId))
         {
             return false;
         }
@@ -518,17 +549,24 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
-        if (!TryPlaceItemAtCell(chestRuntime, chestGrid, cell.x, cell.y, item, true))
+        if (!CheckSpaceOccupyable(chestRuntime, chestGrid, cell.x, cell.y, item, item))
         {
             return false;
         }
 
         INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
-        if (net != null)
+        if (net == null)
         {
-            net.RequestMoveChestItemInOpenChest(item.chestItemIndex, cell, item.rotation);
+            return false;
         }
 
+        // host should move the exact dragged visual immediately so duplicate items dont look like the wrong one moved
+        if (net.IsServer && net.IsOwner)
+        {
+            RestoreItemToCellAndRotation(item, cell, item.rotation);
+        }
+
+        net.RequestMoveChestItemInOpenChest(item.chestItemUniqueId, cell, item.rotation);
         return true;
     }
 
@@ -704,7 +742,7 @@ public class INV_Inventory : MonoBehaviour
     }
 
     // creates a new item instance under either the player grid or chest grid
-    private bool CreateItemInstance(INV_Item item, bool isChestItem, int chestItemIndex, out ItemInstance instance)
+    private bool CreateItemInstance(INV_Item item, bool isChestItem, string chestItemUniqueId, out ItemInstance instance)
     {
         GridRefs refs = GetRefs(isChestItem);
         GridRuntime runtime = GetRuntime(isChestItem);
@@ -731,10 +769,11 @@ public class INV_Inventory : MonoBehaviour
         ItemInstance inst = new ItemInstance
         {
             data = item,
+            inventoryItemUniqueId = isChestItem ? null : System.Guid.NewGuid().ToString(),
             rotation = ItemInstance.Rotation.Up,
             quantity = 1,
             isChestItem = isChestItem,
-            chestItemIndex = chestItemIndex,
+            chestItemUniqueId = chestItemUniqueId,
             ui = rt,
             uiHandler = ui
         };
@@ -1019,6 +1058,37 @@ public class INV_Inventory : MonoBehaviour
         }
     }
 
+    private INV_ItemUI FindTopHoveredItemAtScreenPoint(GridRuntime runtime, Vector2 screenPoint, Camera uiCamera, ItemInstance ignore)
+    {
+        INV_ItemUI found = null;
+        int bestSibling = int.MinValue;
+
+        for (int i = 0; i < runtime.items.Count; i++)
+        {
+            ItemInstance inst = runtime.items[i];
+            if (inst == null || inst == ignore || inst.ui == null || inst.uiHandler == null)
+            {
+                continue;
+            }
+
+            if (!inst.uiHandler.IsScreenPointOverOccupiedSpace(screenPoint, uiCamera))
+            {
+                continue;
+            }
+
+            int sib = inst.ui.GetSiblingIndex();
+            if (sib < bestSibling)
+            {
+                continue;
+            }
+
+            bestSibling = sib;
+            found = inst.uiHandler;
+        }
+
+        return found;
+    }
+
     private void UpdateHoverTooltip()
     {
         if (hoverTooltip == null)
@@ -1095,9 +1165,9 @@ public class INV_Inventory : MonoBehaviour
         if (inst.isChestItem)
         {
             INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
-            if (net != null && inst.chestItemIndex >= 0)
+            if (net != null && !string.IsNullOrWhiteSpace(inst.chestItemUniqueId))
             {
-                net.RequestMoveChestItemInOpenChest(inst.chestItemIndex, inst.cell, inst.rotation);
+                net.RequestMoveChestItemInOpenChest(inst.chestItemUniqueId, inst.cell, inst.rotation);
             }
         }
 
@@ -1109,15 +1179,29 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
+    public bool DropHeldOrHoverItem()
+    {
+        if (heldItem != null && heldItem.Instance != null && !heldItem.Instance.isChestItem)
+        {
+            return DropItemInstanceToWorld(heldItem.Instance, false);
+        }
+
+        return DropHoverItem();
+    }
+
     public bool DropHoverItem()
     {
-        if (hoverItem == null)
+        if (hoverItem == null || hoverItem.Instance == null || hoverItem.Instance.isChestItem)
         {
             return false;
         }
 
-        ItemInstance inst = hoverItem.Instance;
-        if (inst == null || inst.isChestItem)
+        return DropItemInstanceToWorld(hoverItem.Instance, false);
+    }
+
+    public bool DropItemInstanceToWorld(ItemInstance inst, bool dropWholeStack)
+    {
+        if (inst == null || inst.isChestItem || inst.data == null)
         {
             return false;
         }
@@ -1128,7 +1212,24 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
-        if (inst.quantity > 1)
+        int amountToDrop = dropWholeStack ? Mathf.Max(1, inst.quantity) : 1;
+
+        INV_PlayerInventoryNet netInv = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (netInv == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < amountToDrop; i++)
+        {
+            netInv.RequestDropItem(itemId);
+        }
+
+        if (dropWholeStack || inst.quantity <= 1)
+        {
+            RemoveLocalPlayerItemInstance(inst);
+        }
+        else
         {
             inst.quantity--;
 
@@ -1136,30 +1237,10 @@ public class INV_Inventory : MonoBehaviour
             {
                 inst.uiHandler.ApplyUpdatedVisuals();
             }
-
-            INV_PlayerInventoryNet netInvStack = GetComponentInParent<INV_PlayerInventoryNet>();
-            if (netInvStack == null)
-            {
-                hoverItem = null;
-                return false;
-            }
-
-            netInvStack.RequestDropItem(itemId);
-            hoverItem = null;
-            return true;
         }
 
-        RemoveLocalPlayerItemInstance(inst);
-
-        INV_PlayerInventoryNet netInv = GetComponentInParent<INV_PlayerInventoryNet>();
-        if (netInv == null)
-        {
-            hoverItem = null;
-            return false;
-        }
-
-        netInv.RequestDropItem(itemId);
         hoverItem = null;
+        heldItem = null;
         return true;
     }
 
@@ -1201,8 +1282,52 @@ public class INV_Inventory : MonoBehaviour
         }
     }
 
-    public bool RemoveLocalChestVisualByIndex(int chestItemIndex)
+    public bool RemovePlayerItemByUniqueId(string inventoryItemUniqueId, int amount)
     {
+        if (string.IsNullOrWhiteSpace(inventoryItemUniqueId) || amount <= 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < playerRuntime.items.Count; i++)
+        {
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst == null || inst.inventoryItemUniqueId != inventoryItemUniqueId)
+            {
+                continue;
+            }
+
+            int take = Mathf.Min(inst.quantity, amount);
+            inst.quantity -= take;
+
+            if (inst.quantity <= 0)
+            {
+                RemoveLocalPlayerItemInstance(inst);
+            }
+            else if (inst.uiHandler != null)
+            {
+                inst.uiHandler.ApplyUpdatedVisuals();
+            }
+
+            INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+            if (hotBar != null)
+            {
+                hotBar.RefreshAllVisuals();
+            }
+
+            return take > 0;
+        }
+
+        return false;
+    }
+
+    public bool RemoveLocalChestVisualByUniqueId(string chestItemUniqueId)
+    {
+        if (string.IsNullOrWhiteSpace(chestItemUniqueId))
+        {
+            return false;
+        }
+
         for (int i = 0; i < chestRuntime.items.Count; i++)
         {
             ItemInstance inst = chestRuntime.items[i];
@@ -1211,7 +1336,7 @@ public class INV_Inventory : MonoBehaviour
                 continue;
             }
 
-            if (inst.chestItemIndex != chestItemIndex)
+            if (inst.chestItemUniqueId != chestItemUniqueId)
             {
                 continue;
             }
@@ -1249,9 +1374,50 @@ public class INV_Inventory : MonoBehaviour
         item.cell = cell;
     }
 
+    private void ApplyChestGridSize(INV_Chest chest)
+    {
+        if (chest == null)
+        {
+            return;
+        }
+
+        if (chestGrid.maxWidth == chest.GridWidth && chestGrid.maxHeight == chest.GridHeight)
+        {
+            return;
+        }
+
+        chestGrid.maxWidth = chest.GridWidth;
+        chestGrid.maxHeight = chest.GridHeight;
+        chestRuntime.generated = false;
+
+        if (chestGrid.gridRoot != null)
+        {
+            for (int i = chestGrid.gridRoot.childCount - 1; i >= 0; i--)
+            {
+                Destroy(chestGrid.gridRoot.GetChild(i).gameObject);
+            }
+        }
+
+        GenerateGrid(chestGrid, chestRuntime);
+    }
+
     // chest setup / teardown
     public void OpenChestView(INV_Chest chest, List<INV_Chest.ChestItemData> snapshot)
     {
+        // if we're dragging a chest item, defer the visual rebuild until drag ends
+        if (heldItem != null && heldItem.Instance != null && heldItem.Instance.isChestItem)
+        {
+            pendingChestSnapshotSource = chest;
+            pendingChestSnapshot = snapshot != null ? new List<INV_Chest.ChestItemData>(snapshot) : null;
+            return;
+        }
+
+        ApplyOpenChestSnapshot(chest, snapshot);
+    }
+
+    private void ApplyOpenChestSnapshot(INV_Chest chest, List<INV_Chest.ChestItemData> snapshot)
+    {
+        ApplyChestGridSize(chest);
         EnsureGrid(true);
 
         activeChest = chest;
@@ -1270,8 +1436,21 @@ public class INV_Inventory : MonoBehaviour
 
         for (int i = 0; i < snapshot.Count; i++)
         {
-            CreateChestVisualFromSnapshot(snapshot[i], i);
+            CreateChestVisualFromSnapshot(snapshot[i]);
         }
+    }
+
+    public void FlushPendingChestSnapshot()
+    {
+        if (pendingChestSnapshotSource == null)
+        {
+            return;
+        }
+
+        ApplyOpenChestSnapshot(pendingChestSnapshotSource, pendingChestSnapshot);
+
+        pendingChestSnapshotSource = null;
+        pendingChestSnapshot = null;
     }
 
     public void CloseChestView()
@@ -1281,10 +1460,15 @@ public class INV_Inventory : MonoBehaviour
         ClearChestView();
         activeChest = null;
 
+        pendingChestSnapshot = null;
+        pendingChestSnapshotSource = null;
+
         if (chestGrid.panelRoot != null)
         {
             chestGrid.panelRoot.SetActive(false);
         }
+
+        HideContextMenu();
 
         INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
         if (closingChest != null && net != null && net.IsOwner)
@@ -1321,7 +1505,7 @@ public class INV_Inventory : MonoBehaviour
         chestRuntime.items.Clear();
     }
 
-    private ItemInstance CreateChestVisualFromSnapshot(INV_Chest.ChestItemData data, int chestItemIndex)
+    private ItemInstance CreateChestVisualFromSnapshot(INV_Chest.ChestItemData data)
     {
         if (data == null || string.IsNullOrWhiteSpace(data.itemId))
         {
@@ -1335,7 +1519,7 @@ public class INV_Inventory : MonoBehaviour
         }
 
         ItemInstance inst;
-        if (!CreateItemInstance(item, true, chestItemIndex, out inst))
+        if (!CreateItemInstance(item, true, data.uniqueId, out inst))
         {
             return null;
         }
@@ -1360,6 +1544,7 @@ public class INV_Inventory : MonoBehaviour
     {
         INV_Chest.ChestItemData preview = new INV_Chest.ChestItemData
         {
+            uniqueId = System.Guid.NewGuid().ToString(),
             itemId = itemId,
             quantity = quantity,
             cellX = cell.x,
@@ -1367,11 +1552,11 @@ public class INV_Inventory : MonoBehaviour
             rotation = (int)rotation
         };
 
-        CreateChestVisualFromSnapshot(preview, -1);
+        CreateChestVisualFromSnapshot(preview);
     }
 
     // called by item ui when releasing drag over the chest panel
-    public bool TryStoreHeldItemInOpenChestFromScreenPoint(ItemInstance item, Vector2 screenPoint, Camera uiCamera)
+    public bool TryStoreHeldItemInOpenChestFromScreenPoint(ItemInstance item, Vector2 screenPoint, Camera uiCamera, bool autoAdd)
     {
         EnsureGrid(true);
 
@@ -1381,17 +1566,6 @@ public class INV_Inventory : MonoBehaviour
         }
 
         if (item.data == null)
-        {
-            return false;
-        }
-
-        Vector2Int chestCell;
-        if (!TryGetCellFromScreenPoint(chestRuntime, chestGrid, screenPoint, uiCamera, out chestCell))
-        {
-            return false;
-        }
-
-        if (!CheckSpaceOccupyable(chestRuntime, chestGrid, chestCell.x, chestCell.y, item, null))
         {
             return false;
         }
@@ -1406,18 +1580,57 @@ public class INV_Inventory : MonoBehaviour
         int quantity = Mathf.Max(1, item.quantity);
         ItemInstance.Rotation rotation = item.rotation;
 
+        if (autoAdd)
+        {
+            Vector2Int chestCell;
+            if (!TryGetCellFromScreenPoint(chestRuntime, chestGrid, screenPoint, uiCamera, out chestCell))
+            {
+                return false;
+            }
+
+            if (!CheckSpaceOccupyable(chestRuntime, chestGrid, chestCell.x, chestCell.y, item, null))
+            {
+                return false;
+            }
+
+            // host uses the real server path directly, so no local prediction
+            if (net.IsServer)
+            {
+                net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+                return true;
+            }
+
+            // client predicts locally because server does not own the real inventory state for remote players
+            RemoveLocalPlayerItemInstance(item);
+            AddLocalChestVisualPreview(itemId, quantity, chestCell, rotation);
+
+            net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+            return true;
+        }
+
+        Vector2Int exactChestCell;
+        if (!TryGetCellFromScreenPoint(chestRuntime, chestGrid, screenPoint, uiCamera, out exactChestCell))
+        {
+            return false;
+        }
+
+        if (!CheckSpaceOccupyable(chestRuntime, chestGrid, exactChestCell.x, exactChestCell.y, item, null))
+        {
+            return false;
+        }
+
         // host uses the real server path directly, so no local prediction
         if (net.IsServer)
         {
-            net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+            net.RequestStoreItemInOpenChest(itemId, quantity, exactChestCell, rotation);
             return true;
         }
 
         // client predicts locally because server does not own the real inventory state for remote players
         RemoveLocalPlayerItemInstance(item);
-        AddLocalChestVisualPreview(itemId, quantity, chestCell, rotation);
+        AddLocalChestVisualPreview(itemId, quantity, exactChestCell, rotation);
 
-        net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+        net.RequestStoreItemInOpenChest(itemId, quantity, exactChestCell, rotation);
         return true;
     }
 
@@ -1429,7 +1642,7 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
-        if (item.chestItemIndex < 0)
+        if (string.IsNullOrWhiteSpace(item.chestItemUniqueId))
         {
             return false;
         }
@@ -1459,12 +1672,129 @@ public class INV_Inventory : MonoBehaviour
         // host uses the real server path directly, so no local prediction
         if (net.IsServer)
         {
-            net.RequestTakeChestItemFromOpenChest(item.chestItemIndex, inventoryCell, item.rotation);
+            net.RequestTakeChestItemFromOpenChest(item.chestItemUniqueId, inventoryCell, item.rotation);
             return true;
         }
 
         // client waits for exact-cell local add rpc + chest refresh
-        net.RequestTakeChestItemFromOpenChest(item.chestItemIndex, inventoryCell, item.rotation);
+        net.RequestTakeChestItemFromOpenChest(item.chestItemUniqueId, inventoryCell, item.rotation);
+        return true;
+    }
+
+    public bool TryMoveLocalChestVisualByUniqueId(string chestItemUniqueId, Vector2Int cell, ItemInstance.Rotation rotation)
+    {
+        if (string.IsNullOrWhiteSpace(chestItemUniqueId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < chestRuntime.items.Count; i++)
+        {
+            ItemInstance inst = chestRuntime.items[i];
+            if (inst == null || !inst.isChestItem)
+            {
+                continue;
+            }
+
+            if (inst.chestItemUniqueId != chestItemUniqueId)
+            {
+                continue;
+            }
+
+            RestoreItemToCellAndRotation(inst, cell, rotation);
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool TryMergeItemIntoHoveredStack(ItemInstance dragged, Vector2 screenPoint, Camera uiCamera)
+    {
+        if (dragged == null || dragged.data == null || !dragged.data.Stackable || dragged.isChestItem)
+        {
+            return false;
+        }
+
+        INV_ItemUI targetUI = FindTopHoveredItemAtScreenPoint(playerRuntime, screenPoint, uiCamera, dragged);
+        if (targetUI == null || targetUI.Instance == null || targetUI.Instance == dragged)
+        {
+            return false;
+        }
+
+        ItemInstance target = targetUI.Instance;
+        if (target.data == null || !target.data.Stackable || target.data.ItemID != dragged.data.ItemID)
+        {
+            return false;
+        }
+
+        int maxStack = target.data.MaxStack;
+        if (target.quantity >= maxStack)
+        {
+            return false;
+        }
+
+        int room = maxStack - target.quantity;
+        int add = Mathf.Min(room, dragged.quantity);
+
+        target.quantity += add;
+        dragged.quantity -= add;
+
+        if (target.uiHandler != null)
+        {
+            target.uiHandler.ApplyUpdatedVisuals();
+        }
+
+        if (dragged.quantity <= 0)
+        {
+            RemoveLocalPlayerItemInstance(dragged);
+        }
+        else if (dragged.uiHandler != null)
+        {
+            dragged.uiHandler.ApplyUpdatedVisuals();
+            RestoreItemToCellAndRotation(dragged, dragged.cell, dragged.rotation);
+        }
+
+        INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+        if (hotBar != null)
+        {
+            hotBar.RefreshAllVisuals();
+        }
+
+        return add > 0;
+    }
+
+    public bool TryQuickStoreItemInOpenChest(ItemInstance item)
+    {
+        EnsureGrid(true);
+
+        if (activeChest == null || item == null || item.isChestItem || item.data == null)
+        {
+            return false;
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net == null) { return false; }
+
+        string itemId = item.data.ItemID;
+        int quantity = Mathf.Max(1, item.quantity);
+        ItemInstance.Rotation rotation = item.rotation;
+
+        Vector2Int chestCell;
+        if (!LookForOccupyableSpace(chestRuntime, chestGrid, item, out chestCell))
+        {
+            return false;
+        }
+
+        if (net.IsServer)
+        {
+            net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+            return true;
+        }
+
+        RemoveLocalPlayerItemInstance(item);
+        AddLocalChestVisualPreview(itemId, quantity, chestCell, rotation);
+
+        net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
         return true;
     }
 
@@ -1577,5 +1907,192 @@ public class INV_Inventory : MonoBehaviour
         }
 
         return remaining <= 0;
+    }
+
+    public void ShowContextMenuForItem(ItemInstance inst, Vector2 screenPoint)
+    {
+        if (itemContextMenu == null || inst == null || inst.data == null)
+        {
+            return;
+        }
+
+        itemContextMenu.Show(inst, screenPoint);
+    }
+
+    public void HideContextMenu()
+    {
+        if (itemContextMenu != null)
+        {
+            itemContextMenu.HideImmediate();
+        }
+    }
+
+    public List<ContextActionType> GetContextActionsForItem(ItemInstance inst)
+    {
+        List<ContextActionType> actions = new List<ContextActionType>();
+
+        if (inst == null || inst.data == null || inst.isChestItem)
+        {
+            return actions;
+        }
+
+        INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+        bool hasSelectedHotbar = hotBar != null && hotBar.SelectedSlot >= 0;
+        bool showDropStack = inst.quantity > 1;
+
+        switch (inst.data.ItemTypeVal)
+        {
+            case INV_Item.ItemType.Consumable:
+                actions.Add(ContextActionType.Use);
+                actions.Add(ContextActionType.DropOne);
+                if (showDropStack)
+                {
+                    actions.Add(ContextActionType.DropStack);
+                }
+
+                AddHotbarAssignActions(actions);
+                if (hasSelectedHotbar)
+                {
+                    actions.Add(ContextActionType.AssignSelectedHotbar);
+                }
+
+                break;
+
+            case INV_Item.ItemType.Weapon:
+            case INV_Item.ItemType.Tool:
+            case INV_Item.ItemType.Item:
+            case INV_Item.ItemType.Resource:
+            case INV_Item.ItemType.Placeable:
+                actions.Add(ContextActionType.DropOne);
+                if (showDropStack)
+                {
+                    actions.Add(ContextActionType.DropStack);
+                }
+
+                AddHotbarAssignActions(actions);
+                if (hasSelectedHotbar)
+                {
+                    actions.Add(ContextActionType.AssignSelectedHotbar);
+                }
+
+                break;
+        }
+
+        return actions;
+    }
+
+    private void AddHotbarAssignActions(List<ContextActionType> actions)
+    {
+        INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+        int slotCount = hotBar != null ? hotBar.SlotCount : 0;
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            switch (i)
+            {
+                case 0: actions.Add(ContextActionType.AssignHotbar1); break;
+                case 1: actions.Add(ContextActionType.AssignHotbar2); break;
+                case 2: actions.Add(ContextActionType.AssignHotbar3); break;
+                case 3: actions.Add(ContextActionType.AssignHotbar4); break;
+            }
+        }
+    }
+
+    public string GetContextActionLabel(ContextActionType action)
+    {
+        switch (action)
+        {
+            case ContextActionType.Use: return "Use";
+            case ContextActionType.DropOne: return "Drop One";
+            case ContextActionType.DropStack: return "Drop Stack";
+            case ContextActionType.AssignHotbar1: return "Assign Hotbar 1";
+            case ContextActionType.AssignHotbar2: return "Assign Hotbar 2";
+            case ContextActionType.AssignHotbar3: return "Assign Hotbar 3";
+            case ContextActionType.AssignHotbar4: return "Assign Hotbar 4";
+            case ContextActionType.AssignSelectedHotbar: return "Assign Selected Hotbar";
+        }
+
+        return action.ToString();
+    }
+
+    public bool ExecuteContextAction(ItemInstance inst, ContextActionType action)
+    {
+        if (inst == null || inst.data == null)
+        {
+            return false;
+        }
+
+        INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+
+        switch (action)
+        {
+            case ContextActionType.Use:
+                if (net == null || inst.isChestItem)
+                {
+                    return false;
+                }
+
+                net.RequestUseItemInInventory(inst.data.ItemID);
+                return true;
+
+            case ContextActionType.DropOne:
+                if (inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return DropItemInstanceToWorld(inst, false);
+
+            case ContextActionType.DropStack:
+                if (inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return DropItemInstanceToWorld(inst, true);
+
+            case ContextActionType.AssignHotbar1:
+                if (hotBar == null || inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return hotBar.AssignItemToSlot(0, inst);
+
+            case ContextActionType.AssignHotbar2:
+                if (hotBar == null || inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return hotBar.AssignItemToSlot(1, inst);
+
+            case ContextActionType.AssignHotbar3:
+                if (hotBar == null || inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return hotBar.AssignItemToSlot(2, inst);
+
+            case ContextActionType.AssignHotbar4:
+                if (hotBar == null || inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return hotBar.AssignItemToSlot(3, inst);
+
+            case ContextActionType.AssignSelectedHotbar:
+                if (hotBar == null || inst.isChestItem || hotBar.SelectedSlot < 0)
+                {
+                    return false;
+                }
+
+                return hotBar.AssignItemToSlot(hotBar.SelectedSlot, inst);
+        }
+
+        return false;
     }
 }

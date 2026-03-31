@@ -54,10 +54,14 @@ public class INV_HotBar : MonoBehaviour
     {
         if (!IsValidSlotIndex(slotIndex)) { return false; }
         if (inventory == null) { return false; }
-        if (inventory.hoverItem == null) { return false; }
-        if (inventory.hoverItem.Instance == null) { return false; }
+        if (inventory.hoverItem == null || inventory.hoverItem.Instance == null) { return false; }
+        return AssignItemToSlot(slotIndex, inventory.hoverItem.Instance);
+    }
 
-        INV_Inventory.ItemInstance inst = inventory.hoverItem.Instance;
+    public bool AssignItemToSlot(int slotIndex, INV_Inventory.ItemInstance inst)
+    {
+        if (!IsValidSlotIndex(slotIndex)) { return false; }
+        if (inst == null || inst.data == null) { return false; }
 
         // remove old reference if this item was already assigned elsewhere
         for (int i = 0; i < slotItems.Length; i++)
@@ -70,13 +74,12 @@ public class INV_HotBar : MonoBehaviour
 
         slotItems[slotIndex] = inst;
 
-        if (logHotbar && inst.data != null)
+        if (logHotbar)
         {
             Debug.Log($"Hotbar, Assigned: {inst.data.Name} to slot {slotIndex}");
         }
 
         RefreshAllVisuals();
-
         return true;
     }
 
