@@ -15,21 +15,36 @@ MonoBehaviour:
   itemID: testitem2
   m_name: Test Item 2
   description: Test Item for debugging purposes
+  itemType: 1
   durability: 0
+  hungerReplenish: 5
+  hungerDrainDelay: 0
+  thirstReplenish: 20
+  thirstDrainDelay: 5
+  chanceOfSpawnInChest: 0
+  chanceOfSpawnAsDebris: 0
   stackable: 1
   maxStack: 2
-  craftable: 0
+  craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements: []
+  craftingRequirements:
+  - item: {fileID: 11400000, guid: 9e427fbdaae830842ae1e35bd89158f2, type: 2}
+    amount: 1
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: 0b6182d223b1d834094e501121887da3, type: 2}
   inventoryMeshOffset: {x: 0, y: 0, z: -20}
-  inventoryMeshScale: 60
+  inventoryMeshRotation: {x: 0, y: 0, z: 0}
+  inventoryMeshScale: 40
+  equippedPrefab: {fileID: 5739193541798090591, guid: 0e74196ecdd2abd44ada4afe36adaed9, type: 3}
+  applyEquippedPrefabVisuals: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
+  equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 0.5
+  craftingMeshOffset: {x: 0, y: 0, z: -20}
+  craftingMeshRotation: {x: 0, y: 0, z: 0}
+  craftingMeshScale: 40
   inventorySpaceShape:
   - +
   - +
   inventorySpace: {x: 2, y: 2}
-  objectType: 0

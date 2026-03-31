@@ -1,178 +1,164 @@
-using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections;
 using Unity.Netcode;
+using Unity.VisualScripting;
+using UnityEngine;
+
+// Script By : George Chapple
+// Summary   : Handles spawning and despawning of space objects
 
 public class SP_SpaceJunk : NetworkBehaviour
 {
-    [SerializeField] private int maxDebris = 20;
-    [SerializeField] private Vector2 spawnTimeRange = new Vector2(3, 6);
-    private float spawnTimeLimit;
-    private float spawnTimer;
-    [HideInInspector] public RS_Move rocket;
-    public List<GameObject> debrisPrefabs = new List<GameObject>();
-    [HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
-    public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
-    public Vector3 spaceBounds = new Vector3(20, 20, 20);
-    public Vector2 spawnBounds = new Vector2(20, 20);
+    [HideInInspector] public Quaternion junkRotation;
+    [HideInInspector] public Vector3 junkRotationRate;
+    [HideInInspector] public SP_Spawner spawner;
+    [SerializeField] private float scaleSpeed = 1;
+    [SerializeField] private Vector2 sizeSpread = new Vector2(0.7f, 1.3f);
+    [SerializeField] private GameObject destroyVFX;
+    private SP_SpaceManager spaceManager;
+    private bool scaling = false;
+    private bool destroyRequested = false;
+    private Rigidbody rb;
 
     private void Awake()
     {
         InitialiseComponents();
     }
 
-    public override void OnNetworkSpawn()
+    private void OnCollisionEnter(Collision collision)
     {
-        base.OnNetworkSpawn();
-
-        // only server controls junk spawning and movement
+        // Only server decides if junk gets destroyed
         if (!IsServer)
         {
-            enabled = false;
             return;
         }
 
+        if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
+        {
+            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
         InitialiseComponents();
     }
 
     private void InitialiseComponents()
     {
-        spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
-        rocket = FindFirstObjectByType<RS_Move>();
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = this.AddComponent<Rigidbody>();
+        }
+
+        transform.localScale = Vector3.one * Random.Range(sizeSpread.x, sizeSpread.y);
+        spaceManager = FindFirstObjectByType<SP_SpaceManager>();
     }
 
+    private void Start()
+    {
+        StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
+        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
+        if (IsServer)
+        { 
+            spaceManager.spawners[spawner]++;
+        }
+    }
+
+    // Update is called once per frame
     void Update()
     {
-        if (!IsServer) return;
-        if (rocket == null) return;
-
-        if (rocket.speed > 0.1f)
+        // only server decides if junk should despawn
+        if (!IsServer)
         {
-            SpawnDebris();
+            return;
         }
 
-        MoveDebris();
-
-        Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
-        foundObjects.Clear();
-
-        foreach (Collider col in colliders)
+        if (spaceManager != null && !spaceManager.foundObjects.Contains(this.gameObject))
         {
-            foundObjects.Add(col.gameObject);
+            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
+    }
 
-        CC_Movement[] players = FindObjectsByType<CC_Movement>(FindObjectsSortMode.None);
-        foreach (CC_Movement player in players)
+    private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)
+    {
+        if (!scaling)
         {
-            if (!foundObjects.Contains(player.gameObject))
+            if (destroy && spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
             {
-                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+                spaceManager.debris.Remove(this.gameObject);
+            }
+
+            scaling = true;
+            transform.localScale = start;
+            float t = 0;
+
+            while (t < 1)
+            {
+                t += Time.deltaTime / duration;
+                transform.localScale = Vector3.Lerp(start, end, Easing.Sine.Out(t));
+                yield return null;
+            }
+
+            transform.localScale = end;
+
+            if (destroy && !destroyRequested)
+            {
+                destroyRequested = true;
+                DestroyJunk();
+            }
+
+            scaling = false;
+        }
+    }
+
+    private void DestroyJunk()
+    {
+        // safety check
+        if (!IsServer)
+        {
+            return;
+        }
+
+        // spawn destroy VFX on server
+        if (destroyVFX != null)
+        {
+            GameObject vfxInstance = Instantiate(destroyVFX, transform.position, transform.rotation);
+            NetworkObject vfxNetObj = vfxInstance.GetComponent<NetworkObject>();
+
+            if (vfxNetObj != null && !vfxNetObj.IsSpawned)
+            {
+                vfxNetObj.Spawn();
             }
         }
-    }
 
-    private void SpawnDebris()
-    {
-        if (debris.Count < maxDebris)
+        spaceManager.spawners[spawner]--;
+
+        // despawn junk over network
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        if (netObj != null && netObj.IsSpawned)
         {
-            if (spawnTimer <= spawnTimeLimit)
-            {
-                spawnTimer += Time.deltaTime;
-            }
-            else
-            {
-                GameObject newDebris = Instantiate(
-                    debrisPrefabs[Random.Range(0, debrisPrefabs.Count)],
-                    new Vector3(
-                        Random.Range(spawnBounds.x / 2 * -1, spawnBounds.x / 2),
-                        Random.Range(spawnBounds.y / 2 * -1, spawnBounds.y / 2),
-                        spaceBounds.z / 2
-                    ),
-                    transform.rotation
-                );
-
-                newDebris.transform.eulerAngles = Vector3.back;
-
-                NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
-                if (netObj != null && !netObj.IsSpawned)
-                {
-                    netObj.Spawn();
-                }
-
-                debris.Add(newDebris, rocket.worldDirection);
-                spawnTimeLimit = Random.Range(spawnTimeRange.x, spawnTimeRange.y);
-                spawnTimer = 0;
-
-                SP_Junk junk = newDebris.GetComponent<SP_Junk>();
-                if (junk != null)
-                {
-                    junk.objDirection = (Vector3.back + debris[newDebris] - rocket.worldDirection).normalized * rocket.speed;
-                }
-            }
+            netObj.Despawn(true);
+        }
+        else
+        {
+            Destroy(this.gameObject);
         }
     }
-
-    private void MoveDebris()
+    public void RemoveFromSpaceManager()
     {
-        List<GameObject> debrisObjects = new List<GameObject>(debris.Keys);
-
-        foreach (GameObject obj in debrisObjects)
+        if (spaceManager == null)
         {
-            if (obj == null) continue;
-
-            SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
-            Rigidbody rb = obj.GetComponent<Rigidbody>();
-
-            if (junkComponent == null || rb == null) continue;
-
-            rb.MovePosition(rb.position + junkComponent.objDirection * Time.deltaTime);
+            spaceManager = FindFirstObjectByType<SP_SpaceManager>();
         }
-    }
 
-    public void RemoveDebris(GameObject obj)
-    {
-        if (obj == null) { return; }
-
-        if (debris.ContainsKey(obj))
+        if (spaceManager == null)
         {
-            debris.Remove(obj);
+            Debug.LogWarning("SP_Junk could not find SP_SpaceJunk.", this);
+            return;
         }
-    }
 
-    private void OnDrawGizmos()
-    {
-        DrawBox(Vector3.zero, transform.rotation, spaceBounds, Color.red);
-        DrawBox(new Vector3(0, 0, spaceBounds.z / 2), transform.rotation, spawnBounds, Color.green);
-    }
-
-    public void DrawBox(Vector3 pos, Quaternion rot, Vector3 scale, Color c)
-    {
-        Matrix4x4 m = new Matrix4x4();
-        m.SetTRS(pos, rot, scale);
-
-        var point1 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, 0.5f));
-        var point2 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, 0.5f));
-        var point3 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, -0.5f));
-        var point4 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, -0.5f));
-
-        var point5 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, 0.5f));
-        var point6 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, 0.5f));
-        var point7 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, -0.5f));
-        var point8 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, -0.5f));
-
-        Debug.DrawLine(point1, point2, c);
-        Debug.DrawLine(point2, point3, c);
-        Debug.DrawLine(point3, point4, c);
-        Debug.DrawLine(point4, point1, c);
-
-        Debug.DrawLine(point5, point6, c);
-        Debug.DrawLine(point6, point7, c);
-        Debug.DrawLine(point7, point8, c);
-        Debug.DrawLine(point8, point5, c);
-
-        Debug.DrawLine(point1, point5, c);
-        Debug.DrawLine(point2, point6, c);
-        Debug.DrawLine(point3, point7, c);
-        Debug.DrawLine(point4, point8, c);
+        spaceManager.RemoveDebris(gameObject);
     }
 }

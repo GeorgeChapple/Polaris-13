@@ -15,7 +15,14 @@ MonoBehaviour:
   itemID: titanium_scrap_wall
   m_name: Titanium Scrap Wall
   description: Titanium Scrap from a wall. Can be used to craft.
+  itemType: 4
   durability: 0
+  hungerReplenish: 0
+  hungerDrainDelay: 0
+  thirstReplenish: 0
+  thirstDrainDelay: 0
+  chanceOfSpawnInChest: 0
+  chanceOfSpawnAsDebris: 0
   stackable: 1
   maxStack: 5
   craftable: 0
@@ -25,11 +32,17 @@ MonoBehaviour:
   mesh: {fileID: -2232952877369940510, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
   material: {fileID: -3661639628750336703, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
   inventoryMeshOffset: {x: 0, y: 0, z: -20}
-  inventoryMeshScale: 80
+  inventoryMeshRotation: {x: 0, y: 0, z: 0}
+  inventoryMeshScale: 120
+  equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+  applyEquippedPrefabVisuals: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
+  equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 0.3
+  craftingMeshOffset: {x: 0, y: 0, z: -20}
+  craftingMeshRotation: {x: 0, y: 0, z: 0}
+  craftingMeshScale: 120
   inventorySpaceShape:
   - ++
   - ++
   inventorySpace: {x: 1, y: 1}
-  objectType: 4

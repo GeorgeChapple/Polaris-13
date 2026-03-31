@@ -2,12 +2,13 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // Made By: Jason Lodge
 // Summary: UI dragging handler for inventory items.
 
-public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
 {
     [Header("Occupied Space Visual")]
     [Tooltip("Root that will hold occupied space visuals behind the item.")]
@@ -31,6 +32,16 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     [Tooltip("TMP label used to show hotbar slot assignment.")]
     [SerializeField] private TextMeshProUGUI hotbarSlotLabel;
 
+    [Header("Overlay Snap")]
+    [Tooltip("Inset used when snapping stack amount under the top-right occupied visual.")]
+    [SerializeField] private float stackLabelInset = 4f;
+
+    [Tooltip("Inset used when snapping hotbar slot under the top-left occupied visual.")]
+    [SerializeField] private float hotbarLabelInset = 4f;
+
+    [Tooltip("Vertical offset downward from the top edge of the occupied visual.")]
+    [SerializeField] private float labelDownOffset = 2f;
+
     private INV_Inventory inv;
     private INV_Inventory.ItemInstance itemInst;
 
@@ -47,6 +58,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     private readonly List<RectTransform> occupiedSpaceVisuals = new List<RectTransform>();
 
     public INV_Inventory.ItemInstance Instance => itemInst;
+    public RectTransform RectTransform => rt;
 
     // setup, called by inventory
     public void Init(INV_Inventory inventory, INV_Inventory.ItemInstance instance)
@@ -77,10 +89,35 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         startCell = itemInst != null ? itemInst.cell : Vector2Int.zero;
     }
 
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (inv == null || itemInst == null) { return; }
+        if (!IsScreenPointOverOccupiedSpace(eventData.position, eventData.pressEventCamera)) { return; }
+
+        bool shiftHeld = Keyboard.current != null && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
+
+        // shift click adds player inventory item into open chest
+        if (eventData.button == PointerEventData.InputButton.Left && shiftHeld)
+        {
+            if (!itemInst.isChestItem && inv.ActiveChest != null)
+            {
+                inv.TryQuickStoreItemInOpenChest(itemInst);
+                return;
+            }
+        }
+        if (eventData.button != PointerEventData.InputButton.Right) { return; }
+
+        inv.ShowContextMenuForItem(itemInst, eventData.position);
+    }
+
     // called by inventory after rotation / rebuild
     public void ApplyUpdatedVisuals()
     {
         if (itemInst == null || rt == null) { return; }
+
+        // labels are snapped from the currently built occupied visuals
+        // so do before mesh visuals too so overlay is always refreshed
+        SnapOverlayLabelsUnderCornerOccupiedSpaces();
 
         // durability bar stays as UI for now
         if (durabilityBar != null)
@@ -94,7 +131,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             if (itemInst.quantity > 1)
             {
                 stackCountLabel.gameObject.SetActive(true);
-                stackCountLabel.text = $"x{itemInst.quantity.ToString()}";
+                stackCountLabel.text = $"x{itemInst.quantity}";
             }
             else
             {
@@ -111,6 +148,9 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         // mesh visuals
         ApplyMeshVisuals();
+
+        // and once more after all ui text changes
+        SnapOverlayLabelsUnderCornerOccupiedSpaces();
     }
 
     public void RebuildOccupiedSpaceVisuals()
@@ -118,12 +158,19 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         if (occupiedSpaceHolderRoot == null) { return; }
         if (inv == null || itemInst == null) { return; }
 
+        // before rebuilding, move labels back to item root so they don't get caught in child cleanup logic
+        RestoreOverlayParentsToItemRoot();
+
         for (int i = occupiedSpaceHolderRoot.childCount - 1; i >= 0; i--)
         {
             Transform child = occupiedSpaceHolderRoot.GetChild(i);
 
             // dont delete the mesh visual if root is shared
             if (meshVisualRoot != null && child == meshVisualRoot) { continue; }
+
+            // dont delete overlay labels if they happen to be under this root
+            if (stackCountLabel != null && child == stackCountLabel.transform) { continue; }
+            if (hotbarSlotLabel != null && child == hotbarSlotLabel.transform) { continue; }
 
             Destroy(child.gameObject);
         }
@@ -178,6 +225,28 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             cellRt.SetAsFirstSibling();
             occupiedSpaceVisuals.Add(cellRt);
         }
+
+        SnapOverlayLabelsUnderCornerOccupiedSpaces();
+    }
+
+    private void RestoreOverlayParentsToItemRoot()
+    {
+        if (rt == null)
+        {
+            rt = GetComponent<RectTransform>();
+        }
+
+        if (rt == null) { return; }
+
+        if (hotbarSlotLabel != null && hotbarSlotLabel.transform.parent != rt)
+        {
+            hotbarSlotLabel.transform.SetParent(rt, true);
+        }
+
+        if (stackCountLabel != null && stackCountLabel.transform.parent != rt)
+        {
+            stackCountLabel.transform.SetParent(rt, true);
+        }
     }
 
     private bool HasOccupiedOffset(Vector2Int check)
@@ -222,6 +291,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         Vector3 rectCenterLocal = new Vector3(rectSize.x * 0.5f, -rectSize.y * 0.5f, 0f);
 
         Vector3 itemOffset = itemInst.data.InventoryMeshOffset;
+        Vector3 itemRotation = itemInst.data.InventoryMeshRotation;
         float itemScale = itemInst.data.InventoryMeshScale;
 
         // make sure we dont put a negative scale on it
@@ -229,25 +299,26 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         // center placement
         meshVisualRoot.localPosition = rectCenterLocal + itemOffset;
+        meshVisualRoot.localRotation = Quaternion.Euler(itemRotation);
         meshVisualRoot.localScale = Vector3.one * itemScale;
 
         // rotation handling
         switch (itemInst.rotation)
         {
             case INV_Inventory.ItemInstance.Rotation.Up:
-                meshVisualRoot.localEulerAngles = Vector3.zero;
+                meshVisualRoot.localEulerAngles = itemRotation;
                 break;
 
             case INV_Inventory.ItemInstance.Rotation.Right:
-                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -90f);
+                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z - 90f);
                 break;
 
             case INV_Inventory.ItemInstance.Rotation.Down:
-                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -180f);
+                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z - 180f);
                 break;
 
             case INV_Inventory.ItemInstance.Rotation.Left:
-                meshVisualRoot.localEulerAngles = new Vector3(0f, 0f, -270f);
+                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z - 270f);
                 break;
         }
     }
@@ -265,6 +336,92 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         hotbarSlotLabel.gameObject.SetActive(true);
         hotbarSlotLabel.text = (slotIndex + 1).ToString();
+
+        SnapOverlayLabelsUnderCornerOccupiedSpaces();
+    }
+
+    private void SnapOverlayLabelsUnderCornerOccupiedSpaces()
+    {
+        if (occupiedSpaceVisuals.Count == 0)
+        {
+            return;
+        }
+
+        RectTransform topLeftOcc = null;
+        RectTransform topRightOcc = null;
+
+        float bestTopYForLeft = float.MinValue;
+        float bestLeftX = float.MaxValue;
+
+        float bestTopYForRight = float.MinValue;
+        float bestRightX = float.MinValue;
+
+        for (int i = 0; i < occupiedSpaceVisuals.Count; i++)
+        {
+            RectTransform occ = occupiedSpaceVisuals[i];
+            if (occ == null) { continue; }
+
+            float left = occ.anchoredPosition.x;
+            float top = occ.anchoredPosition.y;
+            float right = left + occ.sizeDelta.x;
+
+            // top left occupied visual
+            if (top > bestTopYForLeft || (Mathf.Approximately(top, bestTopYForLeft) && left < bestLeftX))
+            {
+                bestTopYForLeft = top;
+                bestLeftX = left;
+                topLeftOcc = occ;
+            }
+
+            // top right occupied visual
+            if (top > bestTopYForRight || (Mathf.Approximately(top, bestTopYForRight) && right > bestRightX))
+            {
+                bestTopYForRight = top;
+                bestRightX = right;
+                topRightOcc = occ;
+            }
+        }
+
+        if (topLeftOcc != null && hotbarSlotLabel != null)
+        {
+            RectTransform hotbarRt = hotbarSlotLabel.rectTransform;
+
+            hotbarRt.SetParent(topLeftOcc, false);
+            hotbarRt.anchorMin = new Vector2(0f, 1f);
+            hotbarRt.anchorMax = new Vector2(0f, 1f);
+            hotbarRt.pivot = new Vector2(0f, 1f);
+            hotbarRt.anchoredPosition = new Vector2(hotbarLabelInset, -labelDownOffset - hotbarLabelInset);
+            hotbarRt.SetAsLastSibling();
+        }
+
+        if (topRightOcc != null && stackCountLabel != null)
+        {
+            RectTransform stackRt = stackCountLabel.rectTransform;
+
+            stackRt.SetParent(topRightOcc, false);
+            stackRt.anchorMin = new Vector2(1f, 1f);
+            stackRt.anchorMax = new Vector2(1f, 1f);
+            stackRt.pivot = new Vector2(1f, 1f);
+            stackRt.anchoredPosition = new Vector2(-stackLabelInset, -labelDownOffset - stackLabelInset);
+            stackRt.SetAsLastSibling();
+        }
+    }
+
+    // used by inventory hover logic and drag start checks
+    public bool IsScreenPointOverOccupiedSpace(Vector2 screenPoint, Camera uiCamera)
+    {
+        for (int i = 0; i < occupiedSpaceVisuals.Count; i++)
+        {
+            RectTransform occ = occupiedSpaceVisuals[i];
+            if (occ == null) { continue; }
+
+            if (RectTransformUtility.RectangleContainsScreenPoint(occ, screenPoint, uiCamera))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -275,6 +432,13 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         if (rt == null) { rt = GetComponent<RectTransform>(); }
         if (rootCanvas == null) { rootCanvas = GetComponentInParent<Canvas>(); }
 
+        // only allow dragging if the pointer is actually over an occupied space
+        if (!IsScreenPointOverOccupiedSpace(eventData.position, eventData.pressEventCamera))
+        {
+            return;
+        }
+
+        inv.HideContextMenu();
         inv.heldItem = this;
 
         // prevent drop logic from seeing an old hover while dragging
@@ -290,6 +454,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (inv == null || inv.heldItem != this) { return; }
         if (rt == null || rootCanvas == null) { return; }
 
         Vector2 delta = eventData.delta / rootCanvas.scaleFactor;
@@ -298,14 +463,67 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        // snap it back to grid
+        // only finish drag if we were actually the held item
         if (inv == null || itemInst == null) { return; }
+        if (inv.heldItem != this) { return; }
 
         Camera uiCam = eventData.pressEventCamera;
+        bool shiftHeld = Keyboard.current != null && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
+
+        // chest item flow
+        if (itemInst.isChestItem)
+        {
+            if (inv.TryTakeChestItemToInventoryFromScreenPoint(itemInst, eventData.position, uiCam))
+            {
+                inv.heldItem = null;
+                inv.FlushPendingChestSnapshot();
+                return;
+            }
+
+            bool movedChest = inv.TryMoveChestItemFromScreenPoint(itemInst, eventData.position, uiCam);
+            if (!movedChest)
+            {
+                inv.RestoreItemToCellAndRotation(itemInst, startCell, startRotation);
+
+                startAnchoredPos = rt.anchoredPosition;
+                itemInst.cell = startCell;
+                itemInst.rotation = startRotation;
+            }
+            else
+            {
+                startCell = itemInst.cell;
+                startRotation = itemInst.rotation;
+                startAnchoredPos = rt.anchoredPosition;
+            }
+
+            inv.heldItem = null;
+            inv.FlushPendingChestSnapshot();
+            return;
+        }
+
+        // player inventory item flow
+        if (inv.TryStoreHeldItemInOpenChestFromScreenPoint(itemInst, eventData.position, uiCam, shiftHeld))
+        {
+            inv.heldItem = null;
+            return;
+        }
+
+        if (inv.TryMergeItemIntoHoveredStack(itemInst, eventData.position, uiCam))
+        {
+            inv.heldItem = null;
+            return;
+        }
 
         bool moved = inv.TryMoveItemFromScreenPoint(itemInst, eventData.position, uiCam);
         if (!moved)
         {
+            // dragging outside inventory drops the stack
+            if (inv.DropItemInstanceToWorld(itemInst, true))
+            {
+                inv.heldItem = null;
+                return;
+            }
+
             // restore previous placed cell and previous rotation
             inv.RestoreItemToCellAndRotation(itemInst, startCell, startRotation);
 

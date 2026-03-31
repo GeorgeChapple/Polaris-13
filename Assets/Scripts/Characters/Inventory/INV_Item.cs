@@ -1,12 +1,12 @@
-using System;
 using System.Collections.Generic;
-using Unity.Netcode;
-using UnityEditor;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 // Made By: Jason Lodge
-// Summary: Data Holder for all objects.
-[CreateAssetMenu(menuName = "Inventory/Object")]
+// Summary: Data Holder for all items.
+[CreateAssetMenu(menuName = "Inventory/Item")]
 public class INV_Item : ScriptableObject
 {
     [Header("Info")]
@@ -14,8 +14,19 @@ public class INV_Item : ScriptableObject
     [SerializeField] private string m_name;
     [SerializeField] private string description;
 
+    public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
+    [SerializeField] private ItemType itemType = ItemType.Item;
+
     [Header("Specs")]
     [SerializeField] private float durability;
+    [SerializeField] private float hungerReplenish;
+    [SerializeField] private float hungerDrainDelay;
+    [SerializeField] private float thirstReplenish;
+    [SerializeField] private float thirstDrainDelay;
+
+    [Header("Probability")]
+    [SerializeField, Min(0)] private int chanceOfSpawnInChest = 0;
+    [SerializeField, Min(0)] private int chanceOfSpawnAsDebris = 0;
 
     [Header("Stack")]
     [SerializeField] private bool stackable;
@@ -27,7 +38,7 @@ public class INV_Item : ScriptableObject
     [SerializeField] private List<CraftingStack> craftingRequirements = new List<CraftingStack>();
     public List<CraftingStack> CraftingRequirements => craftingRequirements;
 
-    [Serializable]
+    [System.Serializable]
     public class CraftingStack
     {
         public INV_Item item;
@@ -43,18 +54,38 @@ public class INV_Item : ScriptableObject
     [Tooltip("Local offset applied to the mesh visual when shown in inventory.")]
     [SerializeField] private Vector3 inventoryMeshOffset = Vector3.zero;
 
+    [Tooltip("Local rotation applied to the mesh visual when shown in inventory.")]
+    [SerializeField] private Vector3 inventoryMeshRotation = Vector3.zero;
+
     [Tooltip("Scale applied to the mesh visual when shown in inventory.")]
     [SerializeField] private float inventoryMeshScale = 1f;
+
+    [Header("Equipped Prefab")]
+    [Tooltip("Prefab used when this item is equipped.")]
+    [SerializeField] private GameObject equippedPrefab;
+
+    [Tooltip("If true, the equipped prefab visual will be overwritten using the item mesh/material/offset/rotation/scale values below.")]
+    [SerializeField] private bool applyEquippedPrefabVisuals;
 
     [Header("Equipped Mesh Visual")]
     [Tooltip("Local offset applied to the mesh visual when equipped.")]
     [SerializeField] private Vector3 equippedMeshOffset = Vector3.zero;
 
+    [Tooltip("Local rotation applied to the mesh visual when equipped.")]
+    [SerializeField] private Vector3 equippedMeshRotation = Vector3.zero;
+
     [Tooltip("Scale applied to the mesh visual when equipped.")]
     [SerializeField] private float equippedMeshScale = 1f;
 
-    [Header("Item Use Script")]
-    [SerializeField] private MonoBehaviour itemUseScript;
+    [Header("Crafting Mesh Visual")]
+    [Tooltip("Local offset applied to the mesh visual when shown in crafting menu.")]
+    [SerializeField] private Vector3 craftingMeshOffset = Vector3.zero;
+
+    [Tooltip("Local rotation applied to the mesh visual when shown in crafting menu.")]
+    [SerializeField] private Vector3 craftingMeshRotation = Vector3.zero;
+
+    [Tooltip("Scale applied to the mesh visual when shown in crafting menu.")]
+    [SerializeField] private float craftingMeshScale = 1f;
 
     [Header("Inventory")]
     [Tooltip("Complex shape per row. '+' = occupies, '-' = empty. Each entry is the next line down.\nExample: '++', '+-'")]
@@ -63,14 +94,20 @@ public class INV_Item : ScriptableObject
     [Tooltip("Fallback size (only used if inventorySpaceShape is empty). Grid size in cells (X = width, Y = height).")]
     [SerializeField] private Vector2 inventorySpace = new Vector2(1, 1);
 
-    public enum ObjectType { Item, Consumable, Weapon, Tool, Resource, Placeable };
-    public ObjectType objectType = ObjectType.Item;
-
     // getters
     public string ItemID => itemID;
     public string Name => m_name;
     public string Description => description;
+    public ItemType ItemTypeVal => itemType;
+
     public float Durability => durability;
+    public float HungerReplenish => hungerReplenish;
+    public float HungerDrainDelay => hungerDrainDelay;
+    public float ThirstReplenish => thirstReplenish;
+    public float ThirstDrainDelay => thirstDrainDelay;
+
+    public int ChanceOfSpawnInChest => chanceOfSpawnInChest;
+    public int ChanceOfSpawnAsDebris => chanceOfSpawnAsDebris;
 
     public bool Stackable => stackable;
     public int MaxStack => stackable ? Mathf.Max(1, maxStack) : 1;
@@ -83,11 +120,18 @@ public class INV_Item : ScriptableObject
     public Material Material => material;
 
     public Vector3 InventoryMeshOffset => inventoryMeshOffset;
+    public Vector3 InventoryMeshRotation => inventoryMeshRotation;
     public float InventoryMeshScale => inventoryMeshScale;
+
+    public GameObject EquippedPrefab => equippedPrefab;
+    public bool ApplyEquippedPrefabVisuals => applyEquippedPrefabVisuals;
     public Vector3 EquippedMeshOffset => equippedMeshOffset;
+    public Vector3 EquippedMeshRotation => equippedMeshRotation;
     public float EquippedMeshScale => equippedMeshScale;
 
-    public MonoBehaviour ItemUseScript => itemUseScript;
+    public Vector3 CraftingMeshOffset => craftingMeshOffset;
+    public Vector3 CraftingMeshRotation => craftingMeshRotation;
+    public float CraftingMeshScale => craftingMeshScale;
 
     public List<string> InventorySpaceShape => inventorySpaceShape;
 
@@ -130,12 +174,8 @@ public class INV_Item : ScriptableObject
     // called by editor button, we dont want this in onvalidate as it would run after every character we type
     public void NormalizeInventoryShape()
     {
-        if (inventorySpaceShape == null)
-        {
-            inventorySpaceShape = new List<string>();
-        }
-
         // if empty, do nothing
+        if (inventorySpaceShape == null) { inventorySpaceShape = new List<string>(); }
         if (inventorySpaceShape.Count == 0) { return; }
 
         // find max width
@@ -159,20 +199,12 @@ public class INV_Item : ScriptableObject
             char[] chars = row.ToCharArray();
             for (int c = 0; c < chars.Length; c++)
             {
-                if (chars[c] != '+' && chars[c] != '-')
-                {
-                    chars[c] = '-';
-                }
+                if (chars[c] != '+' && chars[c] != '-') { chars[c] = '-'; }
             }
-
             row = new string(chars);
 
             // pad to max width
-            if (row.Length < maxW)
-            {
-                row = row.PadRight(maxW, '-');
-            }
-
+            if (row.Length < maxW) { row = row.PadRight(maxW, '-'); }
             inventorySpaceShape[i] = row;
         }
     }
@@ -180,14 +212,14 @@ public class INV_Item : ScriptableObject
 
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_Item))]
+[CanEditMultipleObjects]
 public class INV_ItemEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        serializedObject.Update();
 
-        INV_Item item = (INV_Item)target;
-        if (item == null) { return; }
+        DrawDefaultInspector();
 
         EditorGUILayout.Space(8);
 
@@ -198,13 +230,25 @@ public class INV_ItemEditor : Editor
 
         if (GUILayout.Button("Normalize Inventory Shape"))
         {
-            Undo.RecordObject(item, "Normalize Inventory Shape");
-            item.NormalizeInventoryShape();
-            EditorUtility.SetDirty(item);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                INV_Item item = targets[i] as INV_Item;
+                if (item == null)
+                {
+                    continue;
+                }
+
+                Undo.RecordObject(item, "Normalize Inventory Shape");
+                item.NormalizeInventoryShape();
+                EditorUtility.SetDirty(item);
+            }
+
             AssetDatabase.SaveAssets();
         }
 
         EditorGUILayout.EndVertical();
+
+        serializedObject.ApplyModifiedProperties();
     }
 }
 #endif

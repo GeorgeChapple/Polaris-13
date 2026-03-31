@@ -25,7 +25,7 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Attack",
+                    "name": "UseItemPrimary",
                     "type": "PassThrough",
                     "id": "23af3557-7ea3-42df-9525-17ff25b60c6c",
                     "expectedControlType": "",
@@ -97,7 +97,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Inventory",
+                    "name": "MonitoringMenu",
                     "type": "PassThrough",
                     "id": "e1f7d9ad-9781-4b50-bde9-8601539dcd82",
                     "expectedControlType": "",
@@ -127,15 +127,6 @@
                     "name": "DropItem",
                     "type": "PassThrough",
                     "id": "c7006656-b59f-4c08-b571-57f313054b77",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "DropHeldItem",
-                    "type": "PassThrough",
-                    "id": "68e2a4ea-5149-40e2-aeb3-737411cacfde",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -274,7 +265,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
-                    "action": "Attack",
+                    "action": "UseItemPrimary",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -285,7 +276,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Attack",
+                    "action": "UseItemPrimary",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -336,7 +327,7 @@
                 {
                     "name": "",
                     "id": "1a74127d-b358-479f-bcc2-3596a66b467d",
-                    "path": "<Keyboard>/leftAlt",
+                    "path": "<Keyboard>/ctrl",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
@@ -450,7 +441,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Inventory",
+                    "action": "MonitoringMenu",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -512,22 +503,11 @@
                 {
                     "name": "",
                     "id": "2c177e3c-d718-4504-b5aa-4e0a325f6999",
-                    "path": "<Mouse>/rightButton",
+                    "path": "<Keyboard>/g",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "DropItem",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "2d88789d-b54f-4fc4-bf46-f3f562db04ad",
-                    "path": "<Keyboard>/x",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "DropHeldItem",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

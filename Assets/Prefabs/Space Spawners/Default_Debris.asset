@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 619fee5ac8977a74fa53ea5bd99c4c0c, type: 3}
+  m_Name: Default_Debris
+  m_EditorClassIdentifier: 
+  spawnerName: Default_Spawner
+  gizmoColour: {r: 0.1452893, g: 1, b: 0, a: 1}
+  ignoreMaxDebris: 0
+  maxDebris: 200
+  limited: 0
+  limit: 10
+  spawnbounds: {x: 50, y: 50, z: 0, w: 0}
+  spawnTime: {x: 0.2, y: 0.3}
+  spaceObjects:
+  - prefab: {fileID: 8565455247231493378, guid: 0da06c1e07ff9d54cb19d6a16b922aa6, type: 3}
+    probability: 5
+  - prefab: {fileID: 2200419850922737199, guid: b5a666825a5d2664eb5b3fbc3781de14, type: 3}
+    probability: 10
+  - prefab: {fileID: 346594225879649834, guid: 9c9c1a89f49928e45915114827e789ff, type: 3}
+    probability: 30
+  - prefab: {fileID: 7239671084990043103, guid: 45f2d733d98eebf4586bdd2caf0c8421, type: 3}
+    probability: 60
