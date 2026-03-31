@@ -60,7 +60,10 @@ public class SP_SpaceJunk : NetworkBehaviour
     {
         StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
         rb.AddTorque(Vector3.one * Random.Range(-10, 10));
-        spaceManager.spawners[spawner]++;
+        if (IsServer)
+        { 
+            spaceManager.spawners[spawner]++;
+        }
     }
 
     // Update is called once per frame
