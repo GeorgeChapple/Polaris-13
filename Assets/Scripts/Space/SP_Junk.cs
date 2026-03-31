@@ -7,7 +7,6 @@ public class SP_Junk : NetworkBehaviour
 {
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
-    [HideInInspector] public Vector3 objDirection;
     [SerializeField] private float scaleSpeed = 1;
     [SerializeField] private Vector2 sizeSpread = new Vector2(0.7f, 1.3f);
     [SerializeField] private GameObject destroyVFX;
@@ -56,15 +55,12 @@ public class SP_Junk : NetworkBehaviour
     private void Start()
     {
         StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
-        GetObjectDirection();
         rb.AddTorque(Vector3.one * Random.Range(-10, 10));
     }
 
     // Update is called once per frame
     void Update()
     {
-        GetObjectDirection();
-
         // only server decides if junk should despawn
         if (!IsServer)
         {
@@ -74,14 +70,6 @@ public class SP_Junk : NetworkBehaviour
         if (spaceManager != null && !spaceManager.foundObjects.Contains(this.gameObject))
         {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
-        }
-    }
-
-    private void GetObjectDirection()
-    {
-        if (spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
-        {
-            objDirection = (Vector3.back + spaceManager.debris[this.gameObject] - spaceManager.rocket.worldDirection).normalized * spaceManager.rocket.speed;
         }
     }
 

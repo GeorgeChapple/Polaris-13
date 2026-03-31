@@ -104,10 +104,6 @@ public class SP_SpaceJunk : NetworkBehaviour
                 spawnTimer = 0;
 
                 SP_Junk junk = newDebris.GetComponent<SP_Junk>();
-                if (junk != null)
-                {
-                    junk.objDirection = (Vector3.back + debris[newDebris] - rocket.worldDirection).normalized * rocket.speed;
-                }
             }
         }
     }
@@ -120,12 +116,12 @@ public class SP_SpaceJunk : NetworkBehaviour
         {
             if (obj == null) continue;
 
-            SP_Junk junkComponent = obj.GetComponent<SP_Junk>();
             Rigidbody rb = obj.GetComponent<Rigidbody>();
 
-            if (junkComponent == null || rb == null) continue;
+            if (rb == null) continue;
 
-            rb.MovePosition(rb.position + junkComponent.objDirection * Time.deltaTime);
+            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
+            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
         }
     }
 

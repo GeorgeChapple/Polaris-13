@@ -4,6 +4,7 @@ using UnityEngine;
 public class GravityToggler : NetworkBehaviour
 {
     [SerializeField] private bool useGravity;
+    [SerializeField] private bool shipField;
     [SerializeField] private bool planet;
 
     private void OnTriggerEnter(Collider col)
@@ -13,11 +14,10 @@ public class GravityToggler : NetworkBehaviour
         {
             gravityBody.triggered = true;
             gravityBody.useGravity = useGravity;
-            if (planet) 
-            { 
-                col.GetComponent<NetworkObject>().TrySetParent(transform.parent, true);
+            if (shipField)
+            {
+                ToggleShip(gravityBody);
             }
-            
         }
     }
 
@@ -29,8 +29,34 @@ public class GravityToggler : NetworkBehaviour
             gravityBody.triggered = false;
             if (planet)
             {
-                gravityBody.useGravity = !useGravity;
-                col.GetComponent<NetworkObject>().TryRemoveParent(true);
+                gravityBody.useGravity = !useGravity; 
+                if (shipField)
+                {
+                    ToggleShip(gravityBody);
+                }
+            }
+        }
+    }
+
+    private void ToggleShip(CustomGravityRigidbody gravityBody)
+    {
+        if (shipField && IsServer)
+        {
+            SP_SpaceJunk spaceManager = FindFirstObjectByType<SP_SpaceJunk>();
+            RS_Move rocket = FindFirstObjectByType<RS_Move>();
+            if (gravityBody.useGravity)
+            {
+                if (spaceManager.debris.ContainsKey(gravityBody.gameObject))
+                {
+                    spaceManager.debris.Remove(gravityBody.gameObject);
+                }
+            } 
+            else
+            {
+                if (!spaceManager.debris.ContainsKey(gravityBody.gameObject))
+                {
+                    spaceManager.debris.Add(gravityBody.gameObject, rocket.worldDirection);
+                }
             }
         }
     }
