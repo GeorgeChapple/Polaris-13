@@ -3,6 +3,9 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
+// Script By : George Chapple
+// Summary   : Spawns Space Objects
+
 public class SP_Spawner : NetworkBehaviour
 {
     [HideInInspector] public SP_SpawnSettings settings;

@@ -1,0 +1,59 @@
+using Unity.Multiplayer.Center.NetcodeForGameObjectsExample.DistributedAuthority;
+using Unity.Netcode;
+using Unity.VisualScripting;
+using UnityEngine;
+
+// Script By : George Chapple
+// Summary   : 
+
+public class POI_Initialise : NetworkBehaviour
+{
+    [SerializeField] private GameObject POI;
+
+    private void Awake()
+    {
+        InitialiseComponents();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (!IsServer)
+        {
+            enabled = false;
+            return;
+        }
+
+        InitialiseComponents();
+    }
+
+    private void InitialiseComponents()
+    {
+        SP_SpaceManager m_Space = FindFirstObjectByType<SP_SpaceManager>();
+        POI_Manager m_POI = FindFirstObjectByType<POI_Manager>();
+        float spawnDistance = m_Space.spaceBounds.y;
+        if (spawnDistance < 5000 )
+        {
+            spawnDistance = 5000;
+        }
+        spawnDistance += 5000 * m_POI.levelsGenerated;
+        spawnDistance += POI.GetComponent<POI_Level>().bounds.y;
+
+        GameObject newPOI = Instantiate(POI, new Vector3(0, spawnDistance, 0), transform.rotation);
+
+        NetworkObject netObj = newPOI.GetComponent<NetworkObject>();
+        if (netObj != null && !netObj.IsSpawned)
+        {
+            netObj.Spawn();
+        }
+        else
+        {
+            if (IsServer)
+            {
+                netObj = newPOI.AddComponent<NetworkObject>();
+                netObj.Spawn();
+            }
+        }
+    }
+}
