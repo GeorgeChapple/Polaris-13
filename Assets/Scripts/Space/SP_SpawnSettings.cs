@@ -25,6 +25,7 @@ public class SP_SpawnSettings : ScriptableObject
     public Vector2 spawnTime = new Vector2(0.2f, 0.4f);
     [Tooltip("Space object prefabs and their spawn probabilities.")]
     public List<SpaceObject> spaceObjects = new List<SpaceObject>();
+    public enum BiomeType { Normal, Empty, Irradiated }
 
     [Serializable]
     public struct SpaceObject

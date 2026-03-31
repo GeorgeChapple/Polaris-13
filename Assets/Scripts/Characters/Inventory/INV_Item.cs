@@ -1,5 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+
+using static SP_SpawnSettings;
+
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -25,8 +30,17 @@ public class INV_Item : ScriptableObject
     [SerializeField] private float thirstDrainDelay;
 
     [Header("Probability")]
-    [SerializeField, Min(0)] private int chanceOfSpawnInChest = 0;
-    [SerializeField, Min(0)] private int chanceOfSpawnAsDebris = 0;
+    [SerializeField, Range(0,100)] private int chanceOfSpawnInChest = 0;
+    [SerializeField, Range(0,100)] private int chanceOfSpawnAsDebris = 0;
+    [SerializeField] private List<BiomeProbability> biomeProbabilities;
+
+    [Serializable]
+    public struct BiomeProbability
+    {
+        public BiomeType biomeType;
+
+        public float multiplier;
+    }
 
     [Header("Stack")]
     [SerializeField] private bool stackable;
@@ -108,6 +122,8 @@ public class INV_Item : ScriptableObject
 
     public int ChanceOfSpawnInChest => chanceOfSpawnInChest;
     public int ChanceOfSpawnAsDebris => chanceOfSpawnAsDebris;
+
+    public List<BiomeProbability> BiomeProbablities => biomeProbabilities;
 
     public bool Stackable => stackable;
     public int MaxStack => stackable ? Mathf.Max(1, maxStack) : 1;

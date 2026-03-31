@@ -22,7 +22,10 @@ MonoBehaviour:
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
-  chanceOfSpawnAsDebris: 0
+  chanceOfSpawnAsDebris: 5
+  biomeProbabilities:
+  - biomeType: 0
+    multiplier: 1.25
   stackable: 1
   maxStack: 15
   craftable: 0

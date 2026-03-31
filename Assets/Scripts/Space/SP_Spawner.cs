@@ -1,5 +1,5 @@
-using System;
-using Unity.Multiplayer.Center.NetcodeForGameObjectsExample.DistributedAuthority;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -10,6 +10,8 @@ public class SP_Spawner : NetworkBehaviour
     private float timeLimit;
     private float timer = 0;
     private int lifetimeSpawned = 0;
+
+    private Dictionary<INV_Item, float> sortedItemProbabilites = new Dictionary<INV_Item, float>();
 
     private void Awake()
     {
@@ -33,6 +35,7 @@ public class SP_Spawner : NetworkBehaviour
     private void InitialiseComponents()
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
+        sortedItemProbabilites = SortItemProbabilites();
     }
 
     private void Update()
@@ -41,7 +44,7 @@ public class SP_Spawner : NetworkBehaviour
         {
             timer += Time.deltaTime;
         }
-        else if (settings.limited && lifetimeSpawned > settings.limit )
+        else if (settings.limited && lifetimeSpawned > settings.limit)
         {
             // Safety Check
             if (!IsServer)
@@ -61,8 +64,8 @@ public class SP_Spawner : NetworkBehaviour
             {
                 Destroy(gameObject);
             }
-        } 
-        else 
+        }
+        else
         {
             if (settings.ignoreMaxDebris || !spaceManager.maxDebrisReached && spaceManager.spawners[this] < settings.maxDebris)
             {
@@ -83,6 +86,12 @@ public class SP_Spawner : NetworkBehaviour
                 if (junkComponent != null)
                 {
                     junkComponent.spawner = this;
+                }
+
+                INV_ItemDrop itemDrop = newDebris.GetComponent<INV_ItemDrop>();
+                if (itemDrop != null)
+                {
+                    itemDrop.Init(GetRandomItem());
                 }
 
                 newDebris.transform.eulerAngles = Vector3.back;
@@ -131,6 +140,33 @@ public class SP_Spawner : NetworkBehaviour
         return index;
     }
 
+    private Dictionary<INV_Item, float> SortItemProbabilites()
+    {
+        // sort all item probabilities
+        Dictionary<INV_Item, float> allItemProbabilities = new Dictionary<INV_Item, float>();
+        foreach (INV_Item item in INV_ItemDatabase.Instance.Items)
+        {
+            allItemProbabilities.Add(item, item.ChanceOfSpawnAsDebris);
+        }
+        return allItemProbabilities.OrderBy(entry => entry.Value).ToDictionary(entry => entry.Key, entry => entry.Value);
+    }
+
+    private INV_Item GetRandomItem()
+    {
+        // get highest probability
+        float maxValue = sortedItemProbabilites.Last<KeyValuePair<INV_Item, float>>().Value;
+        float percentage = UnityEngine.Random.Range(0, maxValue + 1) / maxValue;
+        INV_Item itemToReturn = null;
+        foreach (KeyValuePair<INV_Item, float> item in sortedItemProbabilites)
+        {
+            float threshold = item.Value / maxValue;
+            itemToReturn = item.Key;
+            if (percentage <= threshold) { break; }
+        }
+        Debug.Log($"itemReturned: {itemToReturn}");
+        return itemToReturn;
+    }
+
     private Vector2 GetRandomSpawnPosition(Vector4 bounds)
     {
         Vector2 pos = new Vector2();
@@ -160,7 +196,7 @@ public class SP_Spawner : NetworkBehaviour
         {
             pos.y *= -1;
         }
-        
+
         return pos;
     }
 }
