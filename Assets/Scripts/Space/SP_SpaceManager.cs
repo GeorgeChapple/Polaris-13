@@ -114,6 +114,7 @@ public class SP_SpaceManager : NetworkBehaviour
 
         foreach (SP_SpawnSettings settings in spawnSettings)
         {
+            //SortProbabilities(settings);
             GameObject newObject = new GameObject();
             newObject.AddComponent<SP_Spawner>();
             SP_Spawner newSpawner = newObject.GetComponent<SP_Spawner>();
@@ -135,6 +136,7 @@ public class SP_SpaceManager : NetworkBehaviour
             }
 
             spawners.Add(newSpawner, 0);
+
 
             if (IsServer)
             {

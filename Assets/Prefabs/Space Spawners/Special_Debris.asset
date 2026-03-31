@@ -15,11 +15,13 @@ MonoBehaviour:
   spawnerName: Special_Spawner
   gizmoColour: {r: 0, g: 0.9413085, b: 1, a: 1}
   ignoreMaxDebris: 0
-  maxDebris: 100
+  maxDebris: 0
   limited: 0
   limit: 10
   spawnbounds: {x: 100, y: 100, z: 75, w: 75}
   spawnTime: {x: 0.5, y: 1}
   spaceObjects:
   - prefab: {fileID: 8530508181302635655, guid: abb2ac3b32b7b864fbf38773b514a8f4, type: 3}
-    probability: 1
+    probability: 10
+  - prefab: {fileID: 4799854575026602286, guid: e3b13856f5a9ab645a0cdd5d2dc35138, type: 3}
+    probability: 20
