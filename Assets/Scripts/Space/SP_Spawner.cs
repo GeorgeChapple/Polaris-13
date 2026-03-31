@@ -112,8 +112,20 @@ public class SP_Spawner : NetworkBehaviour
     {
         Vector2 pos = new Vector2();
 
-        pos.x = Random.Range(bounds.z / 2, bounds.x / 2);
-        pos.y = Random.Range(bounds.w / 2, bounds.y / 2);
+        pos.x = Random.Range(0, bounds.x / 2);
+        pos.y = Random.Range(0, bounds.y / 2);
+
+        if (pos.x < bounds.z / 2 && pos.y < bounds.w / 2)
+        {
+            if (pos.x > pos.y)
+            {
+                pos.x = bounds.z / 2;
+            }
+            else
+            {
+                pos.y = bounds.w / 2;
+            }
+        }
 
         int randomNegative = Random.Range(0, 2);
         if (randomNegative == 0)
