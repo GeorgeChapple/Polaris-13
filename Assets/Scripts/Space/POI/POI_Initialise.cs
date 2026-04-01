@@ -49,11 +49,20 @@ public class POI_Initialise : NetworkBehaviour
         }
         else
         {
-            if (IsServer)
-            {
-                netObj = newPOI.AddComponent<NetworkObject>();
-                netObj.Spawn();
-            }
+            netObj = newPOI.AddComponent<NetworkObject>();
+            netObj.Spawn();
         }
+
+        POI_Level newLevel = newPOI.GetComponent<POI_Level>();
+        POI_Portal thisPortal = GetComponent<POI_Portal>();
+        thisPortal.destination = newLevel.StartPosition;
+        newLevel.mainPortal = thisPortal;
+        newLevel.ExitPortal.destination = thisPortal.transform;
+        
+        m_POI.levels.Add(newPOI.GetComponent<POI_Level>());
+        m_POI.levelsGenerated++;
+        m_POI.CheckGeneratedReset();
+        newLevel.enabled = true;
+        Destroy(this);
     }
 }

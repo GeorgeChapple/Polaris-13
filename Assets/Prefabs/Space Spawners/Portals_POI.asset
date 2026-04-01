@@ -10,14 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 619fee5ac8977a74fa53ea5bd99c4c0c, type: 3}
-  m_Name: Special_Debris
+  m_Name: Portals_POI
   m_EditorClassIdentifier: 
-  spawnerName: Special_Spawner
-  gizmoColour: {r: 1, g: 0.56824964, b: 0, a: 1}
-  ignoreMaxDebris: 1
+  spawnerName: POI_Portal_Spawner
+  gizmoColour: {r: 1, g: 0, b: 0.7105627, a: 1}
+  ignoreMaxDebris: 0
   maxDebris: 1
   limited: 1
   limit: 1
   spawnbounds: {x: 180, y: 180, z: 150, w: 150}
-  spawnTime: {x: 0.5, y: 1}
-  spaceObjects: []
+  spawnTime: {x: 0.2, y: 0.4}
+  spaceObjects:
+  - prefab: {fileID: 6072806901876968853, guid: 54fd5f67085276644bf36c8bc5974f47, type: 3}
+    probability: 1

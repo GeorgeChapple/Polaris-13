@@ -8,9 +8,9 @@ using System.Collections.Generic;
 
 public class POI_Manager : NetworkBehaviour
 {
-    public List<POI_Level> levels = new List<POI_Level>();
+    [HideInInspector] private const int levelsGeneratedReset = 99;
     [HideInInspector] public int levelsGenerated = 0;
-    private int levelsGeneratedReset = 99;
+    public List<POI_Level> levels = new List<POI_Level>();
 
     private void Awake()
     {
@@ -33,5 +33,13 @@ public class POI_Manager : NetworkBehaviour
     private void InitialiseComponents()
     {
 
+    }
+
+    public void CheckGeneratedReset()
+    {
+        if (levelsGenerated > levelsGeneratedReset)
+        {
+            levelsGenerated = 0;
+        }
     }
 }

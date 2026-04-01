@@ -166,7 +166,6 @@ public class SP_Spawner : NetworkBehaviour
             itemToReturn = item.Key;
             if (percentage <= threshold) { break; }
         }
-        Debug.Log($"itemReturned: {itemToReturn}");
         return itemToReturn;
     }
 

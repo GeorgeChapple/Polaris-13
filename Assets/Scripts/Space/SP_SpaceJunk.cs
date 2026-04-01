@@ -11,6 +11,7 @@ public class SP_SpaceJunk : NetworkBehaviour
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
     [HideInInspector] public SP_Spawner spawner;
+    [HideInInspector] public bool canTeleport = true;
     [SerializeField] private float scaleSpeed = 1;
     [SerializeField] private GameObject destroyVFX;
     private SP_SpaceManager spaceManager;
@@ -56,7 +57,7 @@ public class SP_SpaceJunk : NetworkBehaviour
 
     private void Start()
     {
-        StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
+        StartLerpScale(Vector3.zero, transform.localScale, false);
         rb.AddTorque(Vector3.one * Random.Range(-10, 10));
         if (IsServer)
         { 
@@ -64,19 +65,9 @@ public class SP_SpaceJunk : NetworkBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    public void StartLerpScale(Vector3 start, Vector3 end, bool destroy)
     {
-        // only server decides if junk should despawn
-        if (!IsServer)
-        {
-            return;
-        }
-
-        if (spaceManager != null && !spaceManager.foundObjects.Contains(this.gameObject))
-        {
-            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
-        }
+        StartCoroutine(LerpScale(start, end, scaleSpeed, destroy));
     }
 
     private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)
@@ -153,7 +144,7 @@ public class SP_SpaceJunk : NetworkBehaviour
 
         if (spaceManager == null)
         {
-            Debug.LogWarning("SP_Junk could not find SP_SpaceJunk.", this);
+            Debug.LogWarning("SP_SpaceJunk could not find SP_SpaceManager.", this);
             return;
         }
 

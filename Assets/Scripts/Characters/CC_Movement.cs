@@ -24,6 +24,7 @@ public class CC_Movement : NetworkBehaviour
     [Header("Player Movement")]
     public float moveSpeed = 5f;
     public float accelerationRate = 12f;
+    public bool canTeleport = true;
 
     [Header("Sprint")]
     public float sprintSpeedMult = 1.5f;

@@ -8,6 +8,7 @@ using UnityEngine;
 // Script By : George Chapple
 // Summary   : Manages space spawners and moves space objects depending on rocket direction and speed.
 
+[RequireComponent(typeof(BoxCollider))]
 public class SP_SpaceManager : NetworkBehaviour
 {
     [SerializeField] private int maxDebris = 20;
@@ -40,6 +41,7 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void InitialiseComponents()
     {
+        GetComponent<BoxCollider>().size = spaceBounds;
         rocket = FindFirstObjectByType<RS_Move>();
     }
 
@@ -72,14 +74,19 @@ public class SP_SpaceManager : NetworkBehaviour
         {
             foundObjects.Add(col.gameObject);
         }
+    }
 
-        CC_Movement[] players = FindObjectsByType<CC_Movement>(FindObjectsSortMode.None);
-        foreach (CC_Movement player in players)
+    private void OnTriggerExit(Collider col)
+    {
+        CC_Movement player = col.GetComponent<CC_Movement>();
+        SP_SpaceJunk spaceObj = col.GetComponent<SP_SpaceJunk>();
+        if (player != null && player.canTeleport)
         {
-            if (!foundObjects.Contains(player.gameObject))
-            {
-                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
-            }
+            player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+        }
+        else if (spaceObj != null && spaceObj.canTeleport)
+        {
+            spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
         }
     }
 
@@ -150,10 +157,15 @@ public class SP_SpaceManager : NetworkBehaviour
 
             Rigidbody rb = obj.GetComponent<Rigidbody>();
 
-            if (rb == null) continue;
-
             Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
-            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+            if (rb != null)
+            { 
+                rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+            } 
+            else
+            {
+                obj.transform.position = Vector3.Lerp(obj.transform.position, obj.transform.position + objDirection, Time.deltaTime);
+            }
         }
     }
 
