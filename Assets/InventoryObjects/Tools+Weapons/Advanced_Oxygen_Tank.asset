@@ -10,29 +10,31 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Carbon
+  m_Name: Advanced_Oxygen_Tank
   m_EditorClassIdentifier: 
-  itemID: carbon
-  m_name: Carbon
-  description: An alloy made from plant matter and water
-  itemType: 4
+  itemID: advanced_oxygen_tank
+  m_name: Advanced Oxygen Tank
+  description: An oxygen tank with a large air capacity
+  itemType: 3
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
-  chanceOfSpawnInChest: 5
+  chanceOfSpawnInChest: 0
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
-  stackable: 1
-  maxStack: 5
+  stackable: 0
+  maxStack: 1
   craftable: 1
   canCraftAnywhere: 0
   craftingRequirements:
-  - item: {fileID: 11400000, guid: fa05d28205803df418ae0b04578bd6f1, type: 2}
+  - item: {fileID: 11400000, guid: 7d6024366e8eecb46aaf82efe96a365b, type: 2}
     amount: 1
-  - item: {fileID: 11400000, guid: baeb1ad02c6e27d4a95edb70b0d84579, type: 2}
-    amount: 1
+  - item: {fileID: 11400000, guid: f1eb7407b1a895c4dac218041c0b16fd, type: 2}
+    amount: 3
+  - item: {fileID: 11400000, guid: 8f49abf4fd48b1944aa5c763a2b11b11, type: 2}
+    amount: 3
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}
