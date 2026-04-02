@@ -11,6 +11,7 @@ public class POI_Portal : NetworkBehaviour
 {
     public Transform destination;
     [SerializeField] private float teleportCooldownTime = 1;
+    [SerializeField] private bool refillAir = false;
     [SerializeField] private AddToSpaceJunk toggleSpaceMovement = AddToSpaceJunk.none;
     private SP_SpaceManager spaceManager;
     public UnityEvent portalEntered;
@@ -22,12 +23,6 @@ public class POI_Portal : NetworkBehaviour
         toggle
     }
 
-
-    private void Awake()
-    {
-        InitialiseComponents();
-    }
-
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -37,11 +32,9 @@ public class POI_Portal : NetworkBehaviour
             enabled = false;
             return;
         }
-
-        InitialiseComponents();
     }
 
-    private void InitialiseComponents()
+    private void Start()
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
     }
@@ -68,19 +61,25 @@ public class POI_Portal : NetworkBehaviour
             }
             if (player != null && player.canTeleport)
             {
+                rb.linearVelocity = Vector3.zero;
                 StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, player, rb, teleportPoint));
+                if (refillAir)
+                {
+                    CC_CharacterValues charVals = player.GetComponent<CC_CharacterValues>();
+                    charVals.SetOxygen(charVals.maxOxygen);
+                }
             }
             else if (spaceObj != null && spaceObj.canTeleport)
             {
-                StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, spaceObj, rb, teleportPoint));
+                //StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, spaceObj, rb, teleportPoint));
             }
         }
     }
 
-    private IEnumerator ObjectTeleportCooldown(float duration, NetworkBehaviour component, Rigidbody rb, Vector3 teleportPoint)
+    private IEnumerator ObjectTeleportCooldown(float duration, CC_Movement player, Rigidbody rb, Vector3 teleportPoint)
     {
         ToggleSpaceMovement(toggleSpaceMovement, rb.gameObject);
-        component.GetType().GetProperty("canTeleport").SetValue(component, false);
+        player.canTeleport = false;
         rb.position = teleportPoint;
         float t = 0;
         while (t < duration)
@@ -88,7 +87,7 @@ public class POI_Portal : NetworkBehaviour
             t += Time.deltaTime;
             yield return null;
         }
-        component.GetType().GetProperty("canTeleport").SetValue(component, true);
+        player.canTeleport = true;
     }
 
     private void ToggleSpaceMovement(AddToSpaceJunk toggle, GameObject obj)

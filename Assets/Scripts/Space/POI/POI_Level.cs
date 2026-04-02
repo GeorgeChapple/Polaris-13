@@ -19,11 +19,6 @@ public class POI_Level : NetworkBehaviour
     public Transform StartPosition => startPosition;
     public POI_Portal ExitPortal => exitPortal;
 
-    private void Awake()
-    {
-        InitialiseComponents();
-    }
-
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -33,11 +28,9 @@ public class POI_Level : NetworkBehaviour
             enabled = false;
             return;
         }
-
-        InitialiseComponents();
     }
 
-    private void InitialiseComponents()
+    private void Start()
     {
         GetComponent<BoxCollider>().size = bounds;
         mainPortal.portalEntered.AddListener(AddPlayers);

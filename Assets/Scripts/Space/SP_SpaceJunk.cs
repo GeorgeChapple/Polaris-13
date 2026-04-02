@@ -59,7 +59,7 @@ public class SP_SpaceJunk : NetworkBehaviour
     {
         StartLerpScale(Vector3.zero, transform.localScale, false);
         rb.AddTorque(Vector3.one * Random.Range(-10, 10));
-        if (IsServer)
+        if (IsServer && spawner != null)
         { 
             spaceManager.spawners[spawner]++;
         }
@@ -122,7 +122,10 @@ public class SP_SpaceJunk : NetworkBehaviour
             }
         }
 
-        spaceManager.spawners[spawner]--;
+        if (spawner != null)
+        { 
+            spaceManager.spawners[spawner]--;
+        }
 
         // despawn junk over network
         NetworkObject netObj = GetComponent<NetworkObject>();

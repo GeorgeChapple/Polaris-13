@@ -10,11 +10,6 @@ public class POI_Initialise : NetworkBehaviour
 {
     [SerializeField] private GameObject POI;
 
-    private void Awake()
-    {
-        InitialiseComponents();
-    }
-
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -24,11 +19,9 @@ public class POI_Initialise : NetworkBehaviour
             enabled = false;
             return;
         }
-
-        InitialiseComponents();
     }
 
-    private void InitialiseComponents()
+    private void Start()
     {
         SP_SpaceManager m_Space = FindFirstObjectByType<SP_SpaceManager>();
         POI_Manager m_POI = FindFirstObjectByType<POI_Manager>();
