@@ -313,6 +313,28 @@ public class INV_Chest : NetworkBehaviour
         return true;
     }
 
+    public bool TrySetItemQuantity(string uniqueId, int quantity)
+    {
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            ChestItemData item = items[i];
+            if (item == null || item.uniqueId != uniqueId)
+            {
+                continue;
+            }
+
+            item.quantity = Mathf.Max(0, quantity);
+            return true;
+        }
+
+        return false;
+    }
+
     public bool TryRemoveItem(string uniqueId)
     {
         if (!IsServer || string.IsNullOrWhiteSpace(uniqueId))
@@ -329,6 +351,28 @@ public class INV_Chest : NetworkBehaviour
             }
 
             items.RemoveAt(i);
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool TryRemoveItemQuantity(string uniqueId, int amount)
+    {
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId) || amount <= 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            ChestItemData item = items[i];
+            if (item == null || item.uniqueId != uniqueId)
+            {
+                continue;
+            }
+
+            item.quantity = Mathf.Max(0, item.quantity - amount);
             return true;
         }
 

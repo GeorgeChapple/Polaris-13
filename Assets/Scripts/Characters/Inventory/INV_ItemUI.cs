@@ -96,17 +96,23 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         bool shiftHeld = Keyboard.current != null && (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
 
-        // shift click adds player inventory item into open chest
         if (eventData.button == PointerEventData.InputButton.Left && shiftHeld)
         {
+            // shift click player inventory item into open chest
             if (!itemInst.isChestItem && inv.ActiveChest != null)
             {
                 inv.TryQuickStoreItemInOpenChest(itemInst);
                 return;
             }
-        }
-        if (eventData.button != PointerEventData.InputButton.Right) { return; }
 
+            // shift click chest item into player inventory
+            if (itemInst.isChestItem)
+            {
+                inv.TryQuickTakeChestItemStack(itemInst);
+                return;
+            }
+        }
+        if (eventData.button != PointerEventData.InputButton.Right) { return; }        
         inv.ShowContextMenuForItem(itemInst, eventData.position);
     }
 

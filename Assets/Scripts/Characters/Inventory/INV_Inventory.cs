@@ -89,7 +89,9 @@ public class INV_Inventory : MonoBehaviour
         AssignHotbar2,
         AssignHotbar3,
         AssignHotbar4,
-        AssignSelectedHotbar
+        AssignSelectedHotbar,
+        TakeOne,
+        TakeStack
     }
 
     [System.Serializable]
@@ -1789,6 +1791,50 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
+    public bool TryQuickTakeChestItemOne(ItemInstance item)
+    {
+        if (item == null || !item.isChestItem || item.data == null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.chestItemUniqueId))
+        {
+            return false;
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net == null)
+        {
+            return false;
+        }
+
+        net.RequestTakeChestItemQuick(item.chestItemUniqueId, false);
+        return true;
+    }
+
+    public bool TryQuickTakeChestItemStack(ItemInstance item)
+    {
+        if (item == null || !item.isChestItem || item.data == null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.chestItemUniqueId))
+        {
+            return false;
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net == null)
+        {
+            return false;
+        }
+
+        net.RequestTakeChestItemQuick(item.chestItemUniqueId, true);
+        return true;
+    }
+
     // crafting
     public int GetItemCount(string itemId)
     {
@@ -1922,8 +1968,16 @@ public class INV_Inventory : MonoBehaviour
     {
         List<ContextActionType> actions = new List<ContextActionType>();
 
-        if (inst == null || inst.data == null || inst.isChestItem)
+        if (inst == null || inst.data == null)
         {
+            return actions;
+        }
+
+        // chest item context menu
+        if (inst.isChestItem)
+        {
+            actions.Add(ContextActionType.TakeOne);
+            if (inst.quantity > 1) { actions.Add(ContextActionType.TakeStack); }
             return actions;
         }
 
@@ -1936,36 +1990,39 @@ public class INV_Inventory : MonoBehaviour
             case INV_Item.ItemType.Consumable:
                 actions.Add(ContextActionType.Use);
                 actions.Add(ContextActionType.DropOne);
-                if (showDropStack)
-                {
-                    actions.Add(ContextActionType.DropStack);
-                }
-
+                if (showDropStack) { actions.Add(ContextActionType.DropStack); }
                 AddHotbarAssignActions(actions);
-                if (hasSelectedHotbar)
-                {
-                    actions.Add(ContextActionType.AssignSelectedHotbar);
-                }
-
+                if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
-
             case INV_Item.ItemType.Weapon:
+                actions.Add(ContextActionType.DropOne);
+                if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                AddHotbarAssignActions(actions);
+                if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
+                break;
             case INV_Item.ItemType.Tool:
+                actions.Add(ContextActionType.DropOne);
+                if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                AddHotbarAssignActions(actions);
+                if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
+                break;
             case INV_Item.ItemType.Item:
+                actions.Add(ContextActionType.DropOne);
+                if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                AddHotbarAssignActions(actions);
+                if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
+                break;
             case INV_Item.ItemType.Resource:
+                actions.Add(ContextActionType.DropOne);
+                if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                AddHotbarAssignActions(actions);
+                if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
+                break;
             case INV_Item.ItemType.Placeable:
                 actions.Add(ContextActionType.DropOne);
-                if (showDropStack)
-                {
-                    actions.Add(ContextActionType.DropStack);
-                }
-
+                if (showDropStack) { actions.Add(ContextActionType.DropStack); }
                 AddHotbarAssignActions(actions);
-                if (hasSelectedHotbar)
-                {
-                    actions.Add(ContextActionType.AssignSelectedHotbar);
-                }
-
+                if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
         }
 
@@ -1993,14 +2050,16 @@ public class INV_Inventory : MonoBehaviour
     {
         switch (action)
         {
-            case ContextActionType.Use: return "Use";
-            case ContextActionType.DropOne: return "Drop One";
-            case ContextActionType.DropStack: return "Drop Stack";
-            case ContextActionType.AssignHotbar1: return "Assign Hotbar 1";
-            case ContextActionType.AssignHotbar2: return "Assign Hotbar 2";
-            case ContextActionType.AssignHotbar3: return "Assign Hotbar 3";
-            case ContextActionType.AssignHotbar4: return "Assign Hotbar 4";
-            case ContextActionType.AssignSelectedHotbar: return "Assign Selected Hotbar";
+            case ContextActionType.Use: { return "Use"; }
+            case ContextActionType.DropOne: { return "Drop One"; }
+            case ContextActionType.DropStack: { return "Drop Stack"; }
+            case ContextActionType.AssignHotbar1: { return "Assign Hotbar 1"; }
+            case ContextActionType.AssignHotbar2: { return "Assign Hotbar 2"; }
+            case ContextActionType.AssignHotbar3: { return "Assign Hotbar 3"; }
+            case ContextActionType.AssignHotbar4: { return "Assign Hotbar 4"; }
+            case ContextActionType.AssignSelectedHotbar: { return "Assign Selected Hotbar"; }
+            case ContextActionType.TakeOne: { return "Take One"; }
+            case ContextActionType.TakeStack: { return "Take Stack"; }
         }
 
         return action.ToString();
@@ -2082,6 +2141,14 @@ public class INV_Inventory : MonoBehaviour
                 }
 
                 return hotBar.AssignItemToSlot(hotBar.SelectedSlot, inst);
+
+            case ContextActionType.TakeOne:
+                if (!inst.isChestItem) { return false; }
+                return TryQuickTakeChestItemOne(inst);
+
+            case ContextActionType.TakeStack:
+                if (!inst.isChestItem) { return false; }
+                return TryQuickTakeChestItemStack(inst);
         }
 
         return false;

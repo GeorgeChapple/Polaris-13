@@ -162,6 +162,28 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
+    private void AddItemAmountLocalRpc(string itemId, int amount, RpcParams rpcParams = default)
+    {
+        CacheRefs();
+
+        if (inventory == null || string.IsNullOrWhiteSpace(itemId) || amount <= 0)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < amount; i++)
+        {
+            inventory.TryAddItem(item);
+        }
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
     private void AddItemAtCellLocalRpc(string itemId, int amount, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
     {
         CacheRefs();
@@ -352,6 +374,35 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         );
     }
 
+    public void RequestTakeChestItemQuick(string chestItemUniqueId, bool takeStack)
+    {
+        if (string.IsNullOrWhiteSpace(chestItemUniqueId))
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null || inventory.ActiveChest == null)
+        {
+            return;
+        }
+
+        NetworkObject chestNetObj = inventory.ActiveChest.NetworkObject;
+        if (chestNetObj == null)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            TakeChestItemQuick_Server(inventory.ActiveChest, chestItemUniqueId, takeStack);
+            return;
+        }
+
+        RequestTakeChestItemQuickRpc(new NetworkObjectReference(chestNetObj), chestItemUniqueId, takeStack);
+    }
+
     public void RequestEquipItem(string itemId)
     {
         if (string.IsNullOrWhiteSpace(itemId))
@@ -518,6 +569,22 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         TakeChestItem_Server(chest, chestItemUniqueId, new Vector2Int(cellX, cellY), (INV_Inventory.ItemInstance.Rotation)rotation);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestTakeChestItemQuickRpc(NetworkObjectReference chestRef, string chestItemUniqueId, bool takeStack, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        if (!TryGetChestFromRef(chestRef, out INV_Chest chest))
+        {
+            return;
+        }
+
+        TakeChestItemQuick_Server(chest, chestItemUniqueId, takeStack);
     }
 
     [Rpc(SendTo.Server)]
@@ -991,6 +1058,99 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
         );
 
+        chest.RefreshViewer();
+    }
+
+    private void TakeChestItemQuick_Server(INV_Chest chest, string chestItemUniqueId, bool takeStack)
+    {
+        if (!IsServer || chest == null || string.IsNullOrWhiteSpace(chestItemUniqueId))
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null)
+        {
+            return;
+        }
+
+        INV_Chest.ChestItemData data;
+        if (!chest.TryGetItemData(chestItemUniqueId, out data))
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        INV_Item item = GetItemById(data.itemId);
+        if (item == null)
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        int chestAmount = Mathf.Max(1, data.quantity);
+        int wantedAmount = takeStack ? chestAmount : 1;
+        int addedAmount = 0;
+
+        // host uses server
+        if (IsOwner)
+        {
+            for (int i = 0; i < wantedAmount; i++) // try add on each item rather than new logic
+            {
+                if (!inventory.TryAddItem(item))
+                {
+                    break;
+                }
+
+                addedAmount++;
+            }
+
+            if (addedAmount <= 0)
+            {
+                chest.RefreshViewer();
+                return;
+            }
+
+            int remaining = chestAmount - addedAmount;
+
+            if (remaining <= 0)
+            {
+                chest.TryRemoveItem(chestItemUniqueId);
+            }
+            else
+            {
+                chest.TrySetItemQuantity(chestItemUniqueId, remaining);
+            }
+
+            chest.RefreshViewer();
+            return;
+        }
+
+        // remote client path
+        for (int i = 0; i < wantedAmount; i++)
+        {
+            addedAmount++;
+        }
+
+        if (addedAmount <= 0)
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        int remainingRemote = chestAmount - addedAmount;
+
+        if (remainingRemote <= 0)
+        {
+            chest.TryRemoveItem(chestItemUniqueId);
+        }
+        else
+        {
+            chest.TrySetItemQuantity(chestItemUniqueId, remainingRemote);
+        }
+
+        AddItemAmountLocalRpc(item.ItemID, addedAmount, RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
         chest.RefreshViewer();
     }
 
