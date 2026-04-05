@@ -123,7 +123,6 @@ public class INV_Inventory : MonoBehaviour
     public class ItemInstance // used for saving items and inventory
     {
         public INV_Item data;
-        public string inventoryItemUniqueId;
 
         // rectangular size in cells for UI and bounds
         public Vector2Int size;
@@ -154,6 +153,7 @@ public class INV_Inventory : MonoBehaviour
         // runtime
         public bool isChestItem;
         public string chestItemUniqueId;
+        public string inventoryItemUniqueId;
     }
 
     private class GridRuntime
@@ -769,11 +769,11 @@ public class INV_Inventory : MonoBehaviour
         ItemInstance inst = new ItemInstance
         {
             data = item,
-            inventoryItemUniqueId = isChestItem ? null : System.Guid.NewGuid().ToString(),
             rotation = ItemInstance.Rotation.Up,
             quantity = 1,
             isChestItem = isChestItem,
             chestItemUniqueId = chestItemUniqueId,
+            inventoryItemUniqueId = isChestItem ? null : System.Guid.NewGuid().ToString(),
             ui = rt,
             uiHandler = ui
         };
@@ -1565,7 +1565,7 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
-        if (item.data == null)
+        if (item.data == null || string.IsNullOrWhiteSpace(item.inventoryItemUniqueId))
         {
             return false;
         }
@@ -1576,13 +1576,21 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
+        string inventoryItemUniqueId = item.inventoryItemUniqueId;
         string itemId = item.data.ItemID;
         int quantity = Mathf.Max(1, item.quantity);
         ItemInstance.Rotation rotation = item.rotation;
 
+        Vector2Int chestCell;
         if (autoAdd)
         {
-            Vector2Int chestCell;
+            if (!LookForOccupyableSpace(chestRuntime, chestGrid, item, out chestCell))
+            {
+                return false;
+            }
+        }
+        else
+        {
             if (!TryGetCellFromScreenPoint(chestRuntime, chestGrid, screenPoint, uiCamera, out chestCell))
             {
                 return false;
@@ -1592,45 +1600,20 @@ public class INV_Inventory : MonoBehaviour
             {
                 return false;
             }
-
-            // host uses the real server path directly, so no local prediction
-            if (net.IsServer)
-            {
-                net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
-                return true;
-            }
-
-            // client predicts locally because server does not own the real inventory state for remote players
-            RemoveLocalPlayerItemInstance(item);
-            AddLocalChestVisualPreview(itemId, quantity, chestCell, rotation);
-
-            net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
-            return true;
-        }
-
-        Vector2Int exactChestCell;
-        if (!TryGetCellFromScreenPoint(chestRuntime, chestGrid, screenPoint, uiCamera, out exactChestCell))
-        {
-            return false;
-        }
-
-        if (!CheckSpaceOccupyable(chestRuntime, chestGrid, exactChestCell.x, exactChestCell.y, item, null))
-        {
-            return false;
         }
 
         // host uses the real server path directly, so no local prediction
         if (net.IsServer)
         {
-            net.RequestStoreItemInOpenChest(itemId, quantity, exactChestCell, rotation);
+            net.RequestStoreItemInOpenChest(inventoryItemUniqueId, itemId, quantity, chestCell, rotation);
             return true;
         }
 
         // client predicts locally because server does not own the real inventory state for remote players
         RemoveLocalPlayerItemInstance(item);
-        AddLocalChestVisualPreview(itemId, quantity, exactChestCell, rotation);
+        AddLocalChestVisualPreview(itemId, quantity, chestCell, rotation);
 
-        net.RequestStoreItemInOpenChest(itemId, quantity, exactChestCell, rotation);
+        net.RequestStoreItemInOpenChest(inventoryItemUniqueId, itemId, quantity, chestCell, rotation);
         return true;
     }
 
@@ -1772,12 +1755,16 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
-        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
-        if (net == null) { return false; }
+        if (string.IsNullOrWhiteSpace(item.inventoryItemUniqueId))
+        {
+            return false;
+        }
 
-        string itemId = item.data.ItemID;
-        int quantity = Mathf.Max(1, item.quantity);
-        ItemInstance.Rotation rotation = item.rotation;
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net == null)
+        {
+            return false;
+        }
 
         Vector2Int chestCell;
         if (!LookForOccupyableSpace(chestRuntime, chestGrid, item, out chestCell))
@@ -1785,16 +1772,20 @@ public class INV_Inventory : MonoBehaviour
             return false;
         }
 
+        string itemId = item.data.ItemID;
+        int quantity = Mathf.Max(1, item.quantity);
+        ItemInstance.Rotation rotation = item.rotation;
+
         if (net.IsServer)
         {
-            net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+            net.RequestStoreItemInOpenChest(item.inventoryItemUniqueId, itemId, quantity, chestCell, rotation);
             return true;
         }
 
         RemoveLocalPlayerItemInstance(item);
         AddLocalChestVisualPreview(itemId, quantity, chestCell, rotation);
 
-        net.RequestStoreItemInOpenChest(itemId, quantity, chestCell, rotation);
+        net.RequestStoreItemInOpenChest(item.inventoryItemUniqueId, itemId, quantity, chestCell, rotation);
         return true;
     }
 

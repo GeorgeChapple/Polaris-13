@@ -242,9 +242,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestDropItemRpc(itemId);
     }
 
-    public void RequestStoreItemInOpenChest(string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
+    public void RequestStoreItemInOpenChest(string inventoryItemUniqueId, string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        if (string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
+        if (string.IsNullOrWhiteSpace(inventoryItemUniqueId) || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
         {
             return;
         }
@@ -264,13 +264,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (IsServer)
         {
-            StoreItemInChest_Server(inventory.ActiveChest, itemId, quantity, chestCell, rotation);
+            StoreItemInChest_Server(inventory.ActiveChest, inventoryItemUniqueId, itemId, quantity, chestCell, rotation);
             return;
         }
 
         RequestStoreItemInChestRpc
         (
             new NetworkObjectReference(chestNetObj),
+            inventoryItemUniqueId,
             itemId,
             quantity,
             chestCell.x,
@@ -350,6 +351,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             (int)rotation
         );
     }
+
     public void RequestEquipItem(string itemId)
     {
         if (string.IsNullOrWhiteSpace(itemId))
@@ -463,7 +465,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    private void RequestStoreItemInChestRpc(NetworkObjectReference chestRef, string itemId, int quantity, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
+    private void RequestStoreItemInChestRpc(NetworkObjectReference chestRef, string inventoryItemUniqueId, string itemId, int quantity, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
     {
         if (!IsSenderOwner(rpcParams))
         {
@@ -475,7 +477,15 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        StoreItemInChest_Server(chest, itemId, quantity, new Vector2Int(cellX, cellY), (INV_Inventory.ItemInstance.Rotation)rotation);
+        StoreItemInChest_Server
+        (
+            chest,
+            inventoryItemUniqueId,
+            itemId,
+            quantity,
+            new Vector2Int(cellX, cellY),
+            (INV_Inventory.ItemInstance.Rotation)rotation
+        );
     }
 
     [Rpc(SendTo.Server)]
@@ -850,9 +860,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     // chest
-    private void StoreItemInChest_Server(INV_Chest chest, string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
+    private void StoreItemInChest_Server(INV_Chest chest, string inventoryItemUniqueId, string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        if (!IsServer || chest == null || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
+        if (!IsServer || chest == null || string.IsNullOrWhiteSpace(inventoryItemUniqueId) || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
         {
             return;
         }
@@ -874,19 +884,13 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         // host player uses the real shared inventory instance on server
         if (IsOwner)
         {
-            if (!inventory.HasItemAmount(itemId, quantity))
-            {
-                chest.RefreshViewer();
-                return;
-            }
-
             if (!chest.TryStoreItemData(itemId, quantity, chestCell, rotation))
             {
                 chest.RefreshViewer();
                 return;
             }
 
-            if (inventory.RemoveItemAmount(itemId, quantity))
+            if (inventory.RemovePlayerItemByUniqueId(inventoryItemUniqueId, quantity))
             {
                 chest.RefreshViewer();
                 return;
