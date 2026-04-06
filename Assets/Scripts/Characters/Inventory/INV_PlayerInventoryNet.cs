@@ -749,6 +749,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
             usableItem.WireUp(gameObject, itemId);
             usableItem.OnUse();
+            usableItem.OnUseWithUser(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
 

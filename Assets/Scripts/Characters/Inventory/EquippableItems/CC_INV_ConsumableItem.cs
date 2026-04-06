@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 public class CC_INV_ConsumableItem : MonoBehaviour, IUsableItem
@@ -15,9 +16,17 @@ public class CC_INV_ConsumableItem : MonoBehaviour, IUsableItem
     {
         //use item
         INV_PlayerInventoryNet playerInventoryNet = ownerPlayer.GetComponent<INV_PlayerInventoryNet>();
-        if (playerInventoryNet != null) 
+        if (playerInventoryNet != null)
         {
-            playerInventoryNet.RequestUseItemInInventory(itemId);        
+            playerInventoryNet.RequestUseItemInInventory(itemId);
+        }
+    }
+    public void OnUseWithUser(NetworkObjectReference netObjRef)
+    {
+        INV_PlayerInventoryNet playerInventoryNet = ownerPlayer.GetComponent<INV_PlayerInventoryNet>();
+        if (netObjRef.TryGet(out NetworkObject netObj))
+        {
+            Debug.Log($"{netObj.NetworkObjectId} ate item with id {itemId}.");
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Collections;
 
 // Made by: Jason Lodge
 // Summary: Handles locomotion, gravity, jumping, body rotation and stamina / oxygen usage.
+// Owner sends input, server simulates.
 
 [RequireComponent(typeof(Rigidbody))]
 public class CC_Movement : NetworkBehaviour
@@ -97,6 +98,10 @@ public class CC_Movement : NetworkBehaviour
 
     [SerializeField] private TextMeshProUGUI playerText;
 
+    [Header("Server Input")]
+    [Tooltip("If true, owner sends movement input to the server every frame.")]
+    [SerializeField] private bool sendInputToServer = true;
+
     // internals
     protected Rigidbody rb;
     protected float jumpTimeoutDelta;
@@ -137,6 +142,9 @@ public class CC_Movement : NetworkBehaviour
 
     bool initialised;
     bool deathRespawnRunning;
+
+    // last received owner input, used by server
+    CC_PlayerMoveInput latestServerInput;
 
     // public read for other components like camera/interaction
     public Rigidbody Body => rb;
@@ -197,9 +205,14 @@ public class CC_Movement : NetworkBehaviour
         }
     }
 
-    public bool IsLocallyControlled()
+    public bool HasInputAuthority()
     {
         return singlePlayer || (IsSpawned && IsOwner);
+    }
+
+    public bool HasStateAuthority()
+    {
+        return singlePlayer || (IsSpawned && IsServer);
     }
 
     public override void OnNetworkSpawn()
@@ -235,17 +248,99 @@ public class CC_Movement : NetworkBehaviour
                 }
 
                 Transform spawnPoint = spawnPoints[id].transform;
-                rb.position = spawnPoint.position;
+
+                // server writes transform/rigidbody position
+                if (HasStateAuthority() && rb != null)
+                {
+                    rb.position = spawnPoint.position;
+                    rb.rotation = spawnPoint.rotation;
+                    bodyRotation = rb.rotation;
+                }
+
                 break;
             }
             yield return null;
         }
     }
 
-    // Call in FixedUpdate.
-    public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
+    private void FixedUpdate()
     {
-        if (!IsLocallyControlled() || rb == null) { return; }
+        if (!HasStateAuthority() || rb == null) { return; }
+
+        TickFixed
+        (
+            latestServerInput.move,
+            latestServerInput.look,
+            latestServerInput.jump,
+            latestServerInput.roll,
+            latestServerInput.sprint,
+            latestServerInput.crouch,
+            latestServerInput.stabiliseThrusters
+        );
+    }
+
+    private void LateUpdate()
+    {
+        if (!HasStateAuthority() || rb == null || values == null) { return; }
+
+        TickLateState();
+    }
+
+    public void SubmitOwnerInput(CC_PlayerMoveInput input)
+    {
+        if (!HasInputAuthority())
+        {
+            return;
+        }
+
+        if (singlePlayer)
+        {
+            latestServerInput = input;
+            return;
+        }
+
+        if (IsServer)
+        {
+            latestServerInput = input;
+            return;
+        }
+
+        if (!sendInputToServer)
+        {
+            return;
+        }
+
+        SubmitOwnerInputRpc(input);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void SubmitOwnerInputRpc(CC_PlayerMoveInput input, RpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+        {
+            return;
+        }
+
+        latestServerInput = input;
+    }
+
+    // Call on owner in Update/LateUpdate.
+    public virtual void TickLocalPresentation(Vector2 lookInput, bool inMenu)
+    {
+        if (!HasInputAuthority() || values == null) { return; }
+
+        // local only camera pitch / presentation helpers can still query the states.
+        // movement state itself is simulated by host.
+        if (values.isDead || inMenu)
+        {
+            return;
+        }
+    }
+
+    // Call in FixedUpdate.
+    public virtual void TickFixed(Vector2 moveInput, Vector2 lookInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
+    {
+        if (!HasStateAuthority() || rb == null) { return; }
 
         // keep our up axis updated from gravity
         UpdateGravity();
@@ -274,6 +369,7 @@ public class CC_Movement : NetworkBehaviour
             return;
         }
 
+        pendingLook = lookInput;
         pendingRoll = -rollInput;
 
         // grounded should only matter in ground mode
@@ -316,6 +412,9 @@ public class CC_Movement : NetworkBehaviour
         }
         else
         {
+            // ground yaw is now server-side from owner look input
+            AddGroundYaw(lookInput.x);
+
             GroundMove(moveInput);
             Jump(jumpPressedThisTick);
             GroundThrusters(jumpInput, jumpPressedThisTick);
@@ -332,7 +431,7 @@ public class CC_Movement : NetworkBehaviour
     // Call in LateUpdate.
     public virtual void TickLateState()
     {
-        if (!IsLocallyControlled() || rb == null || values == null) { return; }
+        if (!HasStateAuthority() || rb == null || values == null) { return; }
 
         if (values.isDead)
         {
@@ -728,6 +827,12 @@ public class CC_Movement : NetworkBehaviour
 
     public void UpdateCapsuleCrouch(float crouchSharpness)
     {
+        // keeping capsule shape authoritative in single player or on the server for now.
+        if (!singlePlayer && !IsServer)
+        {
+            return;
+        }
+
         bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded && !jumpedThisTick;
         if (!canCrouch) { crouching = false; }
 
@@ -755,7 +860,7 @@ public class CC_Movement : NetworkBehaviour
         float delay = values != null ? values.DeathRespawnDelay : 3f;
         yield return new WaitForSeconds(delay);
 
-        if (rb != null)
+        if (rb != null && HasStateAuthority())
         {
             RespawnAtSpawnPoint();
         }
@@ -813,5 +918,44 @@ public class CC_Movement : NetworkBehaviour
         }
 
         groundedForward.Normalize();
+    }
+
+    public void TeleportTo(Vector3 position, Quaternion rotation)
+    {
+        if (!canTeleport || !HasStateAuthority() || rb == null)
+        {
+            return;
+        }
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        rb.position = position;
+        rb.rotation = rotation;
+
+        bodyRotation = rotation;
+
+        groundedForward = Vector3.ProjectOnPlane(rotation * Vector3.forward, upAxis);
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.forward;
+        }
+        groundedForward.Normalize();
+    }
+
+    [Rpc(SendTo.Server)]
+    public void RequestTeleportRpc(Vector3 position, Quaternion rotation, RpcParams rpcParams = default)
+    {
+        if (!canTeleport)
+        {
+            return;
+        }
+
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+        {
+            return;
+        }
+
+        TeleportTo(position, rotation);
     }
 }

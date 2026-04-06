@@ -1,11 +1,13 @@
 using Unity.Netcode;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 using UnityEngine.UI;
 
 // Made by: Jason Lodge
-// Summary: Player controller, drives all the locomotion code and things like interaction, menus, etc.
-// This is separated as movement/camera/interaction are modular and can be reused by AI.
+// Summary: Player controller, drives all the local player input, menus, camera and interaction.
+// Movement itself is host/server authoritative through movement script.
 
 [RequireComponent(typeof(CC_Movement))]
 [RequireComponent(typeof(CC_CameraController))]
@@ -91,9 +93,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
     }
 
-    private bool IsLocallyControlled()
+    private bool HasInputAuthority()
     {
-        return movement != null && movement.IsLocallyControlled();
+        return movement != null && movement.HasInputAuthority();
     }
 
     private void Awake()
@@ -157,7 +159,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void ApplyOwnershipState()
     {
-        bool local = IsLocallyControlled();
+        bool local = HasInputAuthority();
 
 #if ENABLE_INPUT_SYSTEM
         if (playerInput != null)
@@ -186,7 +188,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void Start()
     {
-        if (!IsLocallyControlled()) { return; }
+        if (!HasInputAuthority()) { return; }
 
         // if we start in a menu, dont lock
         if (inMenu)
@@ -213,7 +215,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private void OnApplicationFocus(bool hasFocus)
     {
         // if a menu is open, dont re-lock cursor
-        if (!IsLocallyControlled()) { return; }
+        if (!HasInputAuthority()) { return; }
 
         if (hasFocus && cursorLocked && !inMenu)
         {
@@ -223,11 +225,17 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void Update()
     {
+        if (!HasInputAuthority())
+        {
+            return;
+        }
+
         // dead players cannot use input
         if (values != null && values.isDead)
         {
             HandleDeadState();
             UpdateCursorUI();
+            SendMovementInput();
             return;
         }
 
@@ -244,26 +252,9 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         // cursor
         UpdateCursorUI();
-    }
 
-    private void FixedUpdate()
-    {
-        if (movement == null) { return; }
-
-        if (values != null && values.isDead)
-        {
-            movement.TickFixed(Vector2.zero, false, 0f, false, false, false);
-            return;
-        }
-
-        if (inMenu)
-        {
-            movement.TickFixed(Vector2.zero, false, 0f, false, false, false);
-            return;
-        }
-
-        // movement / physics
-        movement.TickFixed(input.move, input.jump, input.roll, input.sprint, input.crouch, input.stabiliseThrusters);
+        // owner sends input snapshot to the server every frame
+        SendMovementInput();
     }
 
     private void LateUpdate()
@@ -273,7 +264,6 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (values != null && values.isDead)
         {
             if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
-            if (movement != null) { movement.TickLateState(); }
             if (interaction != null) { interaction.TickInteract(false); }
             return;
         }
@@ -281,19 +271,49 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (inMenu)
         {
             if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
-            if (movement != null) { movement.TickLateState(); }
             if (interaction != null) { interaction.TickInteract(false); }
             return;
         }
 
         if (cameraController != null) { cameraController.TickLate(input.look, isMouse); }
-        if (movement != null) { movement.TickLateState(); }
         if (interaction != null) { interaction.TickInteract(input.interact); }
+    }
+
+    private void SendMovementInput()
+    {
+        if (movement == null || input == null)
+        {
+            return;
+        }
+
+        CC_PlayerMoveInput moveInput = new CC_PlayerMoveInput
+        {
+            move = inMenu ? Vector2.zero : input.move,
+            look = inMenu ? Vector2.zero : input.look,
+            roll = inMenu ? 0f : input.roll,
+            jump = !inMenu && input.jump,
+            sprint = !inMenu && input.sprint,
+            crouch = !inMenu && input.crouch,
+            stabiliseThrusters = !inMenu && input.stabiliseThrusters,
+            tick = GetLocalTick()
+        };
+
+        movement.SubmitOwnerInput(moveInput);
+    }
+
+    private uint GetLocalTick()
+    {
+        if (NetworkManager == null || NetworkManager.NetworkTickSystem == null)
+        {
+            return 0;
+        }
+
+        return (uint)NetworkManager.NetworkTickSystem.LocalTime.Tick;
     }
 
     private void UpdateCursorUI()
     {
-        if (!IsLocallyControlled()) { return; }
+        if (!HasInputAuthority()) { return; }
         if (cursorImage == null) { return; }
 
         // hide cursor while menu is open
@@ -326,7 +346,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void HandleItemUse()
     {
-        if (!IsLocallyControlled() || inMenu || inventoryNet == null)
+        if (!HasInputAuthority() || inMenu || inventoryNet == null)
         {
             useHeld = false;
             return;

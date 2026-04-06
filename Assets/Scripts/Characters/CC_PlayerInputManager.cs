@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -75,4 +76,33 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void HotbarSlot3Input(bool newState) { hotbarSlot3 = newState; }
     public void HotbarSlot4Input(bool newState) { hotbarSlot4 = newState; }
     public void RollInput(float newRollState) { roll = newRollState; }
+}
+
+// player movement input payload sent from the owning client to the host/server.
+public struct CC_PlayerMoveInput : INetworkSerializable
+{
+    public Vector2 move;
+    public Vector2 look;
+    public float roll;
+
+    public bool jump;
+    public bool sprint;
+    public bool crouch;
+    public bool stabiliseThrusters;
+
+    public uint tick;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref move);
+        serializer.SerializeValue(ref look);
+        serializer.SerializeValue(ref roll);
+
+        serializer.SerializeValue(ref jump);
+        serializer.SerializeValue(ref sprint);
+        serializer.SerializeValue(ref crouch);
+        serializer.SerializeValue(ref stabiliseThrusters);
+
+        serializer.SerializeValue(ref tick);
+    }
 }
