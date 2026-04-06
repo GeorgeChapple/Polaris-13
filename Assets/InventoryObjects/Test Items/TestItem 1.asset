@@ -31,6 +31,11 @@ MonoBehaviour:
   craftingRequirements:
   - item: {fileID: 11400000, guid: 9e427fbdaae830842ae1e35bd89158f2, type: 2}
     amount: 1
+  craftingRecipes:
+  - recipeName: TestItem
+    requirements:
+    - item: {fileID: 11400000, guid: 9e427fbdaae830842ae1e35bd89158f2, type: 2}
+      amount: 1
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: 0b6182d223b1d834094e501121887da3, type: 2}

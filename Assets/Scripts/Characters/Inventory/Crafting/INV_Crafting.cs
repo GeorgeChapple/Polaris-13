@@ -9,6 +9,24 @@ using UnityEngine.UI;
 
 public class INV_Crafting : MonoBehaviour
 {
+    public enum CraftingFilterMode
+    {
+        All,
+        CraftableOnly,
+        NonCraftableOnly
+    }
+
+    public enum ItemTypeFilterMode
+    {
+        All = -1,
+        Item = INV_Item.ItemType.Item,
+        Consumable = INV_Item.ItemType.Consumable,
+        Weapon = INV_Item.ItemType.Weapon,
+        Tool = INV_Item.ItemType.Tool,
+        Resource = INV_Item.ItemType.Resource,
+        Placeable = INV_Item.ItemType.Placeable
+    }
+
     [Header("Refs")]
     [SerializeField] private CC_CharacterPlayerController playerController;
     [SerializeField] private INV_Inventory inventory;
@@ -17,6 +35,11 @@ public class INV_Crafting : MonoBehaviour
     [Header("Crafting UI")]
     [SerializeField] private RectTransform craftingContentRoot;
     [SerializeField] private GameObject craftingButtonPrefab;
+
+    [Header("Filter")]
+    [SerializeField] private string nameFilter;
+    [SerializeField] private CraftingFilterMode filterMode = CraftingFilterMode.All;
+    [SerializeField] private ItemTypeFilterMode itemTypeFilterMode = ItemTypeFilterMode.All;
 
     [Header("Runtime")]
     public List<INV_Item> craftables = new List<INV_Item>();
@@ -96,6 +119,11 @@ public class INV_Crafting : MonoBehaviour
                 continue;
             }
 
+            if (!PassesFilter(item))
+            {
+                continue;
+            }
+
             if (CanCraftItemRightNow(item))
             {
                 craftables.Add(item);
@@ -105,6 +133,9 @@ public class INV_Crafting : MonoBehaviour
                 nonCraftables.Add(item);
             }
         }
+
+        SortCraftingList(craftables);
+        SortCraftingList(nonCraftables);
     }
 
     public void SetupCraftingButtons()
@@ -116,10 +147,185 @@ public class INV_Crafting : MonoBehaviour
             return;
         }
 
+        // craftables first, then non craftables
         SpawnButtonsForList(craftables, true);
         SpawnButtonsForList(nonCraftables, false);
 
         ExpandContentRoot();
+    }
+
+    public void SetNameFilter(string newFilter)
+    {
+        nameFilter = newFilter != null ? newFilter.Trim() : string.Empty;
+        RebuildCraftingView();
+    }
+
+    public void SetFilterMode(CraftingFilterMode newFilterMode)
+    {
+        filterMode = newFilterMode;
+        RebuildCraftingView();
+    }
+
+    public void SetFilterModeFromDropdown(int dropdownValue)
+    {
+        if (dropdownValue < 0 || dropdownValue >= System.Enum.GetValues(typeof(CraftingFilterMode)).Length)
+        {
+            filterMode = CraftingFilterMode.All;
+            RebuildCraftingView();
+            return;
+        }
+
+        filterMode = (CraftingFilterMode)dropdownValue;
+        RebuildCraftingView();
+    }
+
+    public void SetItemTypeFilterMode(ItemTypeFilterMode newItemTypeFilterMode)
+    {
+        itemTypeFilterMode = newItemTypeFilterMode;
+        RebuildCraftingView();
+    }
+
+    public void SetItemTypeFilterModeFromDropdown(int dropdownValue)
+    {
+        switch (dropdownValue)
+        {
+            case 0:
+                itemTypeFilterMode = ItemTypeFilterMode.All;
+                break;
+
+            case 1:
+                itemTypeFilterMode = ItemTypeFilterMode.Item;
+                break;
+
+            case 2:
+                itemTypeFilterMode = ItemTypeFilterMode.Consumable;
+                break;
+
+            case 3:
+                itemTypeFilterMode = ItemTypeFilterMode.Weapon;
+                break;
+
+            case 4:
+                itemTypeFilterMode = ItemTypeFilterMode.Tool;
+                break;
+
+            case 5:
+                itemTypeFilterMode = ItemTypeFilterMode.Resource;
+                break;
+
+            case 6:
+                itemTypeFilterMode = ItemTypeFilterMode.Placeable;
+                break;
+
+            default:
+                itemTypeFilterMode = ItemTypeFilterMode.All;
+                break;
+        }
+
+        RebuildCraftingView();
+    }
+
+    private bool PassesFilter(INV_Item item)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        bool isCraftableNow = CanCraftItemRightNow(item);
+
+        switch (filterMode)
+        {
+            case CraftingFilterMode.CraftableOnly:
+                if (!isCraftableNow)
+                {
+                    return false;
+                }
+                break;
+
+            case CraftingFilterMode.NonCraftableOnly:
+                if (isCraftableNow)
+                {
+                    return false;
+                }
+                break;
+        }
+
+        if (itemTypeFilterMode != ItemTypeFilterMode.All)
+        {
+            if ((int)item.ItemTypeVal != (int)itemTypeFilterMode)
+            {
+                return false;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(nameFilter))
+        {
+            return true;
+        }
+
+        string loweredFilter = nameFilter.ToLowerInvariant();
+        string itemName = !string.IsNullOrWhiteSpace(item.Name) ? item.Name.ToLowerInvariant() : string.Empty;
+        string itemDescription = !string.IsNullOrWhiteSpace(item.Description) ? item.Description.ToLowerInvariant() : string.Empty;
+
+        if (itemName.Contains(loweredFilter) || itemDescription.Contains(loweredFilter))
+        {
+            return true;
+        }
+
+        for (int i = 0; i < item.RecipeCount; i++)
+        {
+            string recipeName = item.GetRecipeName(i);
+            if (!string.IsNullOrWhiteSpace(recipeName) && recipeName.ToLowerInvariant().Contains(loweredFilter))
+            {
+                return true;
+            }
+
+            List<INV_Item.CraftingStack> recipeRequirements = item.GetRecipeRequirements(i);
+            if (recipeRequirements == null)
+            {
+                continue;
+            }
+
+            for (int r = 0; r < recipeRequirements.Count; r++)
+            {
+                INV_Item.CraftingStack req = recipeRequirements[r];
+                if (req?.item == null || string.IsNullOrWhiteSpace(req.item.Name))
+                {
+                    continue;
+                }
+
+                if (req.item.Name.ToLowerInvariant().Contains(loweredFilter))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void SortCraftingList(List<INV_Item> items)
+    {
+        items.Sort((a, b) =>
+        {
+            if (a == b)
+            {
+                return 0;
+            }
+
+            if (a == null)
+            {
+                return 1;
+            }
+
+            if (b == null)
+            {
+                return -1;
+            }
+
+            return string.Compare(a.Name, b.Name, System.StringComparison.OrdinalIgnoreCase);
+        });
     }
 
     private void SpawnButtonsForList(List<INV_Item> items, bool interactable)
@@ -147,7 +353,8 @@ public class INV_Crafting : MonoBehaviour
             return;
         }
 
-        buttonUi.Init(this, item, interactable, BuildRequirementText(item));
+        int bestRecipeIndex = GetBestRecipeIndex(item);
+        buttonUi.Init(this, item, interactable, bestRecipeIndex);
         spawnedButtons.Add(buttonUi);
     }
 
@@ -208,14 +415,14 @@ public class INV_Crafting : MonoBehaviour
         LayoutRebuilder.ForceRebuildLayoutImmediate(craftingContentRoot);
     }
 
-    public void TryCraftItem(INV_Item item)
+    public void TryCraftItem(INV_Item item, int recipeIndex)
     {
         if (item == null || inventoryNet == null)
         {
             return;
         }
 
-        inventoryNet.RequestCraftItem(item.ItemID);
+        inventoryNet.RequestCraftItem(item.ItemID, recipeIndex);
     }
 
     private void OnCraftRequestFinished(bool success, string craftedItemId)
@@ -224,6 +431,24 @@ public class INV_Crafting : MonoBehaviour
     }
 
     public bool CanCraftItemRightNow(INV_Item item)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < item.RecipeCount; i++)
+        {
+            if (CanCraftRecipeRightNow(item, i))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool CanCraftRecipeRightNow(INV_Item item, int recipeIndex)
     {
         if (item == null || inventory == null)
         {
@@ -235,9 +460,15 @@ public class INV_Crafting : MonoBehaviour
             return false;
         }
 
-        for (int i = 0; i < item.CraftingRequirements.Count; i++)
+        List<INV_Item.CraftingStack> recipeRequirements = item.GetRecipeRequirements(recipeIndex);
+        if (recipeRequirements == null || recipeRequirements.Count == 0)
         {
-            INV_Item.CraftingStack req = item.CraftingRequirements[i];
+            return false;
+        }
+
+        for (int i = 0; i < recipeRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = recipeRequirements[i];
             if (req?.item == null || req.amount <= 0)
             {
                 continue;
@@ -252,7 +483,25 @@ public class INV_Crafting : MonoBehaviour
         return inventory.CanAddItem(item);
     }
 
-    private string BuildRequirementText(INV_Item item)
+    public int GetBestRecipeIndex(INV_Item item)
+    {
+        if (item == null || item.RecipeCount <= 0)
+        {
+            return 0;
+        }
+
+        for (int i = 0; i < item.RecipeCount; i++)
+        {
+            if (CanCraftRecipeRightNow(item, i))
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    public string BuildRequirementText(INV_Item item, int recipeIndex)
     {
         if (item == null)
         {
@@ -264,16 +513,22 @@ public class INV_Crafting : MonoBehaviour
             return "Needs crafting station";
         }
 
-        if (item.CraftingRequirements == null || item.CraftingRequirements.Count == 0 || !item.Craftable)
+        List<INV_Item.CraftingStack> recipeRequirements = item.GetRecipeRequirements(recipeIndex);
+        if (recipeRequirements == null || recipeRequirements.Count == 0 || !item.Craftable)
         {
             return "Uncraftable";
         }
 
         List<string> lines = new List<string>();
 
-        for (int i = 0; i < item.CraftingRequirements.Count; i++)
+        if (item.RecipeCount > 1)
         {
-            INV_Item.CraftingStack req = item.CraftingRequirements[i];
+            lines.Add(item.GetRecipeName(recipeIndex));
+        }
+
+        for (int i = 0; i < recipeRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = recipeRequirements[i];
             if (req?.item == null)
             {
                 continue;
