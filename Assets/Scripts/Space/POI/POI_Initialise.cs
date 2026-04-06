@@ -16,8 +16,7 @@ public class POI_Initialise : NetworkBehaviour
 
         if (!IsServer)
         {
-            enabled = false;
-            return;
+            Destroy(this);
         }
     }
 
@@ -38,11 +37,6 @@ public class POI_Initialise : NetworkBehaviour
         NetworkObject netObj = newPOI.GetComponent<NetworkObject>();
         if (netObj != null && !netObj.IsSpawned)
         {
-            netObj.Spawn();
-        }
-        else
-        {
-            netObj = newPOI.AddComponent<NetworkObject>();
             netObj.Spawn();
         }
 

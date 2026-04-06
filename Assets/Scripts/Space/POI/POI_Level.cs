@@ -41,22 +41,39 @@ public class POI_Level : NetworkBehaviour
     {
         if (mainPortal == null && players == 0)
         {
+            if (IsServer)
+            {
+                GetComponent<NetworkObject>().Despawn(true);
+            }
             Destroy(this.gameObject);
         }
     }
 
     private void OnTriggerExit(Collider col)
     {
-        CC_Movement player = col.GetComponent<CC_Movement>();
-        SP_SpaceJunk spaceObj = col.GetComponent<SP_SpaceJunk>();
-        if (player != null && player.canTeleport)
+        NetworkObject netObj = col.GetComponent<NetworkObject>();
+        if (netObj != null)
         {
-            SubtractPlayers();
-            player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+            ObjectExitSpacePOIRpc(netObj);
         }
-        else if (spaceObj != null && spaceObj.canTeleport)
-        {
-            spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ObjectExitSpacePOIRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        { 
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            SP_SpaceJunk spaceObj = netObj.GetComponent<SP_SpaceJunk>();
+            if (player != null && player.canTeleport)
+            {
+                SubtractPlayers();
+                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+            }
+            else if (spaceObj != null && spaceObj.canTeleport)
+            {
+                spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
+            }
         }
     }
 

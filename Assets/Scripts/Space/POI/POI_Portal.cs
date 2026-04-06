@@ -39,41 +39,54 @@ public class POI_Portal : NetworkBehaviour
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider col)
     {
-        Rigidbody rb = other.GetComponent<Rigidbody>();
-        CC_Movement player = other.GetComponent<CC_Movement>();
-        SP_SpaceJunk spaceObj = other.GetComponent<SP_SpaceJunk>();
-        if (rb != null)
+        NetworkObject netObj = col.GetComponent<NetworkObject>();
+        if (netObj != null )
         {
-            Vector3 teleportPoint = Vector3.zero;
-            if (destination != null)
-            { 
-                teleportPoint = destination.position;  
-            } 
-            else if (player != null) 
-            {
-                teleportPoint = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
-            }
-            else if (spaceObj != null)
-            {
-                teleportPoint = Vector3.zero;
-            }
-            if (player != null && player.canTeleport)
-            {
-                rb.linearVelocity = Vector3.zero;
-                StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, player, rb, teleportPoint));
-                if (refillAir)
-                {
-                    CC_CharacterValues charVals = player.GetComponent<CC_CharacterValues>();
-                    charVals.SetOxygen(charVals.maxOxygen);
-                }
-            }
-            else if (spaceObj != null && spaceObj.canTeleport)
-            {
-                //StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, spaceObj, rb, teleportPoint));
-            }
+            ObjectTeleportationRpc(netObj);
         }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ObjectTeleportationRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        {
+            Rigidbody rb = netObj.GetComponent<Rigidbody>();
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            //SP_SpaceJunk spaceObj = other.GetComponent<SP_SpaceJunk>();
+            if (rb != null)
+            {
+                Vector3 teleportPoint = Vector3.zero;
+                if (destination != null)
+                {
+                    teleportPoint = destination.position;
+                }
+                else if (player != null)
+                {
+                    teleportPoint = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+                }
+                //else if (spaceObj != null)
+                //{
+                //    teleportPoint = Vector3.zero;
+                //}
+                if (player != null && player.canTeleport)
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, player, rb, teleportPoint));
+                    if (refillAir)
+                    {
+                        CC_CharacterValues charVals = player.GetComponent<CC_CharacterValues>();
+                        charVals.SetOxygen(charVals.maxOxygen);
+                    }
+                }
+                //else if (spaceObj != null && spaceObj.canTeleport)
+                //{
+                //StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, spaceObj, rb, teleportPoint));
+                //}
+            }
+        } 
     }
 
     private IEnumerator ObjectTeleportCooldown(float duration, CC_Movement player, Rigidbody rb, Vector3 teleportPoint)

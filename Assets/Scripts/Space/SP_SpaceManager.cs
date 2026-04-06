@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -78,15 +79,28 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void OnTriggerExit(Collider col)
     {
-        CC_Movement player = col.GetComponent<CC_Movement>();
-        SP_SpaceJunk spaceObj = col.GetComponent<SP_SpaceJunk>();
-        if (player != null && player.canTeleport)
+        NetworkObject netObj = col.GetComponent<NetworkObject>();
+        if (netObj != null)
         {
-            player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+            ObjectExitSpaceRpc(netObj);
         }
-        else if (spaceObj != null && spaceObj.canTeleport)
-        {
-            spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ObjectExitSpaceRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        { 
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            SP_SpaceJunk spaceObj = netObj.GetComponent<SP_SpaceJunk>();
+            if (player != null && player.canTeleport)
+            {
+                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+            }
+            else if (spaceObj != null && spaceObj.canTeleport)
+            {
+                spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
+            }
         }
     }
 
@@ -156,6 +170,7 @@ public class SP_SpaceManager : NetworkBehaviour
             if (obj == null) continue;
 
             Rigidbody rb = obj.GetComponent<Rigidbody>();
+            NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
             Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
             if (rb != null)

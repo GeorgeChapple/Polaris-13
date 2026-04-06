@@ -47,18 +47,16 @@ public class SP_SpaceJunk : NetworkBehaviour
     private void InitialiseComponents()
     {
         rb = GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            rb = this.AddComponent<Rigidbody>();
-        }
-
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
     }
 
     private void Start()
     {
         StartLerpScale(Vector3.zero, transform.localScale, false);
-        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
+        if (rb != null)
+        {
+            rb.AddTorque(Vector3.one * Random.Range(-10, 10));
+        } 
         if (IsServer && spawner != null)
         { 
             spaceManager.spawners[spawner]++;
@@ -129,14 +127,12 @@ public class SP_SpaceJunk : NetworkBehaviour
 
         // despawn junk over network
         NetworkObject netObj = GetComponent<NetworkObject>();
-        if (netObj != null && netObj.IsSpawned)
+        if (IsServer && netObj != null && netObj.IsSpawned)
         {
             netObj.Despawn(true);
         }
-        else
-        {
-            Destroy(this.gameObject);
-        }
+
+        Destroy(this.gameObject);
     }
     public void RemoveFromSpaceManager()
     {

@@ -43,75 +43,78 @@ public class SP_Spawner : NetworkBehaviour
 
     private void Update()
     {
-        if (timer < timeLimit)
+        if (spaceManager.rocket.speed > 0.1f)
         {
-            timer += Time.deltaTime;
-        }
-        else if (settings.limited && lifetimeSpawned > settings.limit)
-        {
-            // Safety Check
-            if (!IsServer)
+            if (timer < timeLimit)
             {
-                return;
+                timer += Time.deltaTime;
             }
-
-            spaceManager.spawners.Remove(this);
-
-            // Despawn/destroy spawners
-            NetworkObject netObj = GetComponent<NetworkObject>();
-            if (netObj != null && netObj.IsSpawned)
+            else if (settings.limited && lifetimeSpawned >= settings.limit)
             {
-                netObj.Despawn(true);
+                // Safety Check
+                if (!IsServer)
+                {
+                    return;
+                }
+
+                spaceManager.spawners.Remove(this);
+
+                // Despawn/destroy spawners
+                NetworkObject netObj = GetComponent<NetworkObject>();
+                if (netObj != null && netObj.IsSpawned)
+                {
+                    netObj.Despawn(true);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
             }
             else
             {
-                Destroy(gameObject);
-            }
-        }
-        else
-        {
-            if (settings.ignoreMaxDebris || !spaceManager.maxDebrisReached && spaceManager.spawners[this] < settings.maxDebris)
-            {
-                Vector2 spawnPosition = GetRandomSpawnPosition(settings.spawnbounds);
-                int prefabIndex = GetRandomPrefabIndex(settings);
-
-                GameObject newDebris = Instantiate(
-                            settings.spaceObjects[prefabIndex].prefab,
-                            new Vector3(
-                                spawnPosition.x,
-                                spawnPosition.y,
-                                spaceManager.spaceBounds.z / 2
-                            ),
-                            transform.rotation
-                        );
-
-                SP_SpaceJunk junkComponent = newDebris.GetComponent<SP_SpaceJunk>();
-                if (junkComponent != null)
+                if (settings.ignoreMaxDebris || !spaceManager.maxDebrisReached && spaceManager.spawners[this] < settings.maxDebris)
                 {
-                    junkComponent.spawner = this;
-                }
+                    Vector2 spawnPosition = GetRandomSpawnPosition(settings.spawnbounds);
+                    int prefabIndex = GetRandomPrefabIndex(settings);
 
-                INV_ItemDrop itemDrop = newDebris.GetComponent<INV_ItemDrop>();
-                if (itemDrop != null)
-                {
-                    itemDrop.Init(GetRandomItem());
-                }
+                    GameObject newDebris = Instantiate(
+                                settings.spaceObjects[prefabIndex].prefab,
+                                new Vector3(
+                                    spawnPosition.x,
+                                    spawnPosition.y,
+                                    spaceManager.spaceBounds.z / 2
+                                ),
+                                transform.rotation
+                            );
 
-                newDebris.transform.eulerAngles = Vector3.back;
+                    SP_SpaceJunk junkComponent = newDebris.GetComponent<SP_SpaceJunk>();
+                    if (junkComponent != null)
+                    {
+                        junkComponent.spawner = this;
+                    }
 
-                NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
-                if (netObj != null && !netObj.IsSpawned)
-                {
-                    netObj.Spawn();
-                }
+                    INV_ItemDrop itemDrop = newDebris.GetComponent<INV_ItemDrop>();
+                    if (itemDrop != null)
+                    {
+                        itemDrop.Init(GetRandomItem());
+                    }
 
-                spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirection);
+                    newDebris.transform.eulerAngles = Vector3.back;
 
-                timer = 0;
-                timeLimit = GetRandomTimeLimit(settings);
-                if (settings.limited)
-                {
-                    lifetimeSpawned++;
+                    NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
+                    if (netObj != null && !netObj.IsSpawned)
+                    {
+                        netObj.Spawn();
+                    }
+
+                    spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirection);
+
+                    timer = 0;
+                    timeLimit = GetRandomTimeLimit(settings);
+                    if (settings.limited)
+                    {
+                        lifetimeSpawned++;
+                    }
                 }
             }
         }
