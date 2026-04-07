@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &4757901522527422750
+--- !u!1 &7682268737798192233
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,24 +8,24 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5230566950221125944}
+  - component: {fileID: 8610571850413452298}
   m_Layer: 0
-  m_Name: MuzzlePoint
+  m_Name: Muzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5230566950221125944
+--- !u!4 &8610571850413452298
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4757901522527422750}
+  m_GameObject: {fileID: 7682268737798192233}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.474, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -92,7 +92,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 6167580887810336332, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 5230566950221125944}
+      addedObject: {fileID: 8610571850413452298}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       insertIndex: -1
@@ -121,4 +121,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TestBullet: {fileID: 2603096290472475934, guid: 1cce7d8c9fd2a1a4cab127716b1f38ea, type: 3}
-  muzzlePoint: {fileID: 5230566950221125944}
+  muzzlePoint: {fileID: 8610571850413452298}
+  bulletSpeed: 20

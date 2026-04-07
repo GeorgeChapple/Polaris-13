@@ -747,9 +747,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
                 continue;
             }
 
-            usableItem.WireUp(gameObject, itemId);
-            usableItem.OnUse();
-            usableItem.OnUseWithUser(gameObject.GetComponent<NetworkObject>());
+            usableItem.SendItemId(itemId);
+            usableItem.OnUse(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
 

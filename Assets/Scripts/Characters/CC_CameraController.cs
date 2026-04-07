@@ -4,7 +4,6 @@ using Unity.Netcode;
 
 // Made by: Jason Lodge
 // Summary: Handles camera ownership, look rotation, crouch camera offset, FOV, bobbing and replicated camera direction.
-// Real camera is owner only. Movement/body rotation is host/server authoritative.
 
 public class CC_CameraController : NetworkBehaviour
 {
@@ -115,15 +114,13 @@ public class CC_CameraController : NetworkBehaviour
     bool initialised;
 
     // replicated camera direction
-    private NetworkVariable<Vector3> replicatedCameraLocalPosition = new NetworkVariable<Vector3>
-    (
+    private NetworkVariable<Vector3> replicatedCameraLocalPosition = new NetworkVariable<Vector3>(
         Vector3.zero,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner
     );
 
-    private NetworkVariable<Quaternion> replicatedCameraLocalRotation = new NetworkVariable<Quaternion>
-    (
+    private NetworkVariable<Quaternion> replicatedCameraLocalRotation = new NetworkVariable<Quaternion>(
         Quaternion.identity,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner
@@ -158,7 +155,7 @@ public class CC_CameraController : NetworkBehaviour
             camTargetBaseLocalPos = cinemachineCameraTarget.localPosition;
         }
 
-        // prefer the actual look source first so replicated aim includes pitch properly
+        // prefer the actual look source first so replicated aim includes pitch / space look properly
         if (replicatedCameraSource == null)
         {
             if (cinemachineCameraTarget != null)
@@ -172,9 +169,9 @@ public class CC_CameraController : NetworkBehaviour
         }
     }
 
-    bool HasInputAuthority()
+    bool IsLocallyControlled()
     {
-        return movement != null && movement.HasInputAuthority();
+        return movement != null && movement.IsLocallyControlled();
     }
 
     public override void OnNetworkSpawn()
@@ -270,13 +267,19 @@ public class CC_CameraController : NetworkBehaviour
     // Call in LateUpdate.
     public virtual void TickLate(Vector2 lookInput, bool isMouse)
     {
-        if (!HasInputAuthority()) { return; }
+        if (!IsLocallyControlled()) { return; }
 
         CameraRotation(lookInput, isMouse);
         UpdateCrouch();
         UpdateSprintFov();
         UpdateCameraBobbing();
         UpdateReplicatedCameraDirection();
+
+        // body capsule crouch is handled by movement, camera crouch offset is handled here
+        if (movement != null)
+        {
+            movement.UpdateCapsuleCrouch(crouchSharpness);
+        }
     }
 
     protected virtual void CameraRotation(Vector2 look, bool isMouse)
@@ -297,10 +300,20 @@ public class CC_CameraController : NetworkBehaviour
 
         if (invertY) { lookY = -lookY; }
 
-        // pitch always affects camera target locally first
+        // pitch always affects camera target first
         cinemachineTargetPitch -= lookY;
         cinemachineTargetPitch = ClampAngle(cinemachineTargetPitch, bottomClamp, topClamp);
         cinemachineCameraTarget.localRotation = Quaternion.Euler(cinemachineTargetPitch, 0f, 0f);
+
+        // in ground mode, apply yaw immediately
+        if (movement.locomotionType == CC_Movement.LocomotionType.GroundMode)
+        {
+            movement.AddGroundYaw(lookX);
+            return;
+        }
+
+        // in space mode cache look for fixed update rotation
+        movement.SetPendingLook(new Vector2(lookX, lookY));
     }
 
     protected virtual void UpdateCrouch()
@@ -378,7 +391,7 @@ public class CC_CameraController : NetworkBehaviour
 
     void UpdateReplicatedCameraDirection()
     {
-        if (!replicateCameraDirection || !HasInputAuthority() || replicatedCameraDirectionRoot == null) { return; }
+        if (!replicateCameraDirection || !IsLocallyControlled() || replicatedCameraDirectionRoot == null) { return; }
 
         Transform source = replicatedCameraSource != null
             ? replicatedCameraSource

@@ -37,7 +37,7 @@ public class CC_Interaction : NetworkBehaviour
 
     bool IsLocallyControlled()
     {
-        return movement != null && movement.HasInputAuthority();
+        return movement != null && movement.IsLocallyControlled();
     }
 
     protected virtual InteractableObject GetLookInteractable()
