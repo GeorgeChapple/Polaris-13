@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: DebrisSilver Small 1
+  m_Name: Plastic
   m_EditorClassIdentifier: 
-  itemID: silver_meteor_large
-  m_name: Large Silver Meteor
-  description: A large meteor enriched with silver
+  itemID: plastic
+  m_name: Plastic
+  description: A cheaply made rigid material
   itemType: 4
   durability: 0
   hungerReplenish: 0
@@ -22,28 +22,32 @@ MonoBehaviour:
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
-  chanceOfSpawnAsDebris: 5
+  chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
-  stackable: 0
-  maxStack: 1
-  craftable: 0
+  stackable: 1
+  maxStack: 10
+  craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements: []
+  craftingRequirements:
+  - item: {fileID: 11400000, guid: 499359c39420caf4d8b771206f361f4c, type: 2}
+    amount: 1
+  - item: {fileID: 11400000, guid: 8f49abf4fd48b1944aa5c763a2b11b11, type: 2}
+    amount: 2
   icon: {fileID: 0}
-  mesh: {fileID: -8953451059965167647, guid: 483058d875a39f0489f4fc72bd4ba49f, type: 3}
+  mesh: {fileID: 0}
   material: {fileID: 0}
-  inventoryMeshOffset: {x: 0, y: 0, z: -20}
+  inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 120
-  equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
-  applyEquippedPrefabVisuals: 1
+  inventoryMeshScale: 1
+  equippedPrefab: {fileID: 0}
+  applyEquippedPrefabVisuals: 0
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
-  equippedMeshScale: 0.3
-  craftingMeshOffset: {x: 0, y: 0, z: -20}
+  equippedMeshScale: 1
+  craftingMeshOffset: {x: 0, y: 0, z: 0}
   craftingMeshRotation: {x: 0, y: 0, z: 0}
-  craftingMeshScale: 120
+  craftingMeshScale: 1
   inventorySpaceShape:
   - ++
-  - ++
+  - +-
   inventorySpace: {x: 1, y: 1}

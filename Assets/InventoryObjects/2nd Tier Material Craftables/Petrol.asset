@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Scanner
+  m_Name: Petrol
   m_EditorClassIdentifier: 
-  itemID: scanner
-  m_name: Scanner
-  description: A device that can be used to scan materials
-  itemType: 3
+  itemID: petrol
+  m_name: Petrol
+  description: The main fuel source of spacecrafts
+  itemType: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
@@ -24,16 +24,14 @@ MonoBehaviour:
   chanceOfSpawnInChest: 0
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
-  stackable: 0
-  maxStack: 1
+  stackable: 1
+  maxStack: 10
   craftable: 1
   canCraftAnywhere: 0
   craftingRequirements:
-  - item: {fileID: 11400000, guid: 4196f0152793071458449864540a0f64, type: 2}
-    amount: 2
-  - item: {fileID: 11400000, guid: cf28bfe0296244e488cfdfa926e739ca, type: 2}
-    amount: 1
-  - item: {fileID: 11400000, guid: cc51d04d4b6bfea4db7b485153c10017, type: 2}
+  - item: {fileID: 11400000, guid: 499359c39420caf4d8b771206f361f4c, type: 2}
+    amount: 3
+  - item: {fileID: 11400000, guid: fa05d28205803df418ae0b04578bd6f1, type: 2}
     amount: 1
   icon: {fileID: 0}
   mesh: {fileID: 0}

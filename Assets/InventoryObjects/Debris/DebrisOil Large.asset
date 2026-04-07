@@ -10,31 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Scanner
+  m_Name: DebrisOil Large
   m_EditorClassIdentifier: 
-  itemID: scanner
-  m_name: Scanner
-  description: A device that can be used to scan materials
-  itemType: 3
+  itemID: oil_debris_large
+  m_name: Large Oil Meteor
+  description: A large meteor filled with oil
+  itemType: 4
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
-  chanceOfSpawnAsDebris: 0
+  chanceOfSpawnAsDebris: 20
   biomeProbabilities: []
   stackable: 0
   maxStack: 1
-  craftable: 1
+  craftable: 0
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 4196f0152793071458449864540a0f64, type: 2}
-    amount: 2
-  - item: {fileID: 11400000, guid: cf28bfe0296244e488cfdfa926e739ca, type: 2}
-    amount: 1
-  - item: {fileID: 11400000, guid: cc51d04d4b6bfea4db7b485153c10017, type: 2}
-    amount: 1
+  craftingRequirements: []
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}
