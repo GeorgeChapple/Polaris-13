@@ -38,6 +38,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    // local only, used so equipped consumables can remove the correct inventory item on the owner
+    private string localEquippedInventoryItemUniqueId;
+
     // local owner only equipped visual
     private GameObject localEquippedVisual;
 
@@ -410,13 +413,15 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestTakeChestItemQuickRpc(new NetworkObjectReference(chestNetObj), chestItemUniqueId, takeStack);
     }
 
-    public void RequestEquipItem(string itemId)
+    public void RequestEquipItem(string itemId, string inventoryItemUniqueId = null)
     {
         if (string.IsNullOrWhiteSpace(itemId))
         {
             RequestClearEquippedItem();
             return;
         }
+
+        localEquippedInventoryItemUniqueId = inventoryItemUniqueId;
 
         if (IsOwner)
         {
@@ -434,6 +439,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     public void RequestClearEquippedItem()
     {
+        localEquippedInventoryItemUniqueId = null;
+
         if (IsOwner)
         {
             ClearLocalEquippedVisual();
@@ -464,7 +471,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestUseEquippedItemRpc();
     }
 
-    public void RequestUseItemInInventory(string itemId)
+    public void RequestUseItemInInventory(string inventoryItemUniqueId, string itemId)
     {
         if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
         {
@@ -473,11 +480,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (IsServer)
         {
-            UseItemInInventory_Server(itemId);
+            UseItemInInventory_Server(inventoryItemUniqueId, itemId);
             return;
         }
 
-        RequestUseItemInInventoryRpc(itemId);
+        RequestUseItemInInventoryRpc(inventoryItemUniqueId, itemId);
     }
 
     public void RequestCraftItem(string itemId, int recipeIndex)
@@ -628,14 +635,37 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    private void RequestUseItemInInventoryRpc(string itemId, RpcParams rpcParams = default)
+    private void RequestUseItemInInventoryRpc(string inventoryItemUniqueId, string itemId, RpcParams rpcParams = default)
     {
         if (!IsSenderOwner(rpcParams))
         {
             return;
         }
 
-        UseItemInInventory_Server(itemId);
+        UseItemInInventory_Server(inventoryItemUniqueId, itemId);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void UseConsumableLocalRpc(string inventoryItemUniqueId, string itemId, RpcParams rpcParams = default)
+    {
+        CacheRefs();
+
+        if (inventory == null)
+        {
+            return;
+        }
+
+        bool removed = false;
+
+        if (!string.IsNullOrWhiteSpace(inventoryItemUniqueId))
+        {
+            removed = inventory.TryUseLocalConsumableByUniqueId(inventoryItemUniqueId);
+        }
+
+        if (!removed && !string.IsNullOrWhiteSpace(itemId))
+        {
+            inventory.TryUseLocalConsumableByItemId(itemId);
+        }
     }
 
     [Rpc(SendTo.Server)]
@@ -737,6 +767,19 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        // consumables should probably be done here so they use the same networked path as inventory
+        if (item.ItemTypeVal == INV_Item.ItemType.Consumable)
+        {
+            UseItemInInventory_Server(localEquippedInventoryItemUniqueId, itemId);
+            return;
+        }
+
         MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
@@ -759,7 +802,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     // inventory item use / crafting
-    private void UseItemInInventory_Server(string itemId)
+    private void UseItemInInventory_Server(string inventoryItemUniqueId, string itemId)
     {
         if (!IsServer)
         {
@@ -772,29 +815,68 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        if (inventory == null)
-        {
-            inventory = GetComponentInChildren<INV_Inventory>();
-        }
+        CacheRefs();
 
         if (inventory == null)
         {
             return;
         }
 
-        bool removed = inventory.RemoveItemAmount(itemId, 1);
-        if (!removed)
+        // host uses the real inventory instance on server
+        if (IsOwner)
+        {
+            bool removedHost = false;
+
+            if (!string.IsNullOrWhiteSpace(inventoryItemUniqueId))
+            {
+                removedHost = inventory.RemovePlayerItemByUniqueId(inventoryItemUniqueId, 1);
+            }
+
+            if (!removedHost)
+            {
+                removedHost = inventory.RemoveItemAmount(itemId, 1);
+            }
+
+            if (!removedHost)
+            {
+                return;
+            }
+        }
+        else
+        {
+            // remote owner inventory is local only, tell the owner to remove 1 item
+            UseConsumableLocalRpc
+            (
+                inventoryItemUniqueId,
+                itemId,
+                RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
+            );
+        }
+
+        ApplyConsumableEffects_Server(usedItem);
+
+        // if the equipped item no longer exists locally after use, clear equipped state too
+        if (!string.IsNullOrWhiteSpace(localEquippedInventoryItemUniqueId) &&
+            inventoryItemUniqueId == localEquippedInventoryItemUniqueId)
+        {
+            if (IsOwner && !inventory.HasPlayerItemWithUniqueId(localEquippedInventoryItemUniqueId))
+            {
+                RequestClearEquippedItem();
+            }
+        }
+    }
+
+    private void ApplyConsumableEffects_Server(INV_Item usedItem)
+    {
+        if (usedItem == null || characterValues == null)
         {
             return;
         }
 
-        if (characterValues != null)
-        {
-            characterValues.AddHungerDelay(usedItem.HungerDrainDelay);
-            characterValues.AddHunger(usedItem.HungerReplenish);
-            characterValues.AddThirstDelay(usedItem.ThirstDrainDelay);
-            characterValues.AddThirst(usedItem.ThirstReplenish);
-        }
+        characterValues.AddHungerDelay(usedItem.HungerDrainDelay);
+        characterValues.AddHunger(usedItem.HungerReplenish);
+        characterValues.AddThirstDelay(usedItem.ThirstDrainDelay);
+        characterValues.AddThirst(usedItem.ThirstReplenish);
     }
 
     private void CraftItem_Server(string itemId, int recipeIndex)

@@ -376,7 +376,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
                 inventory.hoverItem.Instance.data != null &&
                 !inventory.hoverItem.Instance.isChestItem)
             {
-                inventoryNet.RequestUseItemInInventory(inventory.hoverItem.Instance.data.ItemID);
+                inventoryNet.RequestUseItemInInventory(inventory.hoverItem.Instance.inventoryItemUniqueId, inventory.hoverItem.Instance.data.ItemID);
             }
         }
         else if (!input.interact && useInInvHeld)

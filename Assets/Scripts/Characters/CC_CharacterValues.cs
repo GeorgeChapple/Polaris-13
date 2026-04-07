@@ -1,5 +1,6 @@
 using System.Collections;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -209,13 +210,6 @@ public class CC_CharacterValues : MonoBehaviour
     [Tooltip("Simple centered death image root shown while dead.")]
     [SerializeField] private GameObject deathScreenRoot;
 
-    [Header("Level / Exp")]
-    [SerializeField] int level = 1;
-    [SerializeField] int exp = 0;
-
-    [Tooltip("Exp required for next level. will change to be based on current level eventually.")]
-    public int expToNextLevel = 100;
-
     public bool isDead;
 
     [Header("UI")]
@@ -224,7 +218,6 @@ public class CC_CharacterValues : MonoBehaviour
     public FillUI[] thirstUI;
     public FillUI[] staminaUI;
     public FillUI[] oxygenUI;
-    public FillUI[] expUI;
     public TextMeshProUGUI speedText;
 
     // Getters
@@ -233,9 +226,6 @@ public class CC_CharacterValues : MonoBehaviour
     public float Thirst => thirst;
     public float Stamina => stamina;
     public float Oxygen => oxygen;
-
-    public int Level => level;
-    public int Exp => exp;
 
     private Rigidbody rb;
     public float DeathRespawnDelay => deathRespawnDelay;
@@ -249,9 +239,6 @@ public class CC_CharacterValues : MonoBehaviour
         SetMaxThirst(maxThirst, true);
         SetMaxStamina(maxStamina, true);
         SetMaxOxygen(maxOxygen, true);
-
-        SetLevel(level, false);
-        SetExp(exp, false);
 
         isDead = (health <= 0f || oxygen <= 0f);
 
@@ -274,17 +261,21 @@ public class CC_CharacterValues : MonoBehaviour
 
     void Update()
     {
-        TickHunger();
-        TickThirst();
+        if (CanSimulateLocally())
+        {
+            TickHunger();
+            TickThirst();
+
+            // rudimentary death checks
+            if (!isDead && (health <= 0f || oxygen <= 0f))
+            {
+                Kill();
+            }
+        }
+
         if (speedText != null && rb != null)
         {
             speedText.SetText(System.Convert.ToInt32(rb.linearVelocity.magnitude).ToString());
-        }
-
-        // rudimentary death checks
-        if (!isDead && (health <= 0f || oxygen <= 0f))
-        {
-            Kill();
         }
 
         UpdateDeathScreenState();
@@ -318,10 +309,6 @@ public class CC_CharacterValues : MonoBehaviour
 
         deathRespawnDelay = Mathf.Max(0f, deathRespawnDelay);
 
-        level = Mathf.Max(1, level);
-        exp = Mathf.Max(0, exp);
-        expToNextLevel = Mathf.Max(1, expToNextLevel);
-
         isDead = (health <= 0f || oxygen <= 0f);
 
         InitUI();
@@ -351,7 +338,6 @@ public class CC_CharacterValues : MonoBehaviour
         float t01 = (maxThirst <= 0f) ? 0f : (thirst / maxThirst);
         float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
         float o01 = (maxOxygen <= 0f) ? 0f : (oxygen / maxOxygen);
-        float e01 = (expToNextLevel <= 0) ? 0f : Mathf.Clamp01((float)exp / expToNextLevel);
 
         if (healthUI != null)
         {
@@ -377,11 +363,6 @@ public class CC_CharacterValues : MonoBehaviour
         {
             for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].SetFill(o01, triggerAppear); } }
         }
-
-        if (expUI != null)
-        {
-            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].SetFill(e01, triggerAppear); } }
-        }
     }
 
     void InitUI()
@@ -391,7 +372,6 @@ public class CC_CharacterValues : MonoBehaviour
         float t01 = (maxThirst <= 0f) ? 0f : (thirst / maxThirst);
         float s01 = (maxStamina <= 0f) ? 0f : (stamina / maxStamina);
         float o01 = (maxOxygen <= 0f) ? 0f : (oxygen / maxOxygen);
-        float e01 = (expToNextLevel <= 0) ? 0f : Mathf.Clamp01((float)exp / expToNextLevel);
 
         if (healthUI != null)
         {
@@ -416,11 +396,6 @@ public class CC_CharacterValues : MonoBehaviour
         if (oxygenUI != null)
         {
             for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].Init(o01); } }
-        }
-
-        if (expUI != null)
-        {
-            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].Init(e01); } }
         }
     }
 
@@ -449,11 +424,6 @@ public class CC_CharacterValues : MonoBehaviour
         if (oxygenUI != null)
         {
             for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].Tick(); } }
-        }
-
-        if (expUI != null)
-        {
-            for (int i = 0; i < expUI.Length; i++) { if (expUI[i] != null) { expUI[i].Tick(); } }
         }
     }
 
@@ -864,47 +834,6 @@ public class CC_CharacterValues : MonoBehaviour
         return oxygen > min;
     }
 
-    // Level / Exp
-    public void SetLevel(int newLevel, bool resetExp = true)
-    {
-        level = Mathf.Max(1, newLevel);
-        if (resetExp) { exp = 0; }
-        RefreshUI();
-    }
-
-    public void AddLevel(int amount, bool resetExp = true)
-    {
-        SetLevel(level + amount, resetExp);
-    }
-
-    public void SetExp(int newExp, bool allowLevelUp = true)
-    {
-        exp = Mathf.Max(0, newExp);
-        if (allowLevelUp) { TryLevelUp(); }
-        RefreshUI();
-    }
-
-    public void AddExp(int amount, bool allowLevelUp = true)
-    {
-        exp = Mathf.Max(0, exp + amount);
-        if (allowLevelUp) { TryLevelUp(); }
-        RefreshUI();
-    }
-
-    public bool TryLevelUp()
-    {
-        bool leveled = false;
-
-        while (expToNextLevel > 0 && exp >= expToNextLevel)
-        {
-            exp -= expToNextLevel;
-            level += 1;
-            leveled = true;
-        }
-
-        return leveled;
-    }
-
     public void RespawnReset()
     {
         isDead = false;
@@ -931,8 +860,7 @@ public class CC_CharacterValues : MonoBehaviour
         float newHunger, float newMaxHunger,
         float newThirst, float newMaxThirst,
         float newStamina, float newMaxStamina,
-        float newOxygen, float newMaxOxygen,
-        int newLevel, int newExp
+        float newOxygen, float newMaxOxygen
     )
     {
         SetMaxHealth(newMaxHealth, false);
@@ -950,10 +878,23 @@ public class CC_CharacterValues : MonoBehaviour
         SetMaxOxygen(newMaxOxygen, false);
         SetOxygen(newOxygen, true);
 
-        SetLevel(newLevel, false);
-        SetExp(newExp, true);
-
         RefreshUI();
         UpdateDeathScreenState();
+    }
+
+    private bool CanSimulateLocally()
+    {
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        if (netObj == null || !netObj.IsSpawned)
+        {
+            return true;
+        }
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            return true;
+        }
+
+        return NetworkManager.Singleton.IsServer;
     }
 }

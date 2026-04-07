@@ -1419,7 +1419,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 4413220172885515415}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.8949999
+  m_Size: 0.895
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2267,7 +2267,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 0}
+  m_TargetGraphic: {fileID: 689524165861615200}
   m_TextViewport: {fileID: 5806114438657528081}
   m_TextComponent: {fileID: 5851779949607171248}
   m_Placeholder: {fileID: 8118755700202123597}
@@ -6921,6 +6921,7 @@ GameObject:
   - component: {fileID: 5716702273530058439}
   - component: {fileID: 174551457786224480}
   - component: {fileID: 6908361564922073646}
+  - component: {fileID: 2963449317703620547}
   - component: {fileID: 8369474086802787515}
   - component: {fileID: 7754135669426331764}
   - component: {fileID: 8659341846294892265}
@@ -7386,6 +7387,21 @@ MonoBehaviour:
     alphaLerpOutSpeed: 6
   expUI: []
   speedText: {fileID: 6129475804090202580}
+--- !u!114 &2963449317703620547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6189470309648960028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b0717dab0ba30c43b1c75a17c682ac2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  characterValues: {fileID: 6908361564922073646}
+  logSync: 0
 --- !u!114 &8369474086802787515
 MonoBehaviour:
   m_ObjectHideFlags: 0

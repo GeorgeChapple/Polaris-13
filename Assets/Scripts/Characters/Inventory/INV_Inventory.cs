@@ -1835,6 +1835,118 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
+    public string GetFirstPlayerItemUniqueIdByItemId(string itemId)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < playerRuntime.items.Count; i++)
+        {
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst?.data == null)
+            {
+                continue;
+            }
+
+            if (inst.data.ItemID != itemId)
+            {
+                continue;
+            }
+
+            return inst.inventoryItemUniqueId;
+        }
+
+        return null;
+    }
+
+    public bool HasPlayerItemWithUniqueId(string inventoryItemUniqueId)
+    {
+        if (string.IsNullOrWhiteSpace(inventoryItemUniqueId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < playerRuntime.items.Count; i++)
+        {
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst == null)
+            {
+                continue;
+            }
+
+            if (inst.inventoryItemUniqueId == inventoryItemUniqueId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public bool TryUseLocalConsumableByUniqueId(string inventoryItemUniqueId)
+    {
+        if (string.IsNullOrWhiteSpace(inventoryItemUniqueId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < playerRuntime.items.Count; i++)
+        {
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst?.data == null)
+            {
+                continue;
+            }
+
+            if (inst.inventoryItemUniqueId != inventoryItemUniqueId)
+            {
+                continue;
+            }
+
+            if (inst.data.ItemTypeVal != INV_Item.ItemType.Consumable)
+            {
+                return false;
+            }
+
+            return RemovePlayerItemByUniqueId(inventoryItemUniqueId, 1);
+        }
+
+        return false;
+    }
+
+    public bool TryUseLocalConsumableByItemId(string itemId)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < playerRuntime.items.Count; i++)
+        {
+            ItemInstance inst = playerRuntime.items[i];
+            if (inst?.data == null)
+            {
+                continue;
+            }
+
+            if (inst.data.ItemID != itemId)
+            {
+                continue;
+            }
+
+            if (inst.data.ItemTypeVal != INV_Item.ItemType.Consumable)
+            {
+                return false;
+            }
+
+            return RemovePlayerItemByUniqueId(inst.inventoryItemUniqueId, 1);
+        }
+
+        return false;
+    }
+
     // crafting
     public int GetItemCount(string itemId)
     {
@@ -2083,7 +2195,7 @@ public class INV_Inventory : MonoBehaviour
                     return false;
                 }
 
-                net.RequestUseItemInInventory(inst.data.ItemID);
+                net.RequestUseItemInInventory(inst.inventoryItemUniqueId, inst.data.ItemID);
                 return true;
 
             case ContextActionType.DropOne:
