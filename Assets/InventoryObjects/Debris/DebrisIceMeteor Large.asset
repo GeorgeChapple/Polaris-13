@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Lead
+  m_Name: DebrisIceMeteor Large
   m_EditorClassIdentifier: 
-  itemID: lead
-  m_name: Lead
-  description: A bar of lead
+  itemID: ice_meteor_large
+  m_name: Large Ice Meteor
+  description: A large meteor made of ice
   itemType: 4
   durability: 0
   hungerReplenish: 0
@@ -22,17 +22,15 @@ MonoBehaviour:
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
-  chanceOfSpawnAsDebris: 0
+  chanceOfSpawnAsDebris: 20
   biomeProbabilities: []
-  stackable: 1
-  maxStack: 10
-  craftable: 1
+  stackable: 0
+  maxStack: 1
+  craftable: 0
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 21750d71c3f8f794b8ea5e8859d882b5, type: 2}
-    amount: 1
+  craftingRequirements: []
   icon: {fileID: 0}
-  mesh: {fileID: 0}
+  mesh: {fileID: -2241850966452767214, guid: 8159e59acc2e01b4fa1ed19650bd6f82, type: 3}
   material: {fileID: 0}
   inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}

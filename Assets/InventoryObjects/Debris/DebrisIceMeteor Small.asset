@@ -10,29 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Silver
+  m_Name: DebrisIceMeteor Small
   m_EditorClassIdentifier: 
-  itemID: silver
-  m_name: Silver
-  description: A silver bar
+  itemID: ice_meteor_small
+  m_name: Small Ice Meteor
+  description: A small meteor made of ice
   itemType: 4
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
-  chanceOfSpawnInChest: 20
-  chanceOfSpawnAsDebris: 0
+  chanceOfSpawnInChest: 0
+  chanceOfSpawnAsDebris: 40
   biomeProbabilities: []
-  stackable: 1
-  maxStack: 10
-  craftable: 1
+  stackable: 0
+  maxStack: 1
+  craftable: 0
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: dfa760d69d0f5c948aaeb96d02f2c51c, type: 2}
-    amount: 1
+  craftingRequirements: []
   icon: {fileID: 0}
-  mesh: {fileID: 0}
+  mesh: {fileID: 7903581986307672064, guid: 9e7031f0b2561224780f8edf549ff445, type: 3}
   material: {fileID: 0}
   inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}

@@ -10,27 +10,29 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: DebrisLithofloraSmall
+  m_Name: Copper x1
   m_EditorClassIdentifier: 
-  itemID: small_lithoflora
-  m_name: Small Lithoflora Meteor
-  description: A small meteor with plant life growing on its surface
+  itemID: copper
+  m_name: Copper
+  description: A bar of copper
   itemType: 4
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
-  chanceOfSpawnInChest: 0
-  chanceOfSpawnAsDebris: 40
+  chanceOfSpawnInChest: 20
+  chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
-  stackable: 0
-  maxStack: 1
-  craftable: 0
+  stackable: 1
+  maxStack: 10
+  craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements: []
+  craftingRequirements:
+  - item: {fileID: 11400000, guid: 9bfc42add9d7a4242bb77cba893febbe, type: 2}
+    amount: 1
   icon: {fileID: 0}
-  mesh: {fileID: -6552630041216397055, guid: c2c96abbbebc238468444711d6be9dba, type: 3}
+  mesh: {fileID: 2133127977080242572, guid: d357fb02c0008a64e82d99e3aa368488, type: 3}
   material: {fileID: 0}
   inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}

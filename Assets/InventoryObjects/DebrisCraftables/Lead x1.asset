@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: DebrisLead
+  m_Name: Lead x1
   m_EditorClassIdentifier: 
-  itemID: lead_meteor
-  m_name: Lead Meteor
-  description: A meteor enriched with lead
+  itemID: lead
+  m_name: Lead
+  description: A bar of lead
   itemType: 4
   durability: 0
   hungerReplenish: 0
@@ -22,28 +22,30 @@ MonoBehaviour:
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
-  chanceOfSpawnAsDebris: 5
+  chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 1
-  maxStack: 5
-  craftable: 0
+  maxStack: 10
+  craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements: []
-  icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
-  mesh: {fileID: -2232952877369940510, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
-  material: {fileID: -3661639628750336703, guid: 177bfb383f75dbe4f863cb11cda62ca9, type: 3}
-  inventoryMeshOffset: {x: 0, y: 0, z: -20}
+  craftingRequirements:
+  - item: {fileID: 11400000, guid: 21750d71c3f8f794b8ea5e8859d882b5, type: 2}
+    amount: 1
+  icon: {fileID: 0}
+  mesh: {fileID: 0}
+  material: {fileID: 0}
+  inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 120
-  equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
-  applyEquippedPrefabVisuals: 1
+  inventoryMeshScale: 1
+  equippedPrefab: {fileID: 0}
+  applyEquippedPrefabVisuals: 0
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
-  equippedMeshScale: 0.3
-  craftingMeshOffset: {x: 0, y: 0, z: -20}
+  equippedMeshScale: 1
+  craftingMeshOffset: {x: 0, y: 0, z: 0}
   craftingMeshRotation: {x: 0, y: 0, z: 0}
-  craftingMeshScale: 120
+  craftingMeshScale: 1
   inventorySpaceShape:
   - ++
-  - ++
+  - +-
   inventorySpace: {x: 1, y: 1}
