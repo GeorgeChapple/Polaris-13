@@ -9,7 +9,6 @@ using UnityEngine.Events;
 // Script By : George Chapple
 // Summary   : 
 
-[RequireComponent(typeof(SphereCollider))]
 public class POI_Portal : NetworkBehaviour
 {
     public Transform destination;

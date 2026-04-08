@@ -80,10 +80,29 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void OnTriggerExit(Collider col)
     {
+        Debug.Log("Exit " + col.gameObject);
+        StartCoroutine(WaitTriggerExit(col));
+    }
+
+    private IEnumerator WaitTriggerExit(Collider col)
+    {
+        float t = 0;
+        while (t < 0.1f)
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
         NetworkObject netObj = col.GetComponent<NetworkObject>();
         if (netObj != null)
         {
-            //ObjectExitSpaceRpc(netObj);
+            if (netObj.GetComponent<CC_Movement>() && !cannotTeleport.Contains(col))
+            {
+                PlayerExitSpaceRpc(netObj);
+            }
+            else
+            {
+                ObjectExitSpaceRpc(netObj);
+            }
         }
     }
 
@@ -92,15 +111,24 @@ public class SP_SpaceManager : NetworkBehaviour
     {
         if (targetRef.TryGet(out NetworkObject netObj))
         { 
-            CC_Movement player = netObj.GetComponent<CC_Movement>();
             SP_SpaceJunk spaceObj = netObj.GetComponent<SP_SpaceJunk>();
-            if (player != null && player.canTeleport)
-            {
-                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
-            }
-            else if (spaceObj != null && spaceObj.canTeleport)
+            if (spaceObj != null)
             {
                 spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
+            }
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayerExitSpaceRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        {
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            if (player != null)
+            {
+                player.Body.linearVelocity = Vector3.zero;
+                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
             }
         }
     }

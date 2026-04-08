@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,6 +14,7 @@ public class POI_Level : NetworkBehaviour
     [SerializeField] private Transform startPosition;
     [SerializeField] private POI_Portal exitPortal;
     private int players = 0;
+    private SP_SpaceManager spaceManager;
 
     // Getters
     public int Players => players;
@@ -32,6 +34,7 @@ public class POI_Level : NetworkBehaviour
 
     private void Start()
     {
+        spaceManager = FindFirstObjectByType<SP_SpaceManager>();
         GetComponent<BoxCollider>().size = bounds;
         mainPortal.portalEntered.AddListener(AddPlayers);
         exitPortal.portalEntered.AddListener(SubtractPlayers);
@@ -51,10 +54,28 @@ public class POI_Level : NetworkBehaviour
 
     private void OnTriggerExit(Collider col)
     {
+        StartCoroutine(WaitTriggerExit(col));
+    }
+
+    private IEnumerator WaitTriggerExit(Collider col)
+    {
+        float t = 0;
+        while (t < 0.1f)
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
         NetworkObject netObj = col.GetComponent<NetworkObject>();
         if (netObj != null)
         {
-            ObjectExitSpacePOIRpc(netObj);
+            if (netObj.GetComponent<CC_Movement>() && !spaceManager.cannotTeleport.Contains(col))
+            {
+                PlayerExitSpacePOIRpc(netObj);
+            }
+            else
+            {
+                ObjectExitSpacePOIRpc(netObj);
+            }
         }
     }
 
@@ -62,17 +83,32 @@ public class POI_Level : NetworkBehaviour
     private void ObjectExitSpacePOIRpc(NetworkObjectReference targetRef)
     {
         if (targetRef.TryGet(out NetworkObject netObj))
-        { 
-            CC_Movement player = netObj.GetComponent<CC_Movement>();
+        {
             SP_SpaceJunk spaceObj = netObj.GetComponent<SP_SpaceJunk>();
-            if (player != null && player.canTeleport)
-            {
-                SubtractPlayers();
-                player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
-            }
-            else if (spaceObj != null && spaceObj.canTeleport)
+            if (spaceObj != null)
             {
                 spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
+            }
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayerExitSpacePOIRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        {
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            if (player != null)
+            {
+                player.Body.linearVelocity = Vector3.zero;
+                if (exitPortal.destination != null)
+                {
+                    player.Body.position = exitPortal.destination.position;
+                }
+                else
+                { 
+                    player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+                }
             }
         }
     }
