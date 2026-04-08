@@ -15,9 +15,10 @@ public class SP_SpaceManager : NetworkBehaviour
     [SerializeField] private int maxDebris = 20;
     [HideInInspector] public RS_Move rocket; 
     public List<SP_SpawnSettings> spawnerSettings = new List<SP_SpawnSettings>();
-    [HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
+    //[HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Dictionary<SP_Spawner, int> spawners = new Dictionary<SP_Spawner, int>();
+    [HideInInspector] public List<Collider> cannotTeleport = new List<Collider>();
     public Vector3 spaceBounds = new Vector3(20, 20, 20);
     [HideInInspector] public bool maxDebrisReached;
 
@@ -68,13 +69,13 @@ public class SP_SpaceManager : NetworkBehaviour
 
         MoveDebris();
 
-        Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
-        foundObjects.Clear();
+        //Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
+        //foundObjects.Clear();
 
-        foreach (Collider col in colliders)
-        {
-            foundObjects.Add(col.gameObject);
-        }
+        //foreach (Collider col in colliders)
+        //{
+        //    foundObjects.Add(col.gameObject);
+        //}
     }
 
     private void OnTriggerExit(Collider col)
@@ -82,7 +83,7 @@ public class SP_SpaceManager : NetworkBehaviour
         NetworkObject netObj = col.GetComponent<NetworkObject>();
         if (netObj != null)
         {
-            ObjectExitSpaceRpc(netObj);
+            //ObjectExitSpaceRpc(netObj);
         }
     }
 
