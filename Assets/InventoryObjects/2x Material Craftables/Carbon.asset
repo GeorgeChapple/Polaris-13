@@ -22,7 +22,7 @@ MonoBehaviour:
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 5
-  chanceOfSpawnAsDebris: 0
+  chanceOfSpawnAsDebris: 15
   biomeProbabilities: []
   stackable: 1
   maxStack: 5
@@ -33,6 +33,7 @@ MonoBehaviour:
     amount: 1
   - item: {fileID: 11400000, guid: baeb1ad02c6e27d4a95edb70b0d84579, type: 2}
     amount: 1
+  craftingRecipes: []
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

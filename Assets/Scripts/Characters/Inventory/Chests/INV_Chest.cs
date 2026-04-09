@@ -44,21 +44,11 @@ public class INV_Chest : NetworkBehaviour
 
     public void SetupEverything(GameObject player)
     {
-        if (player == null)
-        {
-            return;
-        }
+        if (player == null) { return; }
 
         NetworkObject playerNetObj = player.GetComponent<NetworkObject>();
-        if (playerNetObj == null)
-        {
-            playerNetObj = player.GetComponentInParent<NetworkObject>();
-        }
-
-        if (playerNetObj == null)
-        {
-            return;
-        }
+        if (playerNetObj == null) { playerNetObj = player.GetComponentInParent<NetworkObject>(); }
+        if (playerNetObj == null) { return; }
 
         if (IsServer)
         {
@@ -74,15 +64,8 @@ public class INV_Chest : NetworkBehaviour
     {
         ulong senderClientId = rpcParams.Receive.SenderClientId;
 
-        if (!playerRef.TryGet(out NetworkObject playerObj) || playerObj == null)
-        {
-            return;
-        }
-
-        if (playerObj.OwnerClientId != senderClientId)
-        {
-            return;
-        }
+        if (!playerRef.TryGet(out NetworkObject playerObj) || playerObj == null) { return; }
+        if (playerObj.OwnerClientId != senderClientId) { return; }
 
         OpenChest_Server(senderClientId);
     }
@@ -96,10 +79,7 @@ public class INV_Chest : NetworkBehaviour
 
     private void OpenChest_Server(ulong targetClientId)
     {
-        if (!IsServer)
-        {
-            return;
-        }
+        if (!IsServer) { return; }
 
         viewingClientIds.Add(targetClientId);
 
@@ -113,11 +93,7 @@ public class INV_Chest : NetworkBehaviour
 
     private void CloseChestViewer_Server(ulong targetClientId)
     {
-        if (!IsServer)
-        {
-            return;
-        }
-
+        if (!IsServer) { return; }
         viewingClientIds.Remove(targetClientId);
     }
 
@@ -128,10 +104,7 @@ public class INV_Chest : NetworkBehaviour
 
     public void RefreshAllViewers()
     {
-        if (!IsServer || viewingClientIds.Count == 0)
-        {
-            return;
-        }
+        if (!IsServer || viewingClientIds.Count == 0) { return; }
 
         string snapshotJson = BuildSnapshotJson();
 
@@ -144,16 +117,10 @@ public class INV_Chest : NetworkBehaviour
     [Rpc(SendTo.Everyone)]
     private void RefreshChestForViewersClientRpc(string snapshotJson, ulong[] viewers)
     {
-        if (!ShouldLocalClientHandleRefresh(viewers))
-        {
-            return;
-        }
+        if (!ShouldLocalClientHandleRefresh(viewers)) { return; }
 
         INV_Inventory localInventory = FindLocalInventory();
-        if (localInventory == null)
-        {
-            return;
-        }
+        if (localInventory == null) { return; }
 
         List<ChestItemData> snapshot = ParseSnapshotJson(snapshotJson);
         localInventory.OpenChestView(this, snapshot);
@@ -167,19 +134,13 @@ public class INV_Chest : NetworkBehaviour
 
     private bool ShouldLocalClientHandleRefresh(ulong[] viewers)
     {
-        if (NetworkManager == null)
-        {
-            return false;
-        }
+        if (NetworkManager == null) { return false; }
 
         ulong localId = NetworkManager.LocalClientId;
 
         for (int i = 0; i < viewers.Length; i++)
         {
-            if (viewers[i] == localId)
-            {
-                return true;
-            }
+            if (viewers[i] == localId) { return true; }
         }
 
         return false;
@@ -192,16 +153,10 @@ public class INV_Chest : NetworkBehaviour
         for (int i = 0; i < nets.Length; i++)
         {
             INV_PlayerInventoryNet net = nets[i];
-            if (net == null || !net.IsOwner)
-            {
-                continue;
-            }
+            if (net == null || !net.IsOwner) { continue; }
 
             INV_Inventory inventory = net.GetComponentInChildren<INV_Inventory>();
-            if (inventory != null)
-            {
-                return inventory;
-            }
+            if (inventory != null) { return inventory; }
         }
 
         return null;
@@ -214,23 +169,61 @@ public class INV_Chest : NetworkBehaviour
         for (int i = 0; i < controllers.Length; i++)
         {
             CC_CharacterPlayerController controller = controllers[i];
-            if (controller == null || !controller.IsOwner)
-            {
-                continue;
-            }
-
+            if (controller == null || !controller.IsOwner) { continue; }
             return controller;
         }
 
         return null;
     }
 
+    public void ClearItems_Server()
+    {
+        if (!IsServer) { return; }
+        items.Clear();
+    }
+
+    public bool TryStoreItemDataAutoPlace(INV_Item item, int quantity = 1)
+    {
+        if (!IsServer || item == null || quantity <= 0) { return false; }
+
+        INV_Inventory.ItemInstance.Rotation[] rotations =
+        {
+            INV_Inventory.ItemInstance.Rotation.Up,
+            INV_Inventory.ItemInstance.Rotation.Right,
+            INV_Inventory.ItemInstance.Rotation.Down,
+            INV_Inventory.ItemInstance.Rotation.Left
+        };
+
+        for (int r = 0; r < rotations.Length; r++)
+        {
+            for (int y = 0; y < chestGridMaxHeight; y++)
+            {
+                for (int x = 0; x < chestGridMaxWidth; x++)
+                {
+                    ChestItemData data = new ChestItemData
+                    {
+                        uniqueId = System.Guid.NewGuid().ToString(),
+                        itemId = item.ItemID,
+                        quantity = quantity,
+                        cellX = x,
+                        cellY = y,
+                        rotation = (int)rotations[r]
+                    };
+
+                    if (!CanPlaceItemData(data, null)) { continue; }
+
+                    items.Add(data);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public bool TryStoreItemData(string itemId, int quantity, Vector2Int cell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        if (!IsServer || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
-        {
-            return false;
-        }
+        if (!IsServer || string.IsNullOrWhiteSpace(itemId) || quantity <= 0) { return false; }
 
         ChestItemData data = new ChestItemData
         {
@@ -242,10 +235,7 @@ public class INV_Chest : NetworkBehaviour
             rotation = (int)rotation
         };
 
-        if (!CanPlaceItemData(data, null))
-        {
-            return false;
-        }
+        if (!CanPlaceItemData(data, null)) { return false; }
 
         items.Add(data);
         return true;
@@ -253,16 +243,10 @@ public class INV_Chest : NetworkBehaviour
 
     public bool TryMoveItemData(string uniqueId, Vector2Int cell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId))
-        {
-            return false;
-        }
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId)) { return false; }
 
         ChestItemData current = GetItemDataByUniqueId(uniqueId);
-        if (current == null)
-        {
-            return false;
-        }
+        if (current == null) { return false; }
 
         ChestItemData test = new ChestItemData
         {
@@ -274,10 +258,7 @@ public class INV_Chest : NetworkBehaviour
             rotation = (int)rotation
         };
 
-        if (!CanPlaceItemData(test, uniqueId))
-        {
-            return false;
-        }
+        if (!CanPlaceItemData(test, uniqueId)) { return false; }
 
         current.cellX = cell.x;
         current.cellY = cell.y;
@@ -289,16 +270,10 @@ public class INV_Chest : NetworkBehaviour
     {
         data = null;
 
-        if (string.IsNullOrWhiteSpace(uniqueId))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(uniqueId)) { return false; }
 
         ChestItemData src = GetItemDataByUniqueId(uniqueId);
-        if (src == null)
-        {
-            return false;
-        }
+        if (src == null) { return false; }
 
         data = new ChestItemData
         {
@@ -315,18 +290,12 @@ public class INV_Chest : NetworkBehaviour
 
     public bool TrySetItemQuantity(string uniqueId, int quantity)
     {
-        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId))
-        {
-            return false;
-        }
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId)) { return false; }
 
         for (int i = 0; i < items.Count; i++)
         {
             ChestItemData item = items[i];
-            if (item == null || item.uniqueId != uniqueId)
-            {
-                continue;
-            }
+            if (item == null || item.uniqueId != uniqueId) { continue; }
 
             item.quantity = Mathf.Max(0, quantity);
             return true;
@@ -337,18 +306,12 @@ public class INV_Chest : NetworkBehaviour
 
     public bool TryRemoveItem(string uniqueId)
     {
-        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId))
-        {
-            return false;
-        }
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId)) { return false; }
 
         for (int i = 0; i < items.Count; i++)
         {
             ChestItemData item = items[i];
-            if (item == null || item.uniqueId != uniqueId)
-            {
-                continue;
-            }
+            if (item == null || item.uniqueId != uniqueId) { continue; }
 
             items.RemoveAt(i);
             return true;
@@ -359,18 +322,12 @@ public class INV_Chest : NetworkBehaviour
 
     public bool TryRemoveItemQuantity(string uniqueId, int amount)
     {
-        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId) || amount <= 0)
-        {
-            return false;
-        }
+        if (!IsServer || string.IsNullOrWhiteSpace(uniqueId) || amount <= 0) { return false; }
 
         for (int i = 0; i < items.Count; i++)
         {
             ChestItemData item = items[i];
-            if (item == null || item.uniqueId != uniqueId)
-            {
-                continue;
-            }
+            if (item == null || item.uniqueId != uniqueId) { continue; }
 
             item.quantity = Mathf.Max(0, item.quantity - amount);
             return true;
@@ -381,10 +338,7 @@ public class INV_Chest : NetworkBehaviour
 
     public bool TryRemoveLastStoredItem()
     {
-        if (!IsServer || items.Count <= 0)
-        {
-            return false;
-        }
+        if (!IsServer || items.Count <= 0) { return false; }
 
         items.RemoveAt(items.Count - 1);
         return true;
@@ -395,11 +349,7 @@ public class INV_Chest : NetworkBehaviour
         for (int i = 0; i < items.Count; i++)
         {
             ChestItemData item = items[i];
-            if (item == null || item.uniqueId != uniqueId)
-            {
-                continue;
-            }
-
+            if (item == null || item.uniqueId != uniqueId) { continue; }
             return item;
         }
 
@@ -418,56 +368,29 @@ public class INV_Chest : NetworkBehaviour
 
     private List<ChestItemData> ParseSnapshotJson(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return new List<ChestItemData>();
-        }
+        if (string.IsNullOrWhiteSpace(json)) { return new List<ChestItemData>(); }
 
         ChestSnapshotWrapper wrapper = JsonUtility.FromJson<ChestSnapshotWrapper>(json);
-        if (wrapper == null || wrapper.items == null)
-        {
-            return new List<ChestItemData>();
-        }
+        if (wrapper == null || wrapper.items == null) { return new List<ChestItemData>(); }
 
         return wrapper.items;
     }
 
     private bool CanPlaceItemData(ChestItemData data, string ignoreUniqueId)
     {
-        if (data == null)
-        {
-            return false;
-        }
+        if (data == null) { return false; }
 
         INV_Item item = INV_ItemDatabase.Instance != null ? INV_ItemDatabase.Instance.GetItemById(data.itemId) : null;
-        if (item == null)
-        {
-            return false;
-        }
+        if (item == null) { return false; }
 
         List<Vector2Int> offsets;
         Vector2Int size;
         BuildOffsetsForItem(item, (INV_Inventory.ItemInstance.Rotation)data.rotation, out offsets, out size);
 
-        if (size.x <= 0 || size.y <= 0)
-        {
-            return false;
-        }
-
-        if (data.cellX < 0 || data.cellY < 0)
-        {
-            return false;
-        }
-
-        if (data.cellX + size.x > chestGridMaxWidth)
-        {
-            return false;
-        }
-
-        if (data.cellY + size.y > chestGridMaxHeight)
-        {
-            return false;
-        }
+        if (size.x <= 0 || size.y <= 0) { return false; }
+        if (data.cellX < 0 || data.cellY < 0) { return false; }
+        if (data.cellX + size.x > chestGridMaxWidth) { return false; }
+        if (data.cellY + size.y > chestGridMaxHeight) { return false; }
 
         for (int i = 0; i < offsets.Count; i++)
         {
@@ -478,21 +401,11 @@ public class INV_Chest : NetworkBehaviour
             for (int c = 0; c < items.Count; c++)
             {
                 ChestItemData other = items[c];
-                if (other == null)
-                {
-                    continue;
-                }
-
-                if (!string.IsNullOrWhiteSpace(ignoreUniqueId) && other.uniqueId == ignoreUniqueId)
-                {
-                    continue;
-                }
+                if (other == null) { continue; }
+                if (!string.IsNullOrWhiteSpace(ignoreUniqueId) && other.uniqueId == ignoreUniqueId) { continue; }
 
                 INV_Item otherItem = INV_ItemDatabase.Instance != null ? INV_ItemDatabase.Instance.GetItemById(other.itemId) : null;
-                if (otherItem == null)
-                {
-                    continue;
-                }
+                if (otherItem == null) { continue; }
 
                 List<Vector2Int> otherOffsets;
                 Vector2Int otherSize;
@@ -501,10 +414,7 @@ public class INV_Chest : NetworkBehaviour
                 for (int o = 0; o < otherOffsets.Count; o++)
                 {
                     Vector2Int otherOff = otherOffsets[o];
-                    if (x == other.cellX + otherOff.x && y == other.cellY + otherOff.y)
-                    {
-                        return false;
-                    }
+                    if (x == other.cellX + otherOff.x && y == other.cellY + otherOff.y) { return false; }
                 }
             }
         }
@@ -517,10 +427,7 @@ public class INV_Chest : NetworkBehaviour
         finalOffsets = new List<Vector2Int>();
         finalSize = Vector2Int.one;
 
-        if (item == null)
-        {
-            return;
-        }
+        if (item == null) { return; }
 
         List<string> shape = item.InventorySpaceShape;
 
@@ -546,10 +453,7 @@ public class INV_Chest : NetworkBehaviour
 
         for (int i = 0; i < shape.Count; i++)
         {
-            if (!string.IsNullOrEmpty(shape[i]))
-            {
-                w = Mathf.Max(w, shape[i].Length);
-            }
+            if (!string.IsNullOrEmpty(shape[i])) { w = Mathf.Max(w, shape[i].Length); }
         }
 
         Vector2Int baseSize = new Vector2Int(Mathf.Max(1, w), Mathf.Max(1, h));
@@ -562,10 +466,7 @@ public class INV_Chest : NetworkBehaviour
             for (int x = 0; x < w; x++)
             {
                 char c = x < row.Length ? row[x] : '-';
-                if (c == '+')
-                {
-                    raw.Add(new Vector2Int(x, y));
-                }
+                if (c == '+') { raw.Add(new Vector2Int(x, y)); }
             }
         }
 
@@ -618,25 +519,10 @@ public class INV_Chest : NetworkBehaviour
         {
             Vector2Int p = rotated[i];
 
-            if (p.x < minX)
-            {
-                minX = p.x;
-            }
-
-            if (p.y < minY)
-            {
-                minY = p.y;
-            }
-
-            if (p.x > maxX)
-            {
-                maxX = p.x;
-            }
-
-            if (p.y > maxY)
-            {
-                maxY = p.y;
-            }
+            if (p.x < minX) { minX = p.x; }
+            if (p.y < minY) { minY = p.y; }
+            if (p.x > maxX) { maxX = p.x; }
+            if (p.y > maxY) { maxY = p.y; }
         }
 
         for (int i = 0; i < rotated.Count; i++)

@@ -17,10 +17,12 @@ public class INV_Item : ScriptableObject
     [Header("Info")]
     [SerializeField] private string itemID;
     [SerializeField] private string m_name;
-    [SerializeField] private string description;
+    [SerializeField][TextArea(1,5)] private string description;
 
     public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
     [SerializeField] private ItemType itemType = ItemType.Item;
+    public enum ItemRarity { Common, Uncommon, Rare, Epic }
+    [SerializeField] private ItemRarity itemRarity = ItemRarity.Common;
 
     [Header("Specs")]
     [SerializeField] private float durability;
@@ -127,6 +129,7 @@ public class INV_Item : ScriptableObject
     public string Name => m_name;
     public string Description => description;
     public ItemType ItemTypeVal => itemType;
+    public ItemRarity ItemRarityVal => itemRarity;
 
     public float Durability => durability;
     public float HungerReplenish => hungerReplenish;
