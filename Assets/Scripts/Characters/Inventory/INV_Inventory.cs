@@ -388,6 +388,19 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
+    public bool TryAddItem(INV_Item item, int quantity)
+    {
+        bool succeeded = false;
+        for (int i = 0; i < quantity; i++)
+        {
+            // needs support preventing items that cant be crafted from amount exceeding inventory space
+            // will add that in an hour or so, im taking a break
+            succeeded = TryAddItem(item); 
+            if (!succeeded) { return succeeded; }
+        }
+        return succeeded;
+    }
+
     // used when we want to add an item to a specific target cell instead of first free space
     public bool TryAddItemAtCell(INV_Item item, Vector2Int cell, ItemInstance.Rotation rotation, int quantity = 1)
     {

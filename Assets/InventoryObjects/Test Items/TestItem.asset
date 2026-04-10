@@ -16,6 +16,7 @@ MonoBehaviour:
   m_name: Test Item
   description: Test Item for debugging purposes
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 20
   hungerDrainDelay: 5
@@ -38,12 +39,14 @@ MonoBehaviour:
       amount: 1
     - item: {fileID: 11400000, guid: 855f6c5dff7711244bb2d75cf852567b, type: 2}
       amount: 1
+    amountGiven: 1
   - recipeName: TestItem 1
     requirements:
     - item: {fileID: 11400000, guid: 6969b1a448f6d844dab9db5bedc20ad5, type: 2}
       amount: 1
     - item: {fileID: 11400000, guid: 8c42545ce6ccc5843b9f3b1c45235ae1, type: 2}
       amount: 1
+    amountGiven: 1
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: 8f7cea3e2c3b4ba46bc631dcbfa78cf2, type: 2}

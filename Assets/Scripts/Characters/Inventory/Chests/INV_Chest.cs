@@ -25,6 +25,9 @@ public class INV_Chest : NetworkBehaviour
         public List<ChestItemData> items = new List<ChestItemData>();
     }
 
+    [Header("Loot Profile")]
+    [SerializeField] private INV_ChestLootProfile lootProfile;
+
     [Header("Chest Data")]
     [SerializeField] private List<ChestItemData> items = new List<ChestItemData>();
 
@@ -37,6 +40,8 @@ public class INV_Chest : NetworkBehaviour
 
     // server side viewer tracking
     private readonly HashSet<ulong> viewingClientIds = new HashSet<ulong>();
+
+    public INV_ChestLootProfile LootProfile => lootProfile;
 
     public IReadOnlyList<ChestItemData> Items => items;
     public int GridHeight => chestGridMaxHeight;

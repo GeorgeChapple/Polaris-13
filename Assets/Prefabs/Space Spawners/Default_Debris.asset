@@ -21,7 +21,9 @@ MonoBehaviour:
   spawnbounds: {x: 50, y: 50, z: 0, w: 0}
   spawnTime: {x: 0.2, y: 0.3}
   spaceObjects:
+  - prefab: {fileID: 766809813825591996, guid: c102a0cdf13a5d6438ff6318cde5043c, type: 3}
+    probability: 5
   - prefab: {fileID: 766809813825591996, guid: 9163a450d6ca4c64582cee55b219be7b, type: 3}
-    probability: 10
+    probability: 20
   - prefab: {fileID: 2353747757295221720, guid: 5ecf8c593f25ae547be18ca857999626, type: 3}
-    probability: 40
+    probability: 80

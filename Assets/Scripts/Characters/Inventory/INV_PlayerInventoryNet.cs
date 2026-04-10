@@ -230,7 +230,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             if (craftedItem != null)
             {
                 RemoveCraftRequirementsLocally(craftedItem, recipeIndex);
-                inventory.TryAddItem(craftedItem);
+                inventory.TryAddItem(craftedItem, craftedItem.GetRecipeReturnAmount(recipeIndex));
             }
         }
 
@@ -926,7 +926,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        if (inventory.TryAddItem(craftedItem))
+        if (inventory.TryAddItem(craftedItem, craftedItem.GetRecipeReturnAmount(recipeIndex)))
         {
             NotifyCraftResult(true, itemId, recipeIndex);
             return;

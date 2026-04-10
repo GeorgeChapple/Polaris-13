@@ -14,11 +14,7 @@ public class SP_Spawner : NetworkBehaviour
     private float timer = 0;
     private int lifetimeSpawned = 0;
 
-    [Header("Chest Loot")]
-    [SerializeField] private Vector2Int chestItemCountRange = new Vector2Int(1, 3);
-
     private Dictionary<INV_Item, float> sortedDebrisItemProbabilites = new Dictionary<INV_Item, float>();
-    private Dictionary<INV_Item, float> sortedChestItemProbabilites = new Dictionary<INV_Item, float>();
 
     private void Awake()
     {
@@ -43,7 +39,6 @@ public class SP_Spawner : NetworkBehaviour
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
         sortedDebrisItemProbabilites = SortItemProbabilites(false);
-        sortedChestItemProbabilites = SortItemProbabilites(true);
     }
 
     private void Update()
@@ -150,17 +145,27 @@ public class SP_Spawner : NetworkBehaviour
     {
         if (!IsServer || chest == null) { return; }
 
+        INV_ChestLootProfile lootProfile = chest.LootProfile;
+        if (lootProfile == null) { return; }
+
         chest.ClearItems_Server();
 
-        int minItemCount = Mathf.Max(0, chestItemCountRange.x);
-        int maxItemCount = Mathf.Max(minItemCount, chestItemCountRange.y);
-        int itemCount = UnityEngine.Random.Range(minItemCount, maxItemCount + 1);
+        int minItemCount = Mathf.Max(0, lootProfile.ItemCountRange.x);
+        int maxItemCount = Mathf.Max(minItemCount, lootProfile.ItemCountRange.y);
+        int itemCount = Random.Range(minItemCount, maxItemCount + 1);
+
+        
 
         for (int i = 0; i < itemCount; i++)
         {
-            INV_Item randomItem = GetRandomChestItem();
+            INV_Item randomItem = GetRandomChestItem(chest);
             if (randomItem == null) { continue; }
-            if (!chest.TryStoreItemDataAutoPlace(randomItem)) { break; }
+
+            int minItemAmount = Mathf.Max(0, randomItem.AmountSpawnedInChestRange.x);
+            int maxItemAmount = Mathf.Max(minItemAmount, randomItem.AmountSpawnedInChestRange.y);
+            int itemAmount = Random.Range(minItemAmount, maxItemAmount + 1);
+
+            if (!chest.TryStoreItemDataAutoPlace(randomItem,itemAmount)) { break; }
         }
 
         chest.RefreshAllViewers();
@@ -213,11 +218,6 @@ public class SP_Spawner : NetworkBehaviour
         return GetRandomItemFromTable(sortedDebrisItemProbabilites);
     }
 
-    private INV_Item GetRandomChestItem()
-    {
-        return GetRandomItemFromTable(sortedChestItemProbabilites);
-    }
-
     private INV_Item GetRandomItemFromTable(Dictionary<INV_Item, float> itemTable)
     {
         if (itemTable == null || itemTable.Count == 0) { return null; }
@@ -235,6 +235,49 @@ public class SP_Spawner : NetworkBehaviour
         }
 
         return itemToReturn;
+    }
+
+    private INV_Item GetRandomChestItem(INV_Chest chest)
+    {
+        if (chest == null) { return null; }
+
+        INV_ChestLootProfile lootProfile = chest.LootProfile;
+        if (lootProfile == null) { return null; }
+
+        List<INV_Item> allItems = (List<INV_Item>)INV_ItemDatabase.Instance.Items;
+        if (allItems == null || allItems.Count == 0) { return null; }
+
+        float totalWeight = 0f;
+
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            INV_Item item = allItems[i];
+            if (item == null) { continue; }
+
+            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
+            if (weight <= 0f) { continue; }
+
+            totalWeight += weight;
+        }
+
+        if (totalWeight <= 0f) { return null; }
+
+        float roll = UnityEngine.Random.Range(0f, totalWeight);
+        float running = 0f;
+
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            INV_Item item = allItems[i];
+            if (item == null) { continue; }
+
+            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
+            if (weight <= 0f) { continue; }
+
+            running += weight;
+            if (roll <= running) { return item; }
+        }
+
+        return null;
     }
 
     private Vector2 GetRandomSpawnPosition(Vector4 bounds)

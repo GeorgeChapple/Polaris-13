@@ -12,16 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
   m_Name: DebrisCopperSmall
   m_EditorClassIdentifier: 
-  itemID: copper_ore_large
-  m_name: Large Copper Meteor
-  description: Large Meteor with Copper inside. Can be used to craft.
+  itemID: copper_ore_small
+  m_name: Small Copper Meteor
+  description: Small Meteor with Copper inside. Can be used to craft.
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 15
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 10
   biomeProbabilities: []
   stackable: 1
@@ -45,6 +47,5 @@ MonoBehaviour:
   craftingMeshRotation: {x: 0, y: 0, z: 0}
   craftingMeshScale: 150
   inventorySpaceShape:
-  - ++
-  - ++
+  - +
   inventorySpace: {x: 1, y: 1}

@@ -100,7 +100,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
     {
         if (itemNameText != null)
         {
-            itemNameText.SetText(item != null ? item.Name : "Null Item");
+            itemNameText.SetText(item != null ? $"{item.Name} x{item.GetRecipeReturnAmount(selectedRecipeIndex)}" : "Null Item");
         }
 
         if (requirementsText != null)
