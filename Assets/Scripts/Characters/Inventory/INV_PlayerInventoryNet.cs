@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -36,6 +37,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
+
+    // local only, used so equipped consumables can remove the correct inventory item on the owner
+    private string localEquippedInventoryItemUniqueId;
 
     // local owner only equipped visual
     private GameObject localEquippedVisual;
@@ -162,6 +166,28 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
+    private void AddItemAmountLocalRpc(string itemId, int amount, RpcParams rpcParams = default)
+    {
+        CacheRefs();
+
+        if (inventory == null || string.IsNullOrWhiteSpace(itemId) || amount <= 0)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < amount; i++)
+        {
+            inventory.TryAddItem(item);
+        }
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
     private void AddItemAtCellLocalRpc(string itemId, int amount, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
     {
         CacheRefs();
@@ -187,7 +213,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
-    private void CraftResultLocalRpc(bool succeeded, string craftedItemId, RpcParams rpcParams = default)
+    private void CraftResultLocalRpc(bool succeeded, string craftedItemId, int recipeIndex, RpcParams rpcParams = default)
     {
         CacheRefs();
 
@@ -203,19 +229,33 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
             if (craftedItem != null)
             {
-                RemoveCraftRequirementsLocally(craftedItem);
-                inventory.TryAddItem(craftedItem);
+                int returnAmount = craftedItem.GetRecipeReturnAmount(recipeIndex);
+
+                if (!inventory.CanAddItem(craftedItem, returnAmount))
+                {
+                    OnCraftRequestFinished?.Invoke(false, craftedItemId);
+                    return;
+                }
+
+                RemoveCraftRequirementsLocally(craftedItem, recipeIndex);
+                inventory.TryAddItem(craftedItem, returnAmount);
             }
         }
 
         OnCraftRequestFinished?.Invoke(succeeded, craftedItemId);
     }
 
-    private void RemoveCraftRequirementsLocally(INV_Item craftedItem)
+    private void RemoveCraftRequirementsLocally(INV_Item craftedItem, int recipeIndex)
     {
-        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        List<INV_Item.CraftingStack> recipeRequirements = craftedItem.GetRecipeRequirements(recipeIndex);
+        if (recipeRequirements == null)
         {
-            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            return;
+        }
+
+        for (int i = 0; i < recipeRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = recipeRequirements[i];
             if (req?.item == null || req.amount <= 0)
             {
                 continue;
@@ -242,9 +282,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestDropItemRpc(itemId);
     }
 
-    public void RequestStoreItemInOpenChest(string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
+    public void RequestStoreItemInOpenChest(string inventoryItemUniqueId, string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        if (string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
+        if (string.IsNullOrWhiteSpace(inventoryItemUniqueId) || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
         {
             return;
         }
@@ -264,13 +304,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (IsServer)
         {
-            StoreItemInChest_Server(inventory.ActiveChest, itemId, quantity, chestCell, rotation);
+            StoreItemInChest_Server(inventory.ActiveChest, inventoryItemUniqueId, itemId, quantity, chestCell, rotation);
             return;
         }
 
         RequestStoreItemInChestRpc
         (
             new NetworkObjectReference(chestNetObj),
+            inventoryItemUniqueId,
             itemId,
             quantity,
             chestCell.x,
@@ -350,13 +391,45 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             (int)rotation
         );
     }
-    public void RequestEquipItem(string itemId)
+
+    public void RequestTakeChestItemQuick(string chestItemUniqueId, bool takeStack)
+    {
+        if (string.IsNullOrWhiteSpace(chestItemUniqueId))
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null || inventory.ActiveChest == null)
+        {
+            return;
+        }
+
+        NetworkObject chestNetObj = inventory.ActiveChest.NetworkObject;
+        if (chestNetObj == null)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            TakeChestItemQuick_Server(inventory.ActiveChest, chestItemUniqueId, takeStack);
+            return;
+        }
+
+        RequestTakeChestItemQuickRpc(new NetworkObjectReference(chestNetObj), chestItemUniqueId, takeStack);
+    }
+
+    public void RequestEquipItem(string itemId, string inventoryItemUniqueId = null)
     {
         if (string.IsNullOrWhiteSpace(itemId))
         {
             RequestClearEquippedItem();
             return;
         }
+
+        localEquippedInventoryItemUniqueId = inventoryItemUniqueId;
 
         if (IsOwner)
         {
@@ -374,6 +447,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     public void RequestClearEquippedItem()
     {
+        localEquippedInventoryItemUniqueId = null;
+
         if (IsOwner)
         {
             ClearLocalEquippedVisual();
@@ -404,7 +479,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestUseEquippedItemRpc();
     }
 
-    public void RequestUseItemInInventory(string itemId)
+    public void RequestUseItemInInventory(string inventoryItemUniqueId, string itemId)
     {
         if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
         {
@@ -413,14 +488,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (IsServer)
         {
-            UseItemInInventory_Server(itemId);
+            UseItemInInventory_Server(inventoryItemUniqueId, itemId);
             return;
         }
 
-        RequestUseItemInInventoryRpc(itemId);
+        RequestUseItemInInventoryRpc(inventoryItemUniqueId, itemId);
     }
 
-    public void RequestCraftItem(string itemId)
+    public void RequestCraftItem(string itemId, int recipeIndex)
     {
         if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
         {
@@ -436,18 +511,18 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         CacheRefs();
 
         // local validation first so clients can craft even if server-side inventory copy is not fully mirrored yet
-        if (crafting != null && !crafting.CanCraftItemRightNow(item))
+        if (crafting != null && !crafting.CanCraftRecipeRightNow(item, recipeIndex))
         {
             return;
         }
 
         if (IsServer)
         {
-            CraftItem_Server(itemId);
+            CraftItem_Server(itemId, recipeIndex);
             return;
         }
 
-        RequestCraftItemRpc(itemId);
+        RequestCraftItemRpc(itemId, recipeIndex);
     }
 
     // server rpc entry points
@@ -463,7 +538,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    private void RequestStoreItemInChestRpc(NetworkObjectReference chestRef, string itemId, int quantity, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
+    private void RequestStoreItemInChestRpc(NetworkObjectReference chestRef, string inventoryItemUniqueId, string itemId, int quantity, int cellX, int cellY, int rotation, RpcParams rpcParams = default)
     {
         if (!IsSenderOwner(rpcParams))
         {
@@ -475,7 +550,15 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        StoreItemInChest_Server(chest, itemId, quantity, new Vector2Int(cellX, cellY), (INV_Inventory.ItemInstance.Rotation)rotation);
+        StoreItemInChest_Server
+        (
+            chest,
+            inventoryItemUniqueId,
+            itemId,
+            quantity,
+            new Vector2Int(cellX, cellY),
+            (INV_Inventory.ItemInstance.Rotation)rotation
+        );
     }
 
     [Rpc(SendTo.Server)]
@@ -508,6 +591,22 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         TakeChestItem_Server(chest, chestItemUniqueId, new Vector2Int(cellX, cellY), (INV_Inventory.ItemInstance.Rotation)rotation);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestTakeChestItemQuickRpc(NetworkObjectReference chestRef, string chestItemUniqueId, bool takeStack, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        if (!TryGetChestFromRef(chestRef, out INV_Chest chest))
+        {
+            return;
+        }
+
+        TakeChestItemQuick_Server(chest, chestItemUniqueId, takeStack);
     }
 
     [Rpc(SendTo.Server)]
@@ -544,18 +643,41 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    private void RequestUseItemInInventoryRpc(string itemId, RpcParams rpcParams = default)
+    private void RequestUseItemInInventoryRpc(string inventoryItemUniqueId, string itemId, RpcParams rpcParams = default)
     {
         if (!IsSenderOwner(rpcParams))
         {
             return;
         }
 
-        UseItemInInventory_Server(itemId);
+        UseItemInInventory_Server(inventoryItemUniqueId, itemId);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void UseConsumableLocalRpc(string inventoryItemUniqueId, string itemId, RpcParams rpcParams = default)
+    {
+        CacheRefs();
+
+        if (inventory == null)
+        {
+            return;
+        }
+
+        bool removed = false;
+
+        if (!string.IsNullOrWhiteSpace(inventoryItemUniqueId))
+        {
+            removed = inventory.TryUseLocalConsumableByUniqueId(inventoryItemUniqueId);
+        }
+
+        if (!removed && !string.IsNullOrWhiteSpace(itemId))
+        {
+            inventory.TryUseLocalConsumableByItemId(itemId);
+        }
     }
 
     [Rpc(SendTo.Server)]
-    private void RequestCraftItemRpc(string itemId, RpcParams rpcParams = default)
+    private void RequestCraftItemRpc(string itemId, int recipeIndex, RpcParams rpcParams = default)
     {
         if (!IsSenderOwner(rpcParams) || string.IsNullOrWhiteSpace(itemId))
         {
@@ -565,7 +687,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         INV_Item craftedItem = GetItemById(itemId);
         if (craftedItem == null)
         {
-            NotifyCraftResult(false, itemId);
+            NotifyCraftResult(false, itemId, recipeIndex);
             return;
         }
 
@@ -573,11 +695,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         // trust the request path and let the owner apply the result locally through CraftResultLocalRpc.
         if (!IsOwner)
         {
-            NotifyCraftResult(true, itemId);
+            NotifyCraftResult(true, itemId, recipeIndex);
             return;
         }
 
-        CraftItem_Server(itemId);
+        CraftItem_Server(itemId, recipeIndex);
     }
 
     private bool IsSenderOwner(RpcParams rpcParams)
@@ -653,6 +775,19 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        // consumables should probably be done here so they use the same networked path as inventory
+        if (item.ItemTypeVal == INV_Item.ItemType.Consumable)
+        {
+            UseItemInInventory_Server(localEquippedInventoryItemUniqueId, itemId);
+            return;
+        }
+
         MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
@@ -663,8 +798,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
                 continue;
             }
 
-            usableItem.WireUp(gameObject, itemId);
-            usableItem.OnUse();
+            usableItem.SendItemId(itemId);
+            usableItem.OnUse(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
 
@@ -675,7 +810,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     // inventory item use / crafting
-    private void UseItemInInventory_Server(string itemId)
+    private void UseItemInInventory_Server(string inventoryItemUniqueId, string itemId)
     {
         if (!IsServer)
         {
@@ -688,32 +823,71 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        if (inventory == null)
-        {
-            inventory = GetComponentInChildren<INV_Inventory>();
-        }
+        CacheRefs();
 
         if (inventory == null)
         {
             return;
         }
 
-        bool removed = inventory.RemoveItemAmount(itemId, 1);
-        if (!removed)
+        // host uses the real inventory instance on server
+        if (IsOwner)
         {
-            return;
+            bool removedHost = false;
+
+            if (!string.IsNullOrWhiteSpace(inventoryItemUniqueId))
+            {
+                removedHost = inventory.RemovePlayerItemByUniqueId(inventoryItemUniqueId, 1);
+            }
+
+            if (!removedHost)
+            {
+                removedHost = inventory.RemoveItemAmount(itemId, 1);
+            }
+
+            if (!removedHost)
+            {
+                return;
+            }
+        }
+        else
+        {
+            // remote owner inventory is local only, tell the owner to remove 1 item
+            UseConsumableLocalRpc
+            (
+                inventoryItemUniqueId,
+                itemId,
+                RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
+            );
         }
 
-        if (characterValues != null)
+        ApplyConsumableEffects_Server(usedItem);
+
+        // if the equipped item no longer exists locally after use, clear equipped state too
+        if (!string.IsNullOrWhiteSpace(localEquippedInventoryItemUniqueId) &&
+            inventoryItemUniqueId == localEquippedInventoryItemUniqueId)
         {
-            characterValues.AddHungerDelay(usedItem.HungerDrainDelay);
-            characterValues.AddHunger(usedItem.HungerReplenish);
-            characterValues.AddThirstDelay(usedItem.ThirstDrainDelay);
-            characterValues.AddThirst(usedItem.ThirstReplenish);
+            if (IsOwner && !inventory.HasPlayerItemWithUniqueId(localEquippedInventoryItemUniqueId))
+            {
+                RequestClearEquippedItem();
+            }
         }
     }
 
-    private void CraftItem_Server(string itemId)
+    private void ApplyConsumableEffects_Server(INV_Item usedItem)
+    {
+        if (usedItem == null || characterValues == null)
+        {
+            return;
+        }
+
+        characterValues.AddHungerDelay(usedItem.HungerDrainDelay);
+        characterValues.AddHunger(usedItem.HungerReplenish);
+        characterValues.AddThirstDelay(usedItem.ThirstDrainDelay);
+        characterValues.AddThirst(usedItem.ThirstReplenish);
+    }
+
+    private void CraftItem_Server(string itemId, int recipeIndex)
     {
         if (!IsServer)
         {
@@ -724,50 +898,64 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (inventory == null)
         {
-            NotifyCraftResult(false, itemId);
+            NotifyCraftResult(false, itemId, recipeIndex);
             return;
         }
 
         INV_Item craftedItem = GetItemById(itemId);
         if (craftedItem == null || !craftedItem.Craftable)
         {
-            NotifyCraftResult(false, itemId);
+            NotifyCraftResult(false, itemId, recipeIndex);
             return;
         }
 
-        if (!HasAllCraftRequirements(craftedItem))
+        List<INV_Item.CraftingStack> recipeRequirements = craftedItem.GetRecipeRequirements(recipeIndex);
+        if (recipeRequirements == null || recipeRequirements.Count == 0)
         {
-            NotifyCraftResult(false, itemId);
+            NotifyCraftResult(false, itemId, recipeIndex);
             return;
         }
 
-        if (!inventory.CanAddItem(craftedItem))
+        if (!HasAllCraftRequirements(recipeRequirements))
         {
-            NotifyCraftResult(false, itemId);
+            NotifyCraftResult(false, itemId, recipeIndex);
             return;
         }
 
-        if (!RemoveCraftRequirementsServer(craftedItem))
+        int returnAmount = craftedItem.GetRecipeReturnAmount(recipeIndex);
+
+        if (!inventory.CanAddItem(craftedItem, returnAmount))
         {
-            NotifyCraftResult(false, itemId);
+            NotifyCraftResult(false, itemId, recipeIndex);
             return;
         }
 
-        if (inventory.TryAddItem(craftedItem))
+        if (!RemoveCraftRequirementsServer(recipeRequirements))
         {
-            NotifyCraftResult(true, itemId);
+            NotifyCraftResult(false, itemId, recipeIndex);
             return;
         }
 
-        RestoreCraftRequirements(craftedItem);
-        NotifyCraftResult(false, itemId);
+        if (inventory.TryAddItem(craftedItem, returnAmount))
+        {
+            NotifyCraftResult(true, itemId, recipeIndex);
+            return;
+        }
+
+        RestoreCraftRequirements(recipeRequirements);
+        NotifyCraftResult(false, itemId, recipeIndex);
     }
 
-    private bool HasAllCraftRequirements(INV_Item craftedItem)
+    private bool HasAllCraftRequirements(List<INV_Item.CraftingStack> recipeRequirements)
     {
-        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        if (recipeRequirements == null)
         {
-            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            return false;
+        }
+
+        for (int i = 0; i < recipeRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = recipeRequirements[i];
             if (req?.item == null || req.amount <= 0)
             {
                 continue;
@@ -782,11 +970,16 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         return true;
     }
 
-    private bool RemoveCraftRequirementsServer(INV_Item craftedItem)
+    private bool RemoveCraftRequirementsServer(List<INV_Item.CraftingStack> recipeRequirements)
     {
-        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        if (recipeRequirements == null)
         {
-            INV_Item.CraftingStack req = craftedItem.CraftingRequirements[i];
+            return false;
+        }
+
+        for (int i = 0; i < recipeRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack req = recipeRequirements[i];
             if (req?.item == null || req.amount <= 0)
             {
                 continue;
@@ -797,18 +990,23 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
                 continue;
             }
 
-            RestoreCraftRequirementsUpToIndex(craftedItem, i);
+            RestoreCraftRequirementsUpToIndex(recipeRequirements, i);
             return false;
         }
 
         return true;
     }
 
-    private void RestoreCraftRequirementsUpToIndex(INV_Item craftedItem, int endExclusive)
+    private void RestoreCraftRequirementsUpToIndex(List<INV_Item.CraftingStack> recipeRequirements, int endExclusive)
     {
+        if (recipeRequirements == null)
+        {
+            return;
+        }
+
         for (int r = 0; r < endExclusive; r++)
         {
-            INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[r];
+            INV_Item.CraftingStack restoreReq = recipeRequirements[r];
             if (restoreReq?.item == null || restoreReq.amount <= 0)
             {
                 continue;
@@ -821,11 +1019,16 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
     }
 
-    private void RestoreCraftRequirements(INV_Item craftedItem)
+    private void RestoreCraftRequirements(List<INV_Item.CraftingStack> recipeRequirements)
     {
-        for (int i = 0; i < craftedItem.CraftingRequirements.Count; i++)
+        if (recipeRequirements == null)
         {
-            INV_Item.CraftingStack restoreReq = craftedItem.CraftingRequirements[i];
+            return;
+        }
+
+        for (int i = 0; i < recipeRequirements.Count; i++)
+        {
+            INV_Item.CraftingStack restoreReq = recipeRequirements[i];
             if (restoreReq?.item == null || restoreReq.amount <= 0)
             {
                 continue;
@@ -838,7 +1041,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
     }
 
-    private void NotifyCraftResult(bool succeeded, string craftedItemId)
+    private void NotifyCraftResult(bool succeeded, string craftedItemId, int recipeIndex)
     {
         if (IsOwner)
         {
@@ -846,13 +1049,13 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        CraftResultLocalRpc(succeeded, craftedItemId, RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
+        CraftResultLocalRpc(succeeded, craftedItemId, recipeIndex, RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
     }
 
     // chest
-    private void StoreItemInChest_Server(INV_Chest chest, string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
+    private void StoreItemInChest_Server(INV_Chest chest, string inventoryItemUniqueId, string itemId, int quantity, Vector2Int chestCell, INV_Inventory.ItemInstance.Rotation rotation)
     {
-        if (!IsServer || chest == null || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
+        if (!IsServer || chest == null || string.IsNullOrWhiteSpace(inventoryItemUniqueId) || string.IsNullOrWhiteSpace(itemId) || quantity <= 0)
         {
             return;
         }
@@ -874,19 +1077,13 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         // host player uses the real shared inventory instance on server
         if (IsOwner)
         {
-            if (!inventory.HasItemAmount(itemId, quantity))
-            {
-                chest.RefreshViewer();
-                return;
-            }
-
             if (!chest.TryStoreItemData(itemId, quantity, chestCell, rotation))
             {
                 chest.RefreshViewer();
                 return;
             }
 
-            if (inventory.RemoveItemAmount(itemId, quantity))
+            if (inventory.RemovePlayerItemByUniqueId(inventoryItemUniqueId, quantity))
             {
                 chest.RefreshViewer();
                 return;
@@ -987,6 +1184,99 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
         );
 
+        chest.RefreshViewer();
+    }
+
+    private void TakeChestItemQuick_Server(INV_Chest chest, string chestItemUniqueId, bool takeStack)
+    {
+        if (!IsServer || chest == null || string.IsNullOrWhiteSpace(chestItemUniqueId))
+        {
+            return;
+        }
+
+        CacheRefs();
+
+        if (inventory == null)
+        {
+            return;
+        }
+
+        INV_Chest.ChestItemData data;
+        if (!chest.TryGetItemData(chestItemUniqueId, out data))
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        INV_Item item = GetItemById(data.itemId);
+        if (item == null)
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        int chestAmount = Mathf.Max(1, data.quantity);
+        int wantedAmount = takeStack ? chestAmount : 1;
+        int addedAmount = 0;
+
+        // host uses server
+        if (IsOwner)
+        {
+            for (int i = 0; i < wantedAmount; i++) // try add on each item rather than new logic
+            {
+                if (!inventory.TryAddItem(item))
+                {
+                    break;
+                }
+
+                addedAmount++;
+            }
+
+            if (addedAmount <= 0)
+            {
+                chest.RefreshViewer();
+                return;
+            }
+
+            int remaining = chestAmount - addedAmount;
+
+            if (remaining <= 0)
+            {
+                chest.TryRemoveItem(chestItemUniqueId);
+            }
+            else
+            {
+                chest.TrySetItemQuantity(chestItemUniqueId, remaining);
+            }
+
+            chest.RefreshViewer();
+            return;
+        }
+
+        // remote client path
+        for (int i = 0; i < wantedAmount; i++)
+        {
+            addedAmount++;
+        }
+
+        if (addedAmount <= 0)
+        {
+            chest.RefreshViewer();
+            return;
+        }
+
+        int remainingRemote = chestAmount - addedAmount;
+
+        if (remainingRemote <= 0)
+        {
+            chest.TryRemoveItem(chestItemUniqueId);
+        }
+        else
+        {
+            chest.TrySetItemQuantity(chestItemUniqueId, remainingRemote);
+        }
+
+        AddItemAmountLocalRpc(item.ItemID, addedAmount, RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
         chest.RefreshViewer();
     }
 

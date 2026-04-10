@@ -17,10 +17,12 @@ public class INV_Item : ScriptableObject
     [Header("Info")]
     [SerializeField] private string itemID;
     [SerializeField] private string m_name;
-    [SerializeField] private string description;
+    [SerializeField][TextArea(1,5)] private string description;
 
     public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
     [SerializeField] private ItemType itemType = ItemType.Item;
+    public enum ItemRarity { Common, Uncommon, Rare, Epic }
+    [SerializeField] private ItemRarity itemRarity = ItemRarity.Common;
 
     [Header("Specs")]
     [SerializeField] private float durability;
@@ -30,8 +32,9 @@ public class INV_Item : ScriptableObject
     [SerializeField] private float thirstDrainDelay;
 
     [Header("Probability")]
-    [SerializeField, Range(0,100)] private int chanceOfSpawnInChest = 0;
-    [SerializeField, Range(0,100)] private int chanceOfSpawnAsDebris = 0;
+    [SerializeField, Range(0, 100)] private int chanceOfSpawnInChest = 0;
+    [SerializeField] private Vector2Int amountSpawnedInChestRange = new Vector2Int(1, 5);
+    [SerializeField, Range(0, 100)] private int chanceOfSpawnAsDebris = 0;
     [SerializeField] private List<BiomeProbability> biomeProbabilities;
 
     [Serializable]
@@ -49,14 +52,29 @@ public class INV_Item : ScriptableObject
     [Header("Crafting")]
     [SerializeField] private bool craftable;
     [SerializeField] private bool canCraftAnywhere;
+
+    // Old ver so I dont break recipes while changing to new ver, will probably also just keep in here as a fallback.
+    [Tooltip("Old single recipe. If Crafting Recipes is empty, this will be used as recipe 0.")]
     [SerializeField] private List<CraftingStack> craftingRequirements = new List<CraftingStack>();
-    public List<CraftingStack> CraftingRequirements => craftingRequirements;
+
+    [SerializeField] private List<CraftingRecipe> craftingRecipes = new List<CraftingRecipe>();
+
+    public List<CraftingStack> CraftingRequirements => GetRecipeRequirements(0);
+    public List<CraftingRecipe> CraftingRecipes => craftingRecipes;
 
     [System.Serializable]
     public class CraftingStack
     {
         public INV_Item item;
         public int amount;
+    }
+
+    [System.Serializable]
+    public class CraftingRecipe
+    {
+        public string recipeName = "Recipe";
+        public List<CraftingStack> requirements = new List<CraftingStack>();
+        public int amountGiven = 1;
     }
 
     [Header("Visuals")]
@@ -113,6 +131,7 @@ public class INV_Item : ScriptableObject
     public string Name => m_name;
     public string Description => description;
     public ItemType ItemTypeVal => itemType;
+    public ItemRarity ItemRarityVal => itemRarity;
 
     public float Durability => durability;
     public float HungerReplenish => hungerReplenish;
@@ -121,6 +140,7 @@ public class INV_Item : ScriptableObject
     public float ThirstDrainDelay => thirstDrainDelay;
 
     public int ChanceOfSpawnInChest => chanceOfSpawnInChest;
+    public Vector2Int AmountSpawnedInChestRange => amountSpawnedInChestRange;
     public int ChanceOfSpawnAsDebris => chanceOfSpawnAsDebris;
 
     public List<BiomeProbability> BiomeProbablities => biomeProbabilities;
@@ -151,6 +171,24 @@ public class INV_Item : ScriptableObject
 
     public List<string> InventorySpaceShape => inventorySpaceShape;
 
+    public int RecipeCount
+    {
+        get
+        {
+            if (craftingRecipes != null && craftingRecipes.Count > 0)
+            {
+                return craftingRecipes.Count;
+            }
+
+            if (craftingRequirements != null && craftingRequirements.Count > 0)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+    }
+
     // utility
     public Vector2Int ItemGridSize // forces a minimum size of 1,1
     {
@@ -167,6 +205,64 @@ public class INV_Item : ScriptableObject
             int h = Mathf.Max(1, Mathf.RoundToInt(inventorySpace.y));
             return new Vector2Int(w, h);
         }
+    }
+
+    public List<CraftingStack> GetRecipeRequirements(int recipeIndex)
+    {
+        if (craftingRecipes != null && craftingRecipes.Count > 0)
+        {
+            if (recipeIndex >= 0 && recipeIndex < craftingRecipes.Count)
+            {
+                return craftingRecipes[recipeIndex] != null ? craftingRecipes[recipeIndex].requirements : null;
+            }
+
+            return null;
+        }
+
+        if (recipeIndex == 0)
+        {
+            return craftingRequirements;
+        }
+
+        return null;
+    }
+
+    public string GetRecipeName(int recipeIndex)
+    {
+        if (craftingRecipes != null && craftingRecipes.Count > 0)
+        {
+            if (recipeIndex >= 0 && recipeIndex < craftingRecipes.Count)
+            {
+                CraftingRecipe recipe = craftingRecipes[recipeIndex];
+                if (recipe != null && !string.IsNullOrWhiteSpace(recipe.recipeName))
+                {
+                    return recipe.recipeName;
+                }
+            }
+        }
+
+        if (RecipeCount > 1)
+        {
+            return $"Recipe {recipeIndex + 1}";
+        }
+
+        return "Recipe";
+    }
+
+    public int GetRecipeReturnAmount(int recipeIndex)
+    {
+        if (craftingRecipes != null && craftingRecipes.Count > 0)
+        {
+            if (recipeIndex >= 0 && recipeIndex < craftingRecipes.Count)
+            {
+                CraftingRecipe recipe = craftingRecipes[recipeIndex];
+                if (recipe != null && recipe.amountGiven > 0)
+                {
+                    return recipe.amountGiven;
+                }
+            }
+        }
+        return 1;
     }
 
     // returns bounding size of the current shape list

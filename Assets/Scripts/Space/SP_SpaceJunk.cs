@@ -11,6 +11,7 @@ public class SP_SpaceJunk : NetworkBehaviour
     [HideInInspector] public Quaternion junkRotation;
     [HideInInspector] public Vector3 junkRotationRate;
     [HideInInspector] public SP_Spawner spawner;
+    [HideInInspector] public bool canTeleport = true;
     [SerializeField] private float scaleSpeed = 1;
     [SerializeField] private GameObject destroyVFX;
     private SP_SpaceManager spaceManager;
@@ -46,37 +47,25 @@ public class SP_SpaceJunk : NetworkBehaviour
     private void InitialiseComponents()
     {
         rb = GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            rb = this.AddComponent<Rigidbody>();
-        }
-
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
     }
 
     private void Start()
     {
-        StartCoroutine(LerpScale(Vector3.zero, transform.localScale, scaleSpeed, false));
-        rb.AddTorque(Vector3.one * Random.Range(-10, 10));
-        if (IsServer)
+        StartLerpScale(Vector3.zero, transform.localScale, false);
+        if (rb != null)
+        {
+            rb.AddTorque(Vector3.one * Random.Range(-10, 10));
+        } 
+        if (IsServer && spawner != null)
         { 
             spaceManager.spawners[spawner]++;
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    public void StartLerpScale(Vector3 start, Vector3 end, bool destroy)
     {
-        // only server decides if junk should despawn
-        if (!IsServer)
-        {
-            return;
-        }
-
-        if (spaceManager != null && !spaceManager.foundObjects.Contains(this.gameObject))
-        {
-            StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
-        }
+        StartCoroutine(LerpScale(start, end, scaleSpeed, destroy));
     }
 
     private IEnumerator LerpScale(Vector3 start, Vector3 end, float duration, bool destroy)
@@ -131,18 +120,19 @@ public class SP_SpaceJunk : NetworkBehaviour
             }
         }
 
-        spaceManager.spawners[spawner]--;
+        if (spawner != null)
+        { 
+            spaceManager.spawners[spawner]--;
+        }
 
         // despawn junk over network
         NetworkObject netObj = GetComponent<NetworkObject>();
-        if (netObj != null && netObj.IsSpawned)
+        if (IsServer && netObj != null && netObj.IsSpawned)
         {
             netObj.Despawn(true);
         }
-        else
-        {
-            Destroy(this.gameObject);
-        }
+
+        Destroy(this.gameObject);
     }
     public void RemoveFromSpaceManager()
     {
@@ -153,7 +143,7 @@ public class SP_SpaceJunk : NetworkBehaviour
 
         if (spaceManager == null)
         {
-            Debug.LogWarning("SP_Junk could not find SP_SpaceJunk.", this);
+            Debug.LogWarning("SP_SpaceJunk could not find SP_SpaceManager.", this);
             return;
         }
 

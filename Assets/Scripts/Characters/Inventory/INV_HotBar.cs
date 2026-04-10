@@ -339,7 +339,7 @@ public class INV_HotBar : MonoBehaviour
             Debug.Log($"Hotbar, Equipped slot {selectedSlot}: {selectedItem.data.Name}");
         }
 
-        playerInventoryNet.RequestEquipItem(selectedItem.data.ItemID);
+        playerInventoryNet.RequestEquipItem(selectedItem.data.ItemID, selectedItem.inventoryItemUniqueId);
     }
 
     private bool IsValidSlotIndex(int slotIndex)

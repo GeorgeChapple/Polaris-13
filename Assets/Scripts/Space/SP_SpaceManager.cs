@@ -2,20 +2,23 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using Unity.VisualScripting;
 using UnityEngine;
 
 // Script By : George Chapple
 // Summary   : Manages space spawners and moves space objects depending on rocket direction and speed.
 
+[RequireComponent(typeof(BoxCollider))]
 public class SP_SpaceManager : NetworkBehaviour
 {
     [SerializeField] private int maxDebris = 20;
     [HideInInspector] public RS_Move rocket; 
     public List<SP_SpawnSettings> spawnerSettings = new List<SP_SpawnSettings>();
-    [HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
+    //[HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Dictionary<SP_Spawner, int> spawners = new Dictionary<SP_Spawner, int>();
+    [HideInInspector] public List<Collider> cannotTeleport = new List<Collider>();
     public Vector3 spaceBounds = new Vector3(20, 20, 20);
     [HideInInspector] public bool maxDebrisReached;
 
@@ -40,6 +43,7 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void InitialiseComponents()
     {
+        GetComponent<BoxCollider>().size = spaceBounds;
         rocket = FindFirstObjectByType<RS_Move>();
     }
 
@@ -63,26 +67,67 @@ public class SP_SpaceManager : NetworkBehaviour
             maxDebrisReached = false;
         }
 
-        //if (rocket.speed > 0.1f)
-        //{
-        //    SpawnSpaceObjects();
-        //}
-
         MoveDebris();
 
-        Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
-        foundObjects.Clear();
+        //Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
+        //foundObjects.Clear();
 
-        foreach (Collider col in colliders)
+        //foreach (Collider col in colliders)
+        //{
+        //    foundObjects.Add(col.gameObject);
+        //}
+    }
+
+    private void OnTriggerExit(Collider col)
+    {
+        Debug.Log("Exit " + col.gameObject);
+        StartCoroutine(WaitTriggerExit(col));
+    }
+
+    private IEnumerator WaitTriggerExit(Collider col)
+    {
+        float t = 0;
+        while (t < 0.1f)
         {
-            foundObjects.Add(col.gameObject);
+            t += Time.deltaTime;
+            yield return null;
         }
-
-        CC_Movement[] players = FindObjectsByType<CC_Movement>(FindObjectsSortMode.None);
-        foreach (CC_Movement player in players)
+        NetworkObject netObj = col.GetComponent<NetworkObject>();
+        if (netObj != null)
         {
-            if (!foundObjects.Contains(player.gameObject))
+            if (netObj.GetComponent<CC_Movement>() && !cannotTeleport.Contains(col))
             {
+                PlayerExitSpaceRpc(netObj);
+            }
+            else
+            {
+                ObjectExitSpaceRpc(netObj);
+            }
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ObjectExitSpaceRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        { 
+            SP_SpaceJunk spaceObj = netObj.GetComponent<SP_SpaceJunk>();
+            if (spaceObj != null)
+            {
+                spaceObj.StartLerpScale(spaceObj.transform.localScale, Vector3.zero, true);
+            }
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayerExitSpaceRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        {
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            if (player != null)
+            {
+                player.Body.linearVelocity = Vector3.zero;
                 player.Body.position = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
             }
         }
@@ -145,65 +190,6 @@ public class SP_SpaceManager : NetworkBehaviour
         }
     }
 
-    //private IEnumerator WaitSpawnObject(SP_SpawnSettings spawner)
-    //{
-    //    spawner.spawning = true;
-
-    //    float t = 0;
-    //    float w = Random.Range(spawner.spawnTime.x, spawner.spawnTime.y);
-    //    while (t < w)
-    //    {
-    //        t += Time.deltaTime;
-    //        yield return null;
-    //    }
-
-    //    Debug.Log("TEST");
-
-    //    int maxValue = 0;
-    //    foreach (SP_SpawnSettings.SpaceObject obj in spawner.spaceObjects)
-    //    {
-    //        maxValue += obj.probability; 
-    //        yield return null;
-    //    }
-
-
-    //    int randomValue = Random.Range(1, maxValue + 1);
-    //    int objectIndex = 0;
-    //    foreach (SP_SpawnSettings.SpaceObject obj in spawner.spaceObjects)
-    //    {
-    //        if (randomValue <= obj.probability)
-    //        {
-    //            break;
-    //        }
-    //        objectIndex++;
-    //        yield return null;
-    //    }
-
-    //    Vector2 spawnPosition = GetRandomSpawnPosition(spawner.spawnbounds);
-
-    //    GameObject newDebris = Instantiate(
-    //                spawner.spaceObjects[0].prefab,
-    //                new Vector3(
-    //                    spawnPosition.x,
-    //                    spawnPosition.y,
-    //                    spaceBounds.z / 2
-    //                ),
-    //                transform.rotation
-    //            );
-
-    //    newDebris.transform.eulerAngles = Vector3.back;
-
-    //    NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
-    //    if (netObj != null && !netObj.IsSpawned)
-    //    {
-    //        netObj.Spawn();
-    //    }
-
-    //    debris.Add(newDebris, rocket.worldDirection);
-
-    //    spawner.spawning = false;
-    //}
-
     private void MoveDebris()
     {
         List<GameObject> debrisObjects = new List<GameObject>(debris.Keys);
@@ -213,11 +199,17 @@ public class SP_SpaceManager : NetworkBehaviour
             if (obj == null) continue;
 
             Rigidbody rb = obj.GetComponent<Rigidbody>();
-
-            if (rb == null) continue;
+            NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
             Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
-            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+            if (rb != null)
+            { 
+                rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+            } 
+            else
+            {
+                obj.transform.position = Vector3.Lerp(obj.transform.position, obj.transform.position + objDirection, Time.deltaTime);
+            }
         }
     }
 
@@ -229,73 +221,6 @@ public class SP_SpaceManager : NetworkBehaviour
         {
             debris.Remove(obj);
         }
-    }
-
-    private void SortProbabilities(SP_SpawnSettings spawner)
-    {
-        spawner.spaceObjects = MergeSort(spawner.spaceObjects);
-    }
-
-    private List<SP_SpawnSettings.SpaceObject> MergeSort(List<SP_SpawnSettings.SpaceObject> objects)
-    {
-        if (!objects.Any()) return new List<SP_SpawnSettings.SpaceObject>();
-
-        int mid = objects.Count / 2;
-
-        List<SP_SpawnSettings.SpaceObject> left = GetListSegment(objects, 0, mid);
-        List<SP_SpawnSettings.SpaceObject> right = GetListSegment(objects, mid + 1, objects.Count - 1);
-
-        if (left.Count > 1)
-        {
-            MergeSort(left);
-        }
-        if (right.Count > 1)
-        {
-            MergeSort(right);
-        }
-
-        MergeList(objects, left, right);
-
-        return objects;
-    }
-
-    private void MergeList(List<SP_SpawnSettings.SpaceObject> list, List<SP_SpawnSettings.SpaceObject> left, List<SP_SpawnSettings.SpaceObject> right)
-    {
-        int i, j, k;
-        i = j = k = 0;
-        SP_SpawnSettings.SpaceObject obj;
-
-        while (i < left.Count && j < right.Count)
-        {
-            if (left[i].probability >= right[j].probability)
-            {
-                obj = left[i++];
-            }
-            else
-            {
-                obj = right[j++];
-            }
-            list[k++] = obj;
-        }
-
-        while (i < left.Count)
-        {
-            list[k++] = left[i++];
-        }
-        while (j < right.Count)
-        {
-            list[k++] = left[j++];
-        }
-    }
-
-    private List<SP_SpawnSettings.SpaceObject> GetListSegment(List<SP_SpawnSettings.SpaceObject> list, int startIndex, int endIndex)
-    {
-        List<SP_SpawnSettings.SpaceObject> newList = new List<SP_SpawnSettings.SpaceObject>();
-        for (int i = startIndex; i <= endIndex;)
-        {
-            newList.Add(list[i]);
-        }
-        return newList;
     }
 
     private void OnDrawGizmos()

@@ -1,23 +1,20 @@
+using Unity.Netcode;
 using UnityEngine;
 
 public class CC_INV_ConsumableItem : MonoBehaviour, IUsableItem
 {
-    private GameObject ownerPlayer;
     private string itemId;
 
-    public void WireUp(GameObject player, string ItemId)
+    public void SendItemId(string ItemId)
     {
-        ownerPlayer = player;
         itemId = ItemId;
     }
 
-    public void OnUse()
+    public void OnUse(NetworkObjectReference netObjRef)
     {
-        //use item
-        INV_PlayerInventoryNet playerInventoryNet = ownerPlayer.GetComponent<INV_PlayerInventoryNet>();
-        if (playerInventoryNet != null) 
+        if (netObjRef.TryGet(out NetworkObject netObj))
         {
-            playerInventoryNet.RequestUseItemInInventory(itemId);        
+            Debug.Log($"{netObj.NetworkObjectId} used consumable with id {itemId}.");
         }
     }
 }
