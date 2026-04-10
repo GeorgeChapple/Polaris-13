@@ -229,8 +229,16 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
             if (craftedItem != null)
             {
+                int returnAmount = craftedItem.GetRecipeReturnAmount(recipeIndex);
+
+                if (!inventory.CanAddItem(craftedItem, returnAmount))
+                {
+                    OnCraftRequestFinished?.Invoke(false, craftedItemId);
+                    return;
+                }
+
                 RemoveCraftRequirementsLocally(craftedItem, recipeIndex);
-                inventory.TryAddItem(craftedItem, craftedItem.GetRecipeReturnAmount(recipeIndex));
+                inventory.TryAddItem(craftedItem, returnAmount);
             }
         }
 
@@ -914,7 +922,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        if (!inventory.CanAddItem(craftedItem))
+        int returnAmount = craftedItem.GetRecipeReturnAmount(recipeIndex);
+
+        if (!inventory.CanAddItem(craftedItem, returnAmount))
         {
             NotifyCraftResult(false, itemId, recipeIndex);
             return;
@@ -926,7 +936,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        if (inventory.TryAddItem(craftedItem, craftedItem.GetRecipeReturnAmount(recipeIndex)))
+        if (inventory.TryAddItem(craftedItem, returnAmount))
         {
             NotifyCraftResult(true, itemId, recipeIndex);
             return;

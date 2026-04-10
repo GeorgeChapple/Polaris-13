@@ -85,6 +85,8 @@ public class INV_Inventory : MonoBehaviour
         Use,
         DropOne,
         DropStack,
+        StoreOne,
+        StoreStack,
         AssignHotbar1,
         AssignHotbar2,
         AssignHotbar3,
@@ -393,8 +395,6 @@ public class INV_Inventory : MonoBehaviour
         bool succeeded = false;
         for (int i = 0; i < quantity; i++)
         {
-            // needs support preventing items that cant be crafted from amount exceeding inventory space
-            // will add that in an hour or so, im taking a break
             succeeded = TryAddItem(item); 
             if (!succeeded) { return succeeded; }
         }
@@ -525,6 +525,157 @@ public class INV_Inventory : MonoBehaviour
 
         Vector2Int foundCell;
         return LookForOccupyableSpace(playerRuntime, playerGrid, temp, out foundCell);
+    }
+
+    public bool CanAddItem(INV_Item item, int quantity)
+    {
+        EnsureGrid(false);
+
+        if (item == null || quantity <= 0)
+        {
+            return false;
+        }
+
+        // check remaining stack room + how many new stacks can fit
+        if (item.Stackable)
+        {
+            int remaining = quantity;
+
+            for (int i = 0; i < playerRuntime.items.Count; i++)
+            {
+                ItemInstance inst = playerRuntime.items[i];
+                if (inst?.data == null)
+                {
+                    continue;
+                }
+
+                if (inst.data.ItemID != item.ItemID || !inst.data.Stackable)
+                {
+                    continue;
+                }
+
+                int room = item.MaxStack - inst.quantity;
+                if (room <= 0)
+                {
+                    continue;
+                }
+
+                remaining -= room;
+                if (remaining <= 0)
+                {
+                    return true;
+                }
+            }
+
+            int stacksNeeded = Mathf.CeilToInt((float)remaining / item.MaxStack);
+            return CanFitNewItemInstances(item, stacksNeeded);
+        }
+
+        // non stackables need one fresh placement per returned item
+        return CanFitNewItemInstances(item, quantity);
+    }
+
+    private bool CanFitNewItemInstances(INV_Item item, int count)
+    {
+        if (item == null || count <= 0)
+        {
+            return false;
+        }
+
+        bool[,] occupied = new bool[playerGrid.maxWidth, playerGrid.maxHeight];
+
+        for (int y = 0; y < playerGrid.maxHeight; y++)
+        {
+            for (int x = 0; x < playerGrid.maxWidth; x++)
+            {
+                occupied[x, y] = playerRuntime.spaces[x, y].isOccupied;
+            }
+        }
+
+        ItemInstance temp = new ItemInstance
+        {
+            data = item,
+            rotation = ItemInstance.Rotation.Up,
+            quantity = 1
+        };
+
+        BuildShapeForInstance(temp, ItemInstance.Rotation.Up);
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2Int foundCell;
+            if (!LookForOccupyableSpaceInSim(playerGrid, occupied, temp, out foundCell))
+            {
+                return false;
+            }
+
+            OccupySpacesInSim(occupied, temp, foundCell.x, foundCell.y);
+        }
+
+        return true;
+    }
+
+    private bool LookForOccupyableSpaceInSim(GridRefs refs, bool[,] occupied, ItemInstance item, out Vector2Int foundCell)
+    {
+        for (int y = 0; y < refs.maxHeight; y++)
+        {
+            for (int x = 0; x < refs.maxWidth; x++)
+            {
+                if (!CheckSpaceOccupyableInSim(refs, occupied, x, y, item))
+                {
+                    continue;
+                }
+
+                foundCell = new Vector2Int(x, y);
+                return true;
+            }
+        }
+
+        foundCell = new Vector2Int(-1, -1);
+        return false;
+    }
+
+    private bool CheckSpaceOccupyableInSim(GridRefs refs, bool[,] occupied, int gridX, int gridY, ItemInstance itemToPlace)
+    {
+        if (itemToPlace == null || itemToPlace.size.x <= 0 || itemToPlace.size.y <= 0)
+        {
+            return false;
+        }
+
+        if (gridX < 0 || gridY < 0)
+        {
+            return false;
+        }
+
+        if (gridX + itemToPlace.size.x > refs.maxWidth)
+        {
+            return false;
+        }
+
+        if (gridY + itemToPlace.size.y > refs.maxHeight)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < itemToPlace.occupiedOffsets.Count; i++)
+        {
+            Vector2Int off = itemToPlace.occupiedOffsets[i];
+            if (occupied[gridX + off.x, gridY + off.y])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void OccupySpacesInSim(bool[,] occupied, ItemInstance item, int gridX, int gridY)
+    {
+        for (int i = 0; i < item.occupiedOffsets.Count; i++)
+        {
+            Vector2Int off = item.occupiedOffsets[i];
+            occupied[gridX + off.x, gridY + off.y] = true;
+        }
     }
 
     // called by INV_ItemUI when an item is dropped from screen point onto the player grid
@@ -1804,6 +1955,98 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
+    public bool TryQuickStoreItemInOpenChest(ItemInstance item, bool moveStack)
+    {
+        EnsureGrid(true);
+
+        if (activeChest == null || item == null || item.isChestItem || item.data == null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.inventoryItemUniqueId))
+        {
+            return false;
+        }
+
+        INV_PlayerInventoryNet net = GetComponentInParent<INV_PlayerInventoryNet>();
+        if (net == null)
+        {
+            return false;
+        }
+
+        int quantity = moveStack ? Mathf.Max(1, item.quantity) : 1;
+        string itemId = item.data.ItemID;
+
+        if (net.IsServer)
+        {
+            Vector2Int chestCell;
+            if (!FindChestSpaceForItemAmount(item.data, quantity, item.rotation, out chestCell))
+            {
+                return false;
+            }
+
+            net.RequestStoreItemInOpenChest(item.inventoryItemUniqueId, itemId, quantity, chestCell, item.rotation);
+            return true;
+        }
+
+        Vector2Int predictedCell;
+        if (!FindChestSpaceForItemAmount(item.data, quantity, item.rotation, out predictedCell))
+        {
+            return false;
+        }
+
+        if (moveStack || item.quantity <= 1)
+        {
+            RemoveLocalPlayerItemInstance(item);
+        }
+        else
+        {
+            item.quantity--;
+
+            if (item.uiHandler != null)
+            {
+                item.uiHandler.ApplyUpdatedVisuals();
+            }
+        }
+
+        AddLocalChestVisualPreview(itemId, quantity, predictedCell, item.rotation);
+        net.RequestStoreItemInOpenChest(item.inventoryItemUniqueId, itemId, quantity, predictedCell, item.rotation);
+        return true;
+    }
+
+    private bool FindChestSpaceForItemAmount(INV_Item item, int quantity, ItemInstance.Rotation rotation, out Vector2Int foundCell)
+    {
+        foundCell = new Vector2Int(-1, -1);
+
+        if (item == null || quantity <= 0)
+        {
+            return false;
+        }
+
+        ItemInstance temp = new ItemInstance
+        {
+            data = item,
+            rotation = rotation,
+            quantity = quantity,
+            isChestItem = true
+        };
+
+        BuildShapeForInstance(temp, rotation);
+
+        if (item.Stackable)
+        {
+            return LookForOccupyableSpace(chestRuntime, chestGrid, temp, out foundCell);
+        }
+
+        if (quantity != 1)
+        {
+            return false;
+        }
+
+        return LookForOccupyableSpace(chestRuntime, chestGrid, temp, out foundCell);
+    }
+
     public bool TryQuickTakeChestItemOne(ItemInstance item)
     {
         if (item == null || !item.isChestItem || item.data == null)
@@ -2109,6 +2352,7 @@ public class INV_Inventory : MonoBehaviour
         INV_HotBar hotBar = GetComponentInParent<INV_HotBar>();
         bool hasSelectedHotbar = hotBar != null && hotBar.SelectedSlot >= 0;
         bool showDropStack = inst.quantity > 1;
+        bool canMoveToChest = activeChest != null;
 
         switch (inst.data.ItemTypeVal)
         {
@@ -2116,36 +2360,48 @@ public class INV_Inventory : MonoBehaviour
                 actions.Add(ContextActionType.Use);
                 actions.Add(ContextActionType.DropOne);
                 if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                if (canMoveToChest) { actions.Add(ContextActionType.StoreOne); }
+                if (canMoveToChest && inst.quantity > 1 && inst.data.Stackable) { actions.Add(ContextActionType.StoreStack); }
                 AddHotbarAssignActions(actions);
                 if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
             case INV_Item.ItemType.Weapon:
                 actions.Add(ContextActionType.DropOne);
                 if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                if (canMoveToChest) { actions.Add(ContextActionType.StoreOne); }
+                if (canMoveToChest && inst.quantity > 1 && inst.data.Stackable) { actions.Add(ContextActionType.StoreStack); }
                 AddHotbarAssignActions(actions);
                 if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
             case INV_Item.ItemType.Tool:
                 actions.Add(ContextActionType.DropOne);
                 if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                if (canMoveToChest) { actions.Add(ContextActionType.StoreOne); }
+                if (canMoveToChest && inst.quantity > 1 && inst.data.Stackable) { actions.Add(ContextActionType.StoreStack); }
                 AddHotbarAssignActions(actions);
                 if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
             case INV_Item.ItemType.Item:
                 actions.Add(ContextActionType.DropOne);
                 if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                if (canMoveToChest) { actions.Add(ContextActionType.StoreOne); }
+                if (canMoveToChest && inst.quantity > 1 && inst.data.Stackable) { actions.Add(ContextActionType.StoreStack); }
                 AddHotbarAssignActions(actions);
                 if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
             case INV_Item.ItemType.Resource:
                 actions.Add(ContextActionType.DropOne);
                 if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                if (canMoveToChest) { actions.Add(ContextActionType.StoreOne); }
+                if (canMoveToChest && inst.quantity > 1 && inst.data.Stackable) { actions.Add(ContextActionType.StoreStack); }
                 AddHotbarAssignActions(actions);
                 if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
             case INV_Item.ItemType.Placeable:
                 actions.Add(ContextActionType.DropOne);
                 if (showDropStack) { actions.Add(ContextActionType.DropStack); }
+                if (canMoveToChest) { actions.Add(ContextActionType.StoreOne); }
+                if (canMoveToChest && inst.quantity > 1 && inst.data.Stackable) { actions.Add(ContextActionType.StoreStack); }
                 AddHotbarAssignActions(actions);
                 if (hasSelectedHotbar) { actions.Add(ContextActionType.AssignSelectedHotbar); }
                 break;
@@ -2178,6 +2434,8 @@ public class INV_Inventory : MonoBehaviour
             case ContextActionType.Use: { return "Use"; }
             case ContextActionType.DropOne: { return "Drop One"; }
             case ContextActionType.DropStack: { return "Drop Stack"; }
+            case ContextActionType.StoreOne: { return "Store One"; }
+            case ContextActionType.StoreStack: { return "Store Stack"; }
             case ContextActionType.AssignHotbar1: { return "Assign Hotbar 1"; }
             case ContextActionType.AssignHotbar2: { return "Assign Hotbar 2"; }
             case ContextActionType.AssignHotbar3: { return "Assign Hotbar 3"; }
@@ -2226,6 +2484,22 @@ public class INV_Inventory : MonoBehaviour
                 }
 
                 return DropItemInstanceToWorld(inst, true);
+
+            case ContextActionType.StoreOne:
+                if (inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return TryQuickStoreItemInOpenChest(inst, false);
+
+            case ContextActionType.StoreStack:
+                if (inst.isChestItem)
+                {
+                    return false;
+                }
+
+                return TryQuickStoreItemInOpenChest(inst, true);
 
             case ContextActionType.AssignHotbar1:
                 if (hotBar == null || inst.isChestItem)

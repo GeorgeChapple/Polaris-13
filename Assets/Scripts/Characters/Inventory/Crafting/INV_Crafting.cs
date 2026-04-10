@@ -480,7 +480,7 @@ public class INV_Crafting : MonoBehaviour
             }
         }
 
-        return inventory.CanAddItem(item);
+        return inventory.CanAddItem(item, item.GetRecipeReturnAmount(recipeIndex));
     }
 
     public int GetBestRecipeIndex(INV_Item item)
