@@ -10,18 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Copper x1
+  m_Name: Copper
   m_EditorClassIdentifier: 
   itemID: copper
   m_name: Copper
   description: A bar of copper
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 20
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 1
@@ -31,6 +33,17 @@ MonoBehaviour:
   craftingRequirements:
   - item: {fileID: 11400000, guid: 9bfc42add9d7a4242bb77cba893febbe, type: 2}
     amount: 1
+  craftingRecipes:
+  - recipeName: Copper x1
+    requirements:
+    - item: {fileID: 11400000, guid: 9bfc42add9d7a4242bb77cba893febbe, type: 2}
+      amount: 1
+    amountGiven: 1
+  - recipeName: Copper x3
+    requirements:
+    - item: {fileID: 11400000, guid: 8c42545ce6ccc5843b9f3b1c45235ae1, type: 2}
+      amount: 1
+    amountGiven: 3
   icon: {fileID: 0}
   mesh: {fileID: 2133127977080242572, guid: d357fb02c0008a64e82d99e3aa368488, type: 3}
   material: {fileID: 0}

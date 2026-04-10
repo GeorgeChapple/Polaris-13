@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Titanium (Wall Scrap)
+  m_Name: Titanium
   m_EditorClassIdentifier: 
   itemID: titanium
   m_name: Titanium
@@ -33,7 +33,17 @@ MonoBehaviour:
   craftingRequirements:
   - item: {fileID: 11400000, guid: 5710b9bad6862e1488ec15474737fd12, type: 2}
     amount: 1
-  craftingRecipes: []
+  craftingRecipes:
+  - recipeName: Titanium
+    requirements:
+    - item: {fileID: 11400000, guid: 5710b9bad6862e1488ec15474737fd12, type: 2}
+      amount: 1
+    amountGiven: 1
+  - recipeName: Titanium
+    requirements:
+    - item: {fileID: 11400000, guid: db4df3af148e7e04fb7e212af9b38426, type: 2}
+      amount: 1
+    amountGiven: 1
   icon: {fileID: 0}
   mesh: {fileID: 5473160952070604782, guid: 0849f7fa3eadd084497c7d27fc8c7e33, type: 3}
   material: {fileID: 0}

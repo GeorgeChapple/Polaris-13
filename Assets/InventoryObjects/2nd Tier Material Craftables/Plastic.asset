@@ -16,12 +16,14 @@ MonoBehaviour:
   m_name: Plastic
   description: A cheaply made rigid material
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 1
@@ -33,6 +35,7 @@ MonoBehaviour:
     amount: 1
   - item: {fileID: 11400000, guid: 8f49abf4fd48b1944aa5c763a2b11b11, type: 2}
     amount: 2
+  craftingRecipes: []
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

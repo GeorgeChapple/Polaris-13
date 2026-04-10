@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
-  m_Name: Water x1
+  m_Name: Water
   m_EditorClassIdentifier: 
   itemID: water
   m_name: Water
   description: A bottle of water
-  itemType: 1
+  itemType: 4
   itemRarity: 1
   durability: 0
   hungerReplenish: 0
@@ -33,7 +33,17 @@ MonoBehaviour:
   craftingRequirements:
   - item: {fileID: 11400000, guid: dd1f89ba5df137243ba168d669088b45, type: 2}
     amount: 1
-  craftingRecipes: []
+  craftingRecipes:
+  - recipeName: Water x1
+    requirements:
+    - item: {fileID: 11400000, guid: dd1f89ba5df137243ba168d669088b45, type: 2}
+      amount: 1
+    amountGiven: 1
+  - recipeName: Water x3
+    requirements:
+    - item: {fileID: 11400000, guid: aa73f5fe20121a0418f4c08a876dc621, type: 2}
+      amount: 1
+    amountGiven: 3
   icon: {fileID: 0}
   mesh: {fileID: -2128599272216676504, guid: 4396d5cd04669754e91b4d51564087fa, type: 3}
   material: {fileID: 0}

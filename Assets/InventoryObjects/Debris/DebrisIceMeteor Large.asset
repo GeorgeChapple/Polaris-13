@@ -16,12 +16,14 @@ MonoBehaviour:
   m_name: Large Ice Meteor
   description: A large meteor made of ice
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 20
   biomeProbabilities: []
   stackable: 0
@@ -29,6 +31,7 @@ MonoBehaviour:
   craftable: 0
   canCraftAnywhere: 0
   craftingRequirements: []
+  craftingRecipes: []
   icon: {fileID: 0}
   mesh: {fileID: -2241850966452767214, guid: 8159e59acc2e01b4fa1ed19650bd6f82, type: 3}
   material: {fileID: 0}

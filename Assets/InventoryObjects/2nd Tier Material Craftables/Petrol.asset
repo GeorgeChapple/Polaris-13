@@ -15,13 +15,15 @@ MonoBehaviour:
   itemID: petrol
   m_name: Petrol
   description: The main fuel source of spacecrafts
-  itemType: 0
+  itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 1
@@ -33,6 +35,7 @@ MonoBehaviour:
     amount: 3
   - item: {fileID: 11400000, guid: fa05d28205803df418ae0b04578bd6f1, type: 2}
     amount: 1
+  craftingRecipes: []
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

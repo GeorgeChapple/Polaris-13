@@ -16,12 +16,14 @@ MonoBehaviour:
   m_name: Small Ice Meteor
   description: A small meteor made of ice
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 40
   biomeProbabilities: []
   stackable: 0
@@ -29,6 +31,7 @@ MonoBehaviour:
   craftable: 0
   canCraftAnywhere: 0
   craftingRequirements: []
+  craftingRecipes: []
   icon: {fileID: 0}
   mesh: {fileID: 7903581986307672064, guid: 9e7031f0b2561224780f8edf549ff445, type: 3}
   material: {fileID: 0}

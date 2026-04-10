@@ -16,12 +16,14 @@ MonoBehaviour:
   m_name: Large Silver Meteor
   description: A large meteor enriched with silver
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 5
   biomeProbabilities: []
   stackable: 0
@@ -29,6 +31,7 @@ MonoBehaviour:
   craftable: 0
   canCraftAnywhere: 0
   craftingRequirements: []
+  craftingRecipes: []
   icon: {fileID: 0}
   mesh: {fileID: -8953451059965167647, guid: 483058d875a39f0489f4fc72bd4ba49f, type: 3}
   material: {fileID: 0}
