@@ -16,23 +16,29 @@ MonoBehaviour:
   m_name: Grapple Hook
   description: This tool can pull meteors in from a distance
   itemType: 3
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 0
   maxStack: 1
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 4196f0152793071458449864540a0f64, type: 2}
-    amount: 2
-  - item: {fileID: 11400000, guid: 87d1992589c02914c8fb7fc8a798c538, type: 2}
-    amount: 2
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Grapple Hook
+    requirements:
+    - item: {fileID: 11400000, guid: 4196f0152793071458449864540a0f64, type: 2}
+      amount: 2
+    - item: {fileID: 11400000, guid: 87d1992589c02914c8fb7fc8a798c538, type: 2}
+      amount: 2
+    amountGiven: 1
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

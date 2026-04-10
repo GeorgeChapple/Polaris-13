@@ -30,14 +30,17 @@ MonoBehaviour:
   maxStack: 5
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 7706ef987409a2040b335a94929d90ff, type: 2}
-    amount: 2
-  - item: {fileID: 11400000, guid: b808de0f084cdd74a96447fc5e60d7fa, type: 2}
-    amount: 2
-  - item: {fileID: 11400000, guid: 1432ba7d163e81243845522d23bfb3fe, type: 2}
-    amount: 2
-  craftingRecipes: []
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: TitanSteel
+    requirements:
+    - item: {fileID: 11400000, guid: 7706ef987409a2040b335a94929d90ff, type: 2}
+      amount: 2
+    - item: {fileID: 11400000, guid: b808de0f084cdd74a96447fc5e60d7fa, type: 2}
+      amount: 2
+    - item: {fileID: 11400000, guid: 1432ba7d163e81243845522d23bfb3fe, type: 2}
+      amount: 2
+    amountGiven: 1
   icon: {fileID: 0}
   mesh: {fileID: 7392947577228632923, guid: c334274037f301349b1498c5cd6e7296, type: 3}
   material: {fileID: 0}

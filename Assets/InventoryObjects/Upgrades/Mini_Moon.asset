@@ -17,23 +17,29 @@ MonoBehaviour:
   description: A small gravatational device that can be attatched to the grapple
     hook to pull in more debris
   itemType: 3
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 0
   maxStack: 1
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 194c739935d7e684da91d2adfe3e3215, type: 2}
-    amount: 1
-  - item: {fileID: 11400000, guid: f5ba55543b0e8784e97316853cf49892, type: 2}
-    amount: 2
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Mini Moon
+    requirements:
+    - item: {fileID: 11400000, guid: 194c739935d7e684da91d2adfe3e3215, type: 2}
+      amount: 1
+    - item: {fileID: 11400000, guid: f5ba55543b0e8784e97316853cf49892, type: 2}
+      amount: 2
+    amountGiven: 1
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

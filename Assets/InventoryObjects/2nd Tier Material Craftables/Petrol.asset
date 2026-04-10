@@ -30,12 +30,15 @@ MonoBehaviour:
   maxStack: 10
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 499359c39420caf4d8b771206f361f4c, type: 2}
-    amount: 3
-  - item: {fileID: 11400000, guid: fa05d28205803df418ae0b04578bd6f1, type: 2}
-    amount: 1
-  craftingRecipes: []
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Petrol
+    requirements:
+    - item: {fileID: 11400000, guid: 499359c39420caf4d8b771206f361f4c, type: 2}
+      amount: 3
+    - item: {fileID: 11400000, guid: fa05d28205803df418ae0b04578bd6f1, type: 2}
+      amount: 1
+    amountGiven: 1
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

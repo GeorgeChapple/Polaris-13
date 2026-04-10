@@ -16,25 +16,31 @@ MonoBehaviour:
   m_name: Scanner
   description: A device that can be used to scan materials
   itemType: 3
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 0
   maxStack: 1
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 4196f0152793071458449864540a0f64, type: 2}
-    amount: 2
-  - item: {fileID: 11400000, guid: cf28bfe0296244e488cfdfa926e739ca, type: 2}
-    amount: 1
-  - item: {fileID: 11400000, guid: cc51d04d4b6bfea4db7b485153c10017, type: 2}
-    amount: 1
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Scanner
+    requirements:
+    - item: {fileID: 11400000, guid: 4196f0152793071458449864540a0f64, type: 2}
+      amount: 2
+    - item: {fileID: 11400000, guid: cf28bfe0296244e488cfdfa926e739ca, type: 2}
+      amount: 1
+    - item: {fileID: 11400000, guid: cc51d04d4b6bfea4db7b485153c10017, type: 2}
+      amount: 1
+    amountGiven: 1
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

@@ -16,25 +16,31 @@ MonoBehaviour:
   m_name: Basic Circuit
   description: An electrical circuit made up of copper and iron
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 10
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 1
   maxStack: 5
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: f1eb7407b1a895c4dac218041c0b16fd, type: 2}
-    amount: 1
-  - item: {fileID: 11400000, guid: 03995dfd76824dc4ba9a5aa37bd9e87f, type: 2}
-    amount: 1
-  - item: {fileID: 11400000, guid: cc51d04d4b6bfea4db7b485153c10017, type: 2}
-    amount: 1
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Basic Circuit
+    requirements:
+    - item: {fileID: 11400000, guid: f1eb7407b1a895c4dac218041c0b16fd, type: 2}
+      amount: 1
+    - item: {fileID: 11400000, guid: 03995dfd76824dc4ba9a5aa37bd9e87f, type: 2}
+      amount: 1
+    - item: {fileID: 11400000, guid: cc51d04d4b6bfea4db7b485153c10017, type: 2}
+      amount: 1
+    amountGiven: 1
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}
