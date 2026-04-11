@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
+  m_Name: Advanced_Oxygen_Tank
+  m_EditorClassIdentifier: 
+  itemID: advanced_oxygen_tank
+  m_name: Advanced Oxygen Tank
+  description: An oxygen tank with a large air capacity
+  itemType: 3
+  itemRarity: 0
+  durability: 0
+  hungerReplenish: 0
+  hungerDrainDelay: 0
+  thirstReplenish: 0
+  thirstDrainDelay: 0
+  chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
+  chanceOfSpawnAsDebris: 0
+  biomeProbabilities: []
+  stackable: 0
+  maxStack: 1
+  craftable: 1
+  canCraftAnywhere: 0
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Advanced Oxygen Tank
+    requirements:
+    - item: {fileID: 11400000, guid: 7d6024366e8eecb46aaf82efe96a365b, type: 2}
+      amount: 1
+    - item: {fileID: 11400000, guid: f1eb7407b1a895c4dac218041c0b16fd, type: 2}
+      amount: 3
+    - item: {fileID: 11400000, guid: 8f49abf4fd48b1944aa5c763a2b11b11, type: 2}
+      amount: 3
+    amountGiven: 1
+  icon: {fileID: 0}
+  mesh: {fileID: 0}
+  material: {fileID: 0}
+  inventoryMeshOffset: {x: 0, y: 0, z: 0}
+  inventoryMeshRotation: {x: 0, y: 0, z: 0}
+  inventoryMeshScale: 1
+  equippedPrefab: {fileID: 0}
+  applyEquippedPrefabVisuals: 0
+  equippedMeshOffset: {x: 0, y: 0, z: 0}
+  equippedMeshRotation: {x: 0, y: 0, z: 0}
+  equippedMeshScale: 1
+  craftingMeshOffset: {x: 0, y: 0, z: 0}
+  craftingMeshRotation: {x: 0, y: 0, z: 0}
+  craftingMeshScale: 1
+  inventorySpaceShape:
+  - ++
+  - +-
+  inventorySpace: {x: 1, y: 1}

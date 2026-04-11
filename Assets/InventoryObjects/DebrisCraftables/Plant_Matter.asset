@@ -30,10 +30,18 @@ MonoBehaviour:
   maxStack: 10
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000}
-    amount: 1
-  craftingRecipes: []
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Plant Matter x1
+    requirements:
+    - item: {fileID: 11400000, guid: cc407e5a45867744783b189ce188d83b, type: 2}
+      amount: 1
+    amountGiven: 1
+  - recipeName: Plant Matter x3
+    requirements:
+    - item: {fileID: 11400000, guid: ebb1b432fd02603448dd456cdc773ef5, type: 2}
+      amount: 1
+    amountGiven: 3
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}

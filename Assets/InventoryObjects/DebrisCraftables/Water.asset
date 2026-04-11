@@ -15,7 +15,7 @@ MonoBehaviour:
   itemID: water
   m_name: Water
   description: A bottle of water
-  itemType: 1
+  itemType: 4
   itemRarity: 1
   durability: 0
   hungerReplenish: 0
@@ -30,12 +30,20 @@ MonoBehaviour:
   maxStack: 10
   craftable: 1
   canCraftAnywhere: 0
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: dd1f89ba5df137243ba168d669088b45, type: 2}
-    amount: 1
-  craftingRecipes: []
+  craftingRequirements: []
+  craftingRecipes:
+  - recipeName: Water x1
+    requirements:
+    - item: {fileID: 11400000, guid: dd1f89ba5df137243ba168d669088b45, type: 2}
+      amount: 1
+    amountGiven: 1
+  - recipeName: Water x3
+    requirements:
+    - item: {fileID: 11400000, guid: aa73f5fe20121a0418f4c08a876dc621, type: 2}
+      amount: 1
+    amountGiven: 3
   icon: {fileID: 0}
-  mesh: {fileID: 0}
+  mesh: {fileID: -2128599272216676504, guid: 4396d5cd04669754e91b4d51564087fa, type: 3}
   material: {fileID: 0}
   inventoryMeshOffset: {x: 0, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}

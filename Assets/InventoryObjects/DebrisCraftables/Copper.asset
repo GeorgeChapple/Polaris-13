@@ -24,7 +24,7 @@ MonoBehaviour:
   thirstDrainDelay: 0
   chanceOfSpawnInChest: 20
   amountSpawnedInChestRange: {x: 1, y: 5}
-  chanceOfSpawnAsDebris: 40
+  chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 1
   maxStack: 10
@@ -32,31 +32,31 @@ MonoBehaviour:
   canCraftAnywhere: 0
   craftingRequirements: []
   craftingRecipes:
-  - recipeName: Copper
+  - recipeName: Copper x1
     requirements:
     - item: {fileID: 11400000, guid: 9bfc42add9d7a4242bb77cba893febbe, type: 2}
       amount: 1
     amountGiven: 1
-  - recipeName: Copper
+  - recipeName: Copper x3
     requirements:
     - item: {fileID: 11400000, guid: 8c42545ce6ccc5843b9f3b1c45235ae1, type: 2}
       amount: 1
-    amountGiven: 4
-  icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
+    amountGiven: 3
+  icon: {fileID: 0}
   mesh: {fileID: 2133127977080242572, guid: d357fb02c0008a64e82d99e3aa368488, type: 3}
-  material: {fileID: 824015559753126921, guid: d357fb02c0008a64e82d99e3aa368488, type: 3}
-  inventoryMeshOffset: {x: 0, y: 0, z: -20}
+  material: {fileID: 0}
+  inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 80
-  equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
-  applyEquippedPrefabVisuals: 1
+  inventoryMeshScale: 1
+  equippedPrefab: {fileID: 0}
+  applyEquippedPrefabVisuals: 0
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
-  equippedMeshScale: 0.3
-  craftingMeshOffset: {x: 0, y: 0, z: -20}
+  equippedMeshScale: 1
+  craftingMeshOffset: {x: 0, y: 0, z: 0}
   craftingMeshRotation: {x: 0, y: 0, z: 0}
-  craftingMeshScale: 80
+  craftingMeshScale: 1
   inventorySpaceShape:
-  - +
-  - +
+  - ++
+  - +-
   inventorySpace: {x: 1, y: 1}
