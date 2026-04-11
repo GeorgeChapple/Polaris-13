@@ -7,12 +7,12 @@ public class HookLineRenderer : NetworkBehaviour
 {
     [SerializeField] private GameObject ropePrefab;
     [SerializeField] private GameObject hookPrefab;
-    private IT_Hook hookManager;
+    [SerializeField] private IT_Hook hookManager;
     private HookHead hookHead;
     private LineRenderer line;
     private List<Transform> ropePoints = new List<Transform>();
     private HookState state = HookState.ready;
-    private Transform muzzle;
+    [SerializeField] private Transform muzzle;
 
     private enum HookState
     {
@@ -24,9 +24,7 @@ public class HookLineRenderer : NetworkBehaviour
 
     private void Start()
     {
-        muzzle = transform.parent;
         line = GetComponent<LineRenderer>();
-        hookManager = transform.root.GetComponent<IT_Hook>();
         ropePoints.Add(transform);
         Transform parent = transform;
         NetworkObject netObj;
@@ -35,7 +33,6 @@ public class HookLineRenderer : NetworkBehaviour
             GameObject newSegment = Instantiate(ropePrefab);
             newSegment.transform.position = muzzle.position;
             newSegment.transform.rotation = muzzle.rotation;
-            newSegment.transform.SetParent(muzzle, true);
             newSegment.GetComponent<HingeJoint>().connectedBody = parent.GetComponent<Rigidbody>();
             netObj = newSegment.GetComponent<NetworkObject>();
             if (netObj != null)
@@ -48,7 +45,6 @@ public class HookLineRenderer : NetworkBehaviour
         GameObject newHook = Instantiate(hookPrefab);
         newHook.transform.position = muzzle.position;
         newHook.transform.rotation = muzzle.rotation;
-        newHook.transform.SetParent(muzzle, true);
         newHook.GetComponent<HingeJoint>().connectedBody = parent.GetComponent<Rigidbody>();
         netObj = null;
         netObj = newHook.GetComponent<NetworkObject>();
@@ -66,6 +62,12 @@ public class HookLineRenderer : NetworkBehaviour
         for (int i = 0; i < ropePoints.Count; i++)
         {
             line.SetPosition(i, ropePoints[i].position);
+            if (IsServer && state == HookState.ready)
+            {
+                ropePoints[i].position = muzzle.position;
+                hookHead.transform.position = muzzle.position;
+                hookHead.transform.rotation = muzzle.rotation;
+            }
         }
     }
 
