@@ -64,7 +64,8 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private bool cursorLocked;
 
     // internal press guards so hold wont spam toggle
-    private bool useHeld;
+    private bool usePrimaryHeld;
+    private bool useSecondaryHeld;
     private bool pauseHeld;
     private bool monitoringMenuHeld;
     private bool rotateHeld;
@@ -328,20 +329,54 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     {
         if (!IsLocallyControlled() || inMenu || inventoryNet == null)
         {
-            useHeld = false;
+            if (usePrimaryHeld)
+            {
+                usePrimaryHeld = false;
+                inventoryNet.RequestReleaseEquippedItem();
+            }
+
+            if (useSecondaryHeld)
+            {
+                useSecondaryHeld = false;
+                inventoryNet.RequestReleaseAltUseEquippedItem();
+            }
+
             return;
         }
 
-        bool pressed = input.useItemPrimary;
+        bool primaryPressed = input.useItemPrimary;
+        bool secondaryPressed = input.useItemSecondary;
 
-        if (pressed && !useHeld)
+        // primary press / hold / release
+        if (primaryPressed && !usePrimaryHeld)
         {
-            useHeld = true;
+            usePrimaryHeld = true;
             TryUseEquippedItem();
         }
-        else if (!pressed && useHeld)
+        else if (primaryPressed && usePrimaryHeld)
         {
-            useHeld = false;
+            inventoryNet.RequestHoldUseEquippedItem();
+        }
+        else if (!primaryPressed && usePrimaryHeld)
+        {
+            usePrimaryHeld = false;
+            inventoryNet.RequestReleaseEquippedItem();
+        }
+
+        // secondary press / hold / release
+        if (secondaryPressed && !useSecondaryHeld)
+        {
+            useSecondaryHeld = true;
+            TryAltUseEquippedItem();
+        }
+        else if (secondaryPressed && useSecondaryHeld)
+        {
+            inventoryNet.RequestHoldAltUseEquippedItem();
+        }
+        else if (!secondaryPressed && useSecondaryHeld)
+        {
+            useSecondaryHeld = false;
+            inventoryNet.RequestReleaseAltUseEquippedItem();
         }
     }
 
@@ -353,6 +388,16 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (string.IsNullOrWhiteSpace(equippedItemId)) { return; }
 
         inventoryNet.RequestUseEquippedItem();
+    }
+
+    private void TryAltUseEquippedItem()
+    {
+        if (inventoryNet == null) { return; }
+
+        string equippedItemId = inventoryNet.GetEquippedItemId();
+        if (string.IsNullOrWhiteSpace(equippedItemId)) { return; }
+
+        inventoryNet.RequestAltUseEquippedItem();
     }
 
     private void HandleInventoryActions()
@@ -671,7 +716,18 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
     private void HandleDeadState()
     {
-        useHeld = false;
+        if (usePrimaryHeld && inventoryNet != null)
+        {
+            inventoryNet.RequestReleaseEquippedItem();
+        }
+
+        if (useSecondaryHeld && inventoryNet != null)
+        {
+            inventoryNet.RequestReleaseAltUseEquippedItem();
+        }
+
+        usePrimaryHeld = false;
+        useSecondaryHeld = false;
         pauseHeld = false;
         monitoringMenuHeld = false;
         rotateHeld = false;

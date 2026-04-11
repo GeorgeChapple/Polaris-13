@@ -26,4 +26,27 @@ public class TestItemScript : MonoBehaviour, IUsableItem
         rb.WakeUp();
         rb.linearVelocity = muzzlePoint.forward * bulletSpeed;
     }
+
+    public void OnUseHeld(NetworkObjectReference netObjRef)
+    {
+        Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Held");
+    }
+
+    public void OnUseReleased(NetworkObjectReference netObjRef)
+    {
+        Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Released");
+    }
+
+    public void OnAltUse(NetworkObjectReference netObjRef)
+    {
+        Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Alt Fired");
+    }
+    public void OnAltUseHeld(NetworkObjectReference netObjRef)
+    {
+        Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Alt Held");
+    }
+    public void OnAltUseReleased(NetworkObjectReference netObjRef)
+    {
+        Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Alt Released");
+    }
 }

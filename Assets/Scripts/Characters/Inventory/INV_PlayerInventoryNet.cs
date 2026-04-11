@@ -479,6 +479,86 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestUseEquippedItemRpc();
     }
 
+    public void RequestHoldUseEquippedItem()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            HoldUseEquippedItem_Server();
+            return;
+        }
+
+        RequestHoldUseEquippedItemRpc();
+    }
+
+    public void RequestReleaseEquippedItem()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            ReleaseUseEquippedItem_Server();
+            return;
+        }
+
+        RequestReleaseUseEquippedItemRpc();
+    }
+
+    public void RequestAltUseEquippedItem()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            AltUseEquippedItem_Server();
+            return;
+        }
+
+        RequestAltUseEquippedItemRpc();
+    }
+
+    public void RequestHoldAltUseEquippedItem()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            HoldAltUseEquippedItem_Server();
+            return;
+        }
+
+        RequestHoldAltUseEquippedItemRpc();
+    }
+
+    public void RequestReleaseAltUseEquippedItem()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            ReleaseAltUseEquippedItem_Server();
+            return;
+        }
+
+        RequestReleaseAltUseEquippedItemRpc();
+    }
+
     public void RequestUseItemInInventory(string inventoryItemUniqueId, string itemId)
     {
         if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
@@ -640,6 +720,61 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         UseEquippedItem_Server();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestHoldUseEquippedItemRpc(RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        HoldUseEquippedItem_Server();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestReleaseUseEquippedItemRpc(RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        ReleaseUseEquippedItem_Server();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestAltUseEquippedItemRpc(RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        AltUseEquippedItem_Server();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestHoldAltUseEquippedItemRpc(RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        HoldAltUseEquippedItem_Server();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestReleaseAltUseEquippedItemRpc(RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        ReleaseAltUseEquippedItem_Server();
     }
 
     [Rpc(SendTo.Server)]
@@ -806,6 +941,206 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         if (!foundUsable && logEquippedItem)
         {
             Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components.", replicatedEquippedVisual);
+        }
+    }
+
+    private void HoldUseEquippedItem_Server()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not IUsableItem usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.OnUseHeld(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for hold use.", replicatedEquippedVisual);
+        }
+    }
+
+    private void ReleaseUseEquippedItem_Server()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not IUsableItem usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.OnUseReleased(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for release use.", replicatedEquippedVisual);
+        }
+    }
+
+    private void AltUseEquippedItem_Server()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not IUsableItem usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.OnAltUse(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt use.", replicatedEquippedVisual);
+        }
+    }
+
+    private void HoldAltUseEquippedItem_Server()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not IUsableItem usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.OnAltUseHeld(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt hold use.", replicatedEquippedVisual);
+        }
+    }
+
+    private void ReleaseAltUseEquippedItem_Server()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not IUsableItem usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.OnAltUseReleased(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt release use.", replicatedEquippedVisual);
         }
     }
 

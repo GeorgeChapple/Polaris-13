@@ -30,4 +30,10 @@ public class IT_Hook : MonoBehaviour, IUsableItem
 
         hook.TriggerHook();
     }
+
+    public void OnUseHeld(NetworkObjectReference netObjRef) { }
+    public void OnUseReleased(NetworkObjectReference netObjRef) { }
+    public void OnAltUse(NetworkObjectReference netObjRef) { }
+    public void OnAltUseHeld(NetworkObjectReference netObjRef) { }
+    public void OnAltUseReleased(NetworkObjectReference netObjRef) { }
 }

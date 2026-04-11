@@ -14,6 +14,7 @@ public class CC_PlayerInputManager : MonoBehaviour
     public bool jump;
     public bool interact;
     public bool useItemPrimary;
+    public bool useItemSecondary;
 
     [Header("Movement Modifiers")]
     public bool sprint;
@@ -44,7 +45,8 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void OnCrouch(InputValue value) { CrouchInput(value.isPressed); }
     public void OnStabiliseThrusters(InputValue value) { StabiliseThrustersInput(value.isPressed); }
     public void OnInteract(InputValue value) { InteractInput(value.isPressed); }
-    public void OnUseItemPrimary(InputValue value) { UseItemPrimary(value.isPressed); }
+    public void OnUseItemPrimary(InputValue value) { UseItemPrimaryInput(value.isPressed); }
+    public void OnUseItemSecondary(InputValue value) { UseItemSecondaryInput(value.isPressed); }
     public void OnRotateItem(InputValue value) { RotateItemInput(value.isPressed); }
     public void OnDropItem(InputValue value) { DropItemInput(value.isPressed); }
     public void OnPause(InputValue value) { PauseInput(value.isPressed); }
@@ -64,7 +66,8 @@ public class CC_PlayerInputManager : MonoBehaviour
     public void CrouchInput(bool newCrouch) { crouch = newCrouch; }
     public void StabiliseThrustersInput(bool newState) { stabiliseThrusters = newState; }
     public void InteractInput(bool newInteractState) { interact = newInteractState; }
-    public void UseItemPrimary(bool newUseItemPrimaryState) { useItemPrimary = newUseItemPrimaryState; }
+    public void UseItemPrimaryInput(bool newUseItemPrimaryState) { useItemPrimary = newUseItemPrimaryState; }
+    public void UseItemSecondaryInput(bool newUseItemSecondaryState) { useItemSecondary = newUseItemSecondaryState; }
     public void RotateItemInput(bool newRotateItemState) { rotateItem = newRotateItemState; }
     public void DropItemInput(bool newDropItemState) { dropItem = newDropItemState; }
     public void PauseInput(bool newPauseState) { pause = newPauseState; }
