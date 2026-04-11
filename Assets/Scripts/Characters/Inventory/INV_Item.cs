@@ -17,10 +17,12 @@ public class INV_Item : ScriptableObject
     [Header("Info")]
     [SerializeField] private string itemID;
     [SerializeField] private string m_name;
-    [SerializeField] private string description;
+    [SerializeField][TextArea(1,5)] private string description;
 
     public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
     [SerializeField] private ItemType itemType = ItemType.Item;
+    public enum ItemRarity { Common, Uncommon, Rare, Epic }
+    [SerializeField] private ItemRarity itemRarity = ItemRarity.Common;
 
     [Header("Specs")]
     [SerializeField] private float durability;
@@ -31,6 +33,7 @@ public class INV_Item : ScriptableObject
 
     [Header("Probability")]
     [SerializeField, Range(0, 100)] private int chanceOfSpawnInChest = 0;
+    [SerializeField] private Vector2Int amountSpawnedInChestRange = new Vector2Int(1, 5);
     [SerializeField, Range(0, 100)] private int chanceOfSpawnAsDebris = 0;
     [SerializeField] private List<BiomeProbability> biomeProbabilities;
 
@@ -71,6 +74,7 @@ public class INV_Item : ScriptableObject
     {
         public string recipeName = "Recipe";
         public List<CraftingStack> requirements = new List<CraftingStack>();
+        public int amountGiven = 1;
     }
 
     [Header("Visuals")]
@@ -127,6 +131,7 @@ public class INV_Item : ScriptableObject
     public string Name => m_name;
     public string Description => description;
     public ItemType ItemTypeVal => itemType;
+    public ItemRarity ItemRarityVal => itemRarity;
 
     public float Durability => durability;
     public float HungerReplenish => hungerReplenish;
@@ -135,6 +140,7 @@ public class INV_Item : ScriptableObject
     public float ThirstDrainDelay => thirstDrainDelay;
 
     public int ChanceOfSpawnInChest => chanceOfSpawnInChest;
+    public Vector2Int AmountSpawnedInChestRange => amountSpawnedInChestRange;
     public int ChanceOfSpawnAsDebris => chanceOfSpawnAsDebris;
 
     public List<BiomeProbability> BiomeProbablities => biomeProbabilities;
@@ -241,6 +247,22 @@ public class INV_Item : ScriptableObject
         }
 
         return "Recipe";
+    }
+
+    public int GetRecipeReturnAmount(int recipeIndex)
+    {
+        if (craftingRecipes != null && craftingRecipes.Count > 0)
+        {
+            if (recipeIndex >= 0 && recipeIndex < craftingRecipes.Count)
+            {
+                CraftingRecipe recipe = craftingRecipes[recipeIndex];
+                if (recipe != null && recipe.amountGiven > 0)
+                {
+                    return recipe.amountGiven;
+                }
+            }
+        }
+        return 1;
     }
 
     // returns bounding size of the current shape list

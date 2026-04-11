@@ -14,7 +14,7 @@ public class SP_Spawner : NetworkBehaviour
     private float timer = 0;
     private int lifetimeSpawned = 0;
 
-    private Dictionary<INV_Item, float> sortedItemProbabilites = new Dictionary<INV_Item, float>();
+    private Dictionary<INV_Item, float> sortedDebrisItemProbabilites = new Dictionary<INV_Item, float>();
 
     private void Awake()
     {
@@ -38,7 +38,7 @@ public class SP_Spawner : NetworkBehaviour
     private void InitialiseComponents()
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
-        sortedItemProbabilites = SortItemProbabilites();
+        sortedDebrisItemProbabilites = SortItemProbabilites(false);
     }
 
     private void Update()
@@ -93,12 +93,6 @@ public class SP_Spawner : NetworkBehaviour
                         junkComponent.spawner = this;
                     }
 
-                    INV_ItemDrop itemDrop = newDebris.GetComponent<INV_ItemDrop>();
-                    if (itemDrop != null)
-                    {
-                        itemDrop.Init(GetRandomItem());
-                    }
-
                     newDebris.transform.eulerAngles = Vector3.back;
 
                     NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
@@ -106,6 +100,33 @@ public class SP_Spawner : NetworkBehaviour
                     {
                         netObj.Spawn();
                     }
+
+                    // items should be initialised after network spawn to ensure is server gates dont prevent
+                    INV_ItemDrop itemDrop = newDebris.GetComponent<INV_ItemDrop>();
+                    if (itemDrop != null)
+                    {
+                        itemDrop.Init(GetRandomDebrisItem());
+                    }
+
+                    INV_Chest chestObject = newDebris.GetComponent<INV_Chest>();
+                    if (chestObject != null)
+                    {
+                        PopulateChest(chestObject);
+                    }
+                    else
+                    {
+                        // for POIs with chests inside
+                        INV_Chest[] chestsInChildren = newDebris.GetComponentsInChildren<INV_Chest>();
+                        if (chestsInChildren != null || chestsInChildren.Count() > 0)
+                        {
+                            foreach (INV_Chest chest in chestsInChildren)
+                            {
+                                PopulateChest(chest); // note to self, add item rarities into this system
+                            }
+                        }
+                    }
+
+
 
                     spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirection);
 
@@ -118,6 +139,36 @@ public class SP_Spawner : NetworkBehaviour
                 }
             }
         }
+    }
+
+    private void PopulateChest(INV_Chest chest)
+    {
+        if (!IsServer || chest == null) { return; }
+
+        INV_ChestLootProfile lootProfile = chest.LootProfile;
+        if (lootProfile == null) { return; }
+
+        chest.ClearItems_Server();
+
+        int minItemCount = Mathf.Max(0, lootProfile.ItemCountRange.x);
+        int maxItemCount = Mathf.Max(minItemCount, lootProfile.ItemCountRange.y);
+        int itemCount = Random.Range(minItemCount, maxItemCount + 1);
+
+        
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            INV_Item randomItem = GetRandomChestItem(chest);
+            if (randomItem == null) { continue; }
+
+            int minItemAmount = Mathf.Max(0, randomItem.AmountSpawnedInChestRange.x);
+            int maxItemAmount = Mathf.Max(minItemAmount, randomItem.AmountSpawnedInChestRange.y);
+            int itemAmount = Random.Range(minItemAmount, maxItemAmount + 1);
+
+            if (!chest.TryStoreItemDataAutoPlace(randomItem,itemAmount)) { break; }
+        }
+
+        chest.RefreshAllViewers();
     }
 
     private float GetRandomTimeLimit(SP_SpawnSettings settings)
@@ -146,30 +197,87 @@ public class SP_Spawner : NetworkBehaviour
         return index;
     }
 
-    private Dictionary<INV_Item, float> SortItemProbabilites()
+    private Dictionary<INV_Item, float> SortItemProbabilites(bool forChest)
     {
         // sort all item probabilities
         Dictionary<INV_Item, float> allItemProbabilities = new Dictionary<INV_Item, float>();
+
         foreach (INV_Item item in INV_ItemDatabase.Instance.Items)
         {
-            allItemProbabilities.Add(item, item.ChanceOfSpawnAsDebris);
+            float probability = forChest ? item.ChanceOfSpawnInChest : item.ChanceOfSpawnAsDebris;
+            if (probability <= 0) { continue; }
+
+            allItemProbabilities.Add(item, probability);
         }
+
         return allItemProbabilities.OrderBy(entry => entry.Value).ToDictionary(entry => entry.Key, entry => entry.Value);
     }
 
-    private INV_Item GetRandomItem()
+    private INV_Item GetRandomDebrisItem()
     {
+        return GetRandomItemFromTable(sortedDebrisItemProbabilites);
+    }
+
+    private INV_Item GetRandomItemFromTable(Dictionary<INV_Item, float> itemTable)
+    {
+        if (itemTable == null || itemTable.Count == 0) { return null; }
+
         // get highest probability
-        float maxValue = sortedItemProbabilites.Last<KeyValuePair<INV_Item, float>>().Value;
+        float maxValue = itemTable.Last<KeyValuePair<INV_Item, float>>().Value;
         float percentage = UnityEngine.Random.Range(0, maxValue + 1) / maxValue;
         INV_Item itemToReturn = null;
-        foreach (KeyValuePair<INV_Item, float> item in sortedItemProbabilites)
+
+        foreach (KeyValuePair<INV_Item, float> item in itemTable)
         {
             float threshold = item.Value / maxValue;
             itemToReturn = item.Key;
             if (percentage <= threshold) { break; }
         }
+
         return itemToReturn;
+    }
+
+    private INV_Item GetRandomChestItem(INV_Chest chest)
+    {
+        if (chest == null) { return null; }
+
+        INV_ChestLootProfile lootProfile = chest.LootProfile;
+        if (lootProfile == null) { return null; }
+
+        List<INV_Item> allItems = (List<INV_Item>)INV_ItemDatabase.Instance.Items;
+        if (allItems == null || allItems.Count == 0) { return null; }
+
+        float totalWeight = 0f;
+
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            INV_Item item = allItems[i];
+            if (item == null) { continue; }
+
+            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
+            if (weight <= 0f) { continue; }
+
+            totalWeight += weight;
+        }
+
+        if (totalWeight <= 0f) { return null; }
+
+        float roll = UnityEngine.Random.Range(0f, totalWeight);
+        float running = 0f;
+
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            INV_Item item = allItems[i];
+            if (item == null) { continue; }
+
+            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
+            if (weight <= 0f) { continue; }
+
+            running += weight;
+            if (roll <= running) { return item; }
+        }
+
+        return null;
     }
 
     private Vector2 GetRandomSpawnPosition(Vector4 bounds)

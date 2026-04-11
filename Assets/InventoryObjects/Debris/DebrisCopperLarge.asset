@@ -12,16 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 145c5ea2cf9b60046a68b7d76db16946, type: 3}
   m_Name: DebrisCopperLarge
   m_EditorClassIdentifier: 
-  itemID: copper_ore_small
-  m_name: Small Copper Meteor
-  description: Small Meteor with Copper inside. Can be used to craft.
+  itemID: copper_ore_large
+  m_name: Large Copper Meteor
+  description: Large Meteor with Copper inside. Can be used to craft.
   itemType: 4
+  itemRarity: 0
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
-  chanceOfSpawnInChest: 0
+  chanceOfSpawnInChest: 15
+  amountSpawnedInChestRange: {x: 1, y: 3}
   chanceOfSpawnAsDebris: 5
   biomeProbabilities:
   - biomeType: 0
@@ -31,12 +33,13 @@ MonoBehaviour:
   craftable: 0
   canCraftAnywhere: 0
   craftingRequirements: []
+  craftingRecipes: []
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 8188482996487996659, guid: ec00af9d249c19a4c8fca6579371da5b, type: 3}
   material: {fileID: 2100000, guid: 125da67a907163c47a54daeb394aa33c, type: 2}
   inventoryMeshOffset: {x: 0, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 80
+  inventoryMeshScale: 150
   equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
   applyEquippedPrefabVisuals: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
@@ -44,7 +47,8 @@ MonoBehaviour:
   equippedMeshScale: 0.3
   craftingMeshOffset: {x: 0, y: 0, z: -20}
   craftingMeshRotation: {x: 0, y: 0, z: 0}
-  craftingMeshScale: 80
+  craftingMeshScale: 150
   inventorySpaceShape:
-  - +
+  - ++
+  - ++
   inventorySpace: {x: 1, y: 1}
