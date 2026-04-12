@@ -137,7 +137,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             if (itemInst.quantity > 1)
             {
                 stackCountLabel.gameObject.SetActive(true);
-                stackCountLabel.text = $"x{itemInst.quantity}";
+                stackCountLabel.SetText($"x{itemInst.quantity}");
             }
             else
             {
@@ -335,13 +335,13 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         if (slotIndex < 0)
         {
-            hotbarSlotLabel.text = string.Empty;
+            hotbarSlotLabel.SetText(string.Empty);
             hotbarSlotLabel.gameObject.SetActive(false);
             return;
         }
 
         hotbarSlotLabel.gameObject.SetActive(true);
-        hotbarSlotLabel.text = (slotIndex + 1).ToString();
+        hotbarSlotLabel.SetText((slotIndex + 1).ToString());
 
         SnapOverlayLabelsUnderCornerOccupiedSpaces();
     }
