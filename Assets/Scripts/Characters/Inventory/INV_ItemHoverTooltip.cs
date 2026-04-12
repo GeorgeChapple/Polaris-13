@@ -1,7 +1,9 @@
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.InputSystem;
+using System.Collections.Generic;
 using TMPro;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using static INV_Inventory;
 
 // Made By: Jason Lodge.
 // Summary: Inventory hover tooltip.
@@ -12,6 +14,7 @@ public class INV_ItemHoverTooltip : MonoBehaviour
     [Header("Refs")]
     [SerializeField] private RectTransform root;
     [SerializeField] private TextMeshProUGUI itemNameText;
+    [SerializeField] private TextMeshProUGUI itemRarityText;
     [SerializeField] private TextMeshProUGUI itemDescriptionText;
 
     private Canvas parentCanvas;
@@ -46,6 +49,13 @@ public class INV_ItemHoverTooltip : MonoBehaviour
             itemNameText.SetText(item.Name);
         }
 
+        if (itemRarityText != null)
+        {
+            KeyValuePair<string, Color> keyValuePair = GetRarityLabel(item.ItemRarityVal);
+            itemRarityText.SetText(keyValuePair.Key);
+            itemRarityText.color = keyValuePair.Value;
+        }
+
         if (itemDescriptionText != null)
         {
             itemDescriptionText.SetText(item.Description);
@@ -59,6 +69,18 @@ public class INV_ItemHoverTooltip : MonoBehaviour
         {
             root.gameObject.SetActive(true);
         }
+    }
+
+    public KeyValuePair<string,Color> GetRarityLabel(INV_Item.ItemRarity action)
+    {
+        switch (action)
+        {
+            case INV_Item.ItemRarity.Common: { return new KeyValuePair<string, Color>("Common", Color.white); }
+            case INV_Item.ItemRarity.Uncommon: { return new KeyValuePair<string, Color>("Uncommon", Color.green); }
+            case INV_Item.ItemRarity.Rare: { return new KeyValuePair<string, Color>("Rare", Color.blue); }
+            case INV_Item.ItemRarity.Epic: { return new KeyValuePair<string, Color>("Epic", Color.magenta); }
+        }
+        return new KeyValuePair<string, Color>(action.ToString(), Color.white);
     }
 
     public void HideImmediate()
