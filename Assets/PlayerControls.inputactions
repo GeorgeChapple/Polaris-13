@@ -34,6 +34,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "UseItemSecondary",
+                    "type": "PassThrough",
+                    "id": "161df5b1-576a-47c8-89ad-7e70c322190f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Interact",
                     "type": "PassThrough",
                     "id": "46d24d34-28d7-4274-8461-0d6fabc3b1c7",
@@ -277,6 +286,28 @@
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "UseItemPrimary",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "43e30191-c60d-4766-8056-25f0573df1f2",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "UseItemSecondary",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c70c5ff9-5c22-4064-8add-3656514a08f0",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "UseItemSecondary",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

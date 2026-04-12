@@ -5,14 +5,11 @@ public class IT_Hook : MonoBehaviour, IUsableItem
 {
     private string itemId;
 
-    private GameObject hook;
+    [SerializeField] private HookLineRenderer hook;
     [SerializeField] private Transform muzzlePoint;
-    [SerializeField] private float bulletSpeed;
-
-    private void Awake()
-    {
-        hook = muzzlePoint.GetChild(0).gameObject;
-    }
+    public float shootSpeed = 5;
+    public int segmentCount = 20;
+    public float length = 10f;
 
     public void SendItemId(string ItemId)
     {
@@ -30,5 +27,13 @@ public class IT_Hook : MonoBehaviour, IUsableItem
         //Rigidbody rb = testbulletFire.GetComponent<Rigidbody>();
         //rb.WakeUp();
         //rb.linearVelocity = muzzlePoint.forward * bulletSpeed;
+
+        hook.TriggerHook();
     }
+
+    public void OnUseHeld(NetworkObjectReference netObjRef) { }
+    public void OnUseReleased(NetworkObjectReference netObjRef) { }
+    public void OnAltUse(NetworkObjectReference netObjRef) { }
+    public void OnAltUseHeld(NetworkObjectReference netObjRef) { }
+    public void OnAltUseReleased(NetworkObjectReference netObjRef) { }
 }

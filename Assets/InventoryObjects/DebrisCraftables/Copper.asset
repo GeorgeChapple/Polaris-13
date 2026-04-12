@@ -32,24 +32,24 @@ MonoBehaviour:
   canCraftAnywhere: 0
   craftingRequirements: []
   craftingRecipes:
-  - recipeName: Copper x1
+  - recipeName: Copper
     requirements:
     - item: {fileID: 11400000, guid: 9bfc42add9d7a4242bb77cba893febbe, type: 2}
       amount: 1
     amountGiven: 1
-  - recipeName: Copper x3
+  - recipeName: Copper
     requirements:
     - item: {fileID: 11400000, guid: 8c42545ce6ccc5843b9f3b1c45235ae1, type: 2}
       amount: 1
     amountGiven: 3
   icon: {fileID: 0}
   mesh: {fileID: 2133127977080242572, guid: d357fb02c0008a64e82d99e3aa368488, type: 3}
-  material: {fileID: 0}
+  material: {fileID: 824015559753126921, guid: d357fb02c0008a64e82d99e3aa368488, type: 3}
   inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
   inventoryMeshScale: 1
-  equippedPrefab: {fileID: 0}
-  applyEquippedPrefabVisuals: 0
+  equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+  applyEquippedPrefabVisuals: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 1
