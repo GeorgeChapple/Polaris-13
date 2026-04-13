@@ -6,7 +6,14 @@ public class IT_PushDevice : CC_INV_UsableItems
     private string itemId;
 
     [SerializeField] private Transform muzzlePoint;
-    [SerializeField] private PushValues pushValues;
+    public Vector3 pushVolumeBounds = new Vector3(5f, 5f, 10f);
+    public float maxPushForce = 10f;
+    public float torqueForce = 1f;
+    public float chargeTime = 2f;
+    public float cooldown = 0.5f;
+    public float pushForce = 0f;
+    public float chargingTimer = 0f;
+    public float cooldownTimer = 0f;
 
     public override void SendItemId(string ItemId)
     {
@@ -15,21 +22,29 @@ public class IT_PushDevice : CC_INV_UsableItems
 
     public override void OnUse(NetworkObjectReference netObjRef) { }
 
-    public override void OnUseHeld(NetworkObjectReference netObjRef) {
+    public override void OnUseHeld(NetworkObjectReference netObjRef)
+    {
         Debug.Log("HOLDING GUARD");
-        if (pushValues.cooldownTimer < 0f)
+
+        if (muzzlePoint == null)
+        {
+            return;
+        }
+
+        if (cooldownTimer <= 0f)
         {
             Debug.Log("HOLDING GUARD2");
-            if (pushValues.chargingTimer < pushValues.chargeTime)
-            {
-                pushValues.chargingTimer += Time.deltaTime;
-            }
-            pushValues.pushForce = Mathf.Lerp(0, pushValues.maxPushForce, pushValues.chargingTimer / pushValues.chargeTime);
+
+            float safeChargeTime = Mathf.Max(0.001f, chargeTime);
+            pushForce = Mathf.Lerp(0f, maxPushForce, Mathf.Clamp(chargingTimer, 0f, safeChargeTime) / safeChargeTime);
+
+            Debug.Log($"Charging Timer: {chargingTimer}, Push Force: {pushForce}");
         }
     }
+
     public override void OnUseReleased(NetworkObjectReference netObjRef) {
-        pushValues.cooldownTimer = pushValues.cooldown;
-        Collider[] colliders = Physics.OverlapBox(muzzlePoint.transform.position + (pushValues.pushVolumeBounds.z / 2) * muzzlePoint.forward, pushValues.pushVolumeBounds / 2, Quaternion.LookRotation(muzzlePoint.forward));
+        cooldownTimer = cooldown;
+        Collider[] colliders = Physics.OverlapBox(muzzlePoint.transform.position + (pushVolumeBounds.z / 2) * muzzlePoint.forward, pushVolumeBounds / 2, Quaternion.LookRotation(muzzlePoint.forward));
         foreach (Collider collider in colliders)
         {
             if (collider.GetComponent<CC_Movement>())
@@ -44,8 +59,8 @@ public class IT_PushDevice : CC_INV_UsableItems
                 PushObjectRpc(collider);
             }
         }
-        pushValues.pushForce= 0;
-        pushValues.chargingTimer = 0;
+        pushForce = 0;
+        chargingTimer = 0;
     }
     public override void OnAltUse(NetworkObjectReference netObjRef) { }
     public override void OnAltUseHeld(NetworkObjectReference netObjRef) { }
@@ -57,8 +72,8 @@ public class IT_PushDevice : CC_INV_UsableItems
         Rigidbody rb = col.GetComponent<Rigidbody>();
         if (rb != null)
         { 
-            rb.AddForce(muzzlePoint.forward * pushValues.pushForce);
-            rb.AddTorque(Vector3.one * Random.Range(-pushValues.torqueForce, pushValues.torqueForce));
+            rb.AddForce(muzzlePoint.forward * pushForce);
+            rb.AddTorque(Vector3.one * Random.Range(-torqueForce, torqueForce));
         }
     }
 
@@ -68,18 +83,26 @@ public class IT_PushDevice : CC_INV_UsableItems
         Rigidbody rb = col.GetComponent<Rigidbody>();
         if (rb != null)
         { 
-            rb.AddForce(muzzlePoint.forward * pushValues.pushForce);
-            rb.AddTorque(Vector3.one * Random.Range(-pushValues.torqueForce, pushValues.torqueForce));
+            rb.AddForce(muzzlePoint.forward * pushForce);
+            rb.AddTorque(Vector3.one * Random.Range(-torqueForce, torqueForce));
+        }
+    }
+
+    private void Start()
+    {
+        if (!transform.root.GetComponent<CC_CharacterPlayerController>().enabled)
+        {
+            this.enabled = false;
         }
     }
 
     private void Update()
     {
-        pushValues.cooldownTimer -= Time.deltaTime;
+        cooldownTimer -= Time.deltaTime;
     }
 
     private void OnDrawGizmos()
     {
-        CustomGizmos.DrawBox(muzzlePoint.transform.position + (pushValues.pushVolumeBounds.z / 2) * muzzlePoint.forward, Quaternion.LookRotation(muzzlePoint.forward), pushValues.pushVolumeBounds, Color.cyan);
+        CustomGizmos.DrawBox(muzzlePoint.transform.position + (pushVolumeBounds.z / 2) * muzzlePoint.forward, Quaternion.LookRotation(muzzlePoint.forward), pushVolumeBounds, Color.cyan);
     }
 }
