@@ -46,10 +46,7 @@ public class IT_PushDevice : CC_INV_UsableItems
         {
             if (collider.GetComponent<CC_Movement>())
             {
-                if (collider.transform.root != transform.root)
-                {
-                    PushPlayerRpc(netObjRef); 
-                }
+                PushPlayerRpc(netObjRef); 
             }
             else
             {
@@ -76,7 +73,7 @@ public class IT_PushDevice : CC_INV_UsableItems
     [Rpc(SendTo.Everyone)]
     private void PushPlayerRpc(NetworkObjectReference netObjRef)
     {
-        if (netObjRef.TryGet(out NetworkObject netObj))
+        if (netObjRef.TryGet(out NetworkObject netObj) && !netObj.IsOwner)
         {
             CC_Movement player = netObj.GetComponent<CC_Movement>();
             if (player != null)
