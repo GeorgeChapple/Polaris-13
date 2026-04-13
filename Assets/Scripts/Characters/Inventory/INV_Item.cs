@@ -17,7 +17,7 @@ public class INV_Item : ScriptableObject
     [Header("Info")]
     [SerializeField] private string itemID;
     [SerializeField] private string m_name;
-    [SerializeField, TextArea(1,5)] private string description;
+    [SerializeField, TextArea(1, 5)] private string description;
 
     public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
     [SerializeField] private ItemType itemType = ItemType.Item;
@@ -86,6 +86,16 @@ public class INV_Item : ScriptableObject
     [SerializeField] private Mesh mesh;
     [SerializeField] private Material material;
 
+    [Header("Equipped Prefab")]
+    [Tooltip("Prefab used when this item is equipped.")]
+    [SerializeField] private GameObject equippedPrefab;
+
+    [Tooltip("If true, the equipped prefab visual will be overwritten using the item mesh/material/offset/rotation/scale values below.")]
+    [SerializeField] private bool applyEquippedPrefabVisuals;
+
+    public enum ForwardAxisRot { X, Y, Z }
+    [SerializeField] private ForwardAxisRot forwardAxisRot = ForwardAxisRot.Z;
+
     [Header("Inventory Mesh Visual")]
     [Tooltip("Local offset applied to the mesh visual when shown in inventory.")]
     [SerializeField] private Vector3 inventoryMeshOffset = Vector3.zero;
@@ -96,12 +106,9 @@ public class INV_Item : ScriptableObject
     [Tooltip("Scale applied to the mesh visual when shown in inventory.")]
     [SerializeField] private float inventoryMeshScale = 1f;
 
-    [Header("Equipped Prefab")]
-    [Tooltip("Prefab used when this item is equipped.")]
-    [SerializeField] private GameObject equippedPrefab;
-
-    [Tooltip("If true, the equipped prefab visual will be overwritten using the item mesh/material/offset/rotation/scale values below.")]
-    [SerializeField] private bool applyEquippedPrefabVisuals;
+    [Header("Drop Mesh Visual")]
+    [Tooltip("Scale applied to the mesh when dropped from inventory.")]
+    [SerializeField] private float dropMeshScale = 1f;
 
     [Header("Equipped Mesh Visual")]
     [Tooltip("Local offset applied to the mesh visual when equipped.")]
@@ -143,6 +150,9 @@ public class INV_Item : ScriptableObject
     public float ThirstReplenish => thirstReplenish;
     public float ThirstDrainDelay => thirstDrainDelay;
 
+    public int RetailPrice => retailPrice;
+    public Vector2 ShopMultiplierRange => shopMultiplierRange;
+
     public int ChanceOfSpawnInChest => chanceOfSpawnInChest;
     public Vector2Int AmountSpawnedInChestRange => amountSpawnedInChestRange;
     public int ChanceOfSpawnAsDebris => chanceOfSpawnAsDebris;
@@ -155,13 +165,19 @@ public class INV_Item : ScriptableObject
     public bool Craftable => craftable;
     public bool CanCraftAnywhere => canCraftAnywhere;
 
+    public List<CraftingStack> LegacyCraftingRequirements => craftingRequirements;
+
     public Sprite Icon => icon;
     public Mesh Mesh => mesh;
     public Material Material => material;
 
+    public ForwardAxisRot ForwardAxisRotVal => forwardAxisRot;
+
     public Vector3 InventoryMeshOffset => inventoryMeshOffset;
     public Vector3 InventoryMeshRotation => inventoryMeshRotation;
     public float InventoryMeshScale => inventoryMeshScale;
+
+    public float DropMeshScale => dropMeshScale;
 
     public GameObject EquippedPrefab => equippedPrefab;
     public bool ApplyEquippedPrefabVisuals => applyEquippedPrefabVisuals;
@@ -174,6 +190,7 @@ public class INV_Item : ScriptableObject
     public float CraftingMeshScale => craftingMeshScale;
 
     public List<string> InventorySpaceShape => inventorySpaceShape;
+    public Vector2 InventorySpace => inventorySpace;
 
     public int RecipeCount
     {

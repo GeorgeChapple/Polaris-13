@@ -1672,6 +1672,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             }
         }
 
+        ApplyDropScale(drop, item);
+
         NetworkObject netObj = drop.GetComponent<NetworkObject>();
         if (netObj == null)
         {
@@ -1680,6 +1682,22 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         netObj.Spawn();
         return true;
+    }
+
+    private void ApplyDropScale(GameObject drop, INV_Item item)
+    {
+        if (drop == null || item == null)
+        {
+            return;
+        }
+
+        float scale = item.DropMeshScale;
+        if (scale <= 0f)
+        {
+            scale = 0f;
+        }
+
+        drop.transform.localScale = Vector3.one * scale;
     }
 
     private void ApplyDropPhysics(GameObject drop)
