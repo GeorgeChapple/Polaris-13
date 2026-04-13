@@ -1262,6 +1262,12 @@ public class INV_Inventory : MonoBehaviour
             return;
         }
 
+        if (itemContextMenu.isActiveAndEnabled)
+        {
+            hoverTooltip.HideImmediate();
+            hoverTimer = 0f;
+        }
+
         if (heldItem != null)
         {
             hoverTooltip.HideImmediate();

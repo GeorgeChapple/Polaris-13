@@ -1,6 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // Made By: Jason Lodge
@@ -9,6 +11,11 @@ using UnityEngine.UI;
 
 public class INV_ItemContextMenu : MonoBehaviour
 {
+    [Header("Settings")]
+    [SerializeField] private Vector2 mouseOffset = Vector2.zero;
+    [Tooltip("Needs to be higher than 0, or buttons don't work.")]
+    [SerializeField] private float disappearDelay = 0.1f;
+
     [Header("Refs")]
     [SerializeField] private RectTransform root;
     [SerializeField] private RectTransform buttonRoot;
@@ -22,6 +29,7 @@ public class INV_ItemContextMenu : MonoBehaviour
     private readonly List<Button> spawnedButtons = new List<Button>();
 
     public bool IsOpen => root != null && root.gameObject.activeSelf;
+
 
     private void Awake()
     {
@@ -37,6 +45,19 @@ public class INV_ItemContextMenu : MonoBehaviour
         }
 
         HideImmediate();
+    }
+
+    private void Update()
+    {
+        bool mouseDown = Mouse.current.leftButton.isPressed;
+        if (mouseDown) { StartCoroutine(WaitToHide()); }
+    }
+
+    IEnumerator WaitToHide()
+    {
+        yield return new WaitForSeconds(disappearDelay);
+        HideImmediate();
+        yield return null;
     }
 
     public void Init(INV_Inventory inventoryRef)
@@ -136,6 +157,6 @@ public class INV_ItemContextMenu : MonoBehaviour
         root.anchorMin = new Vector2(0f, 1f);
         root.anchorMax = new Vector2(0f, 1f);
         root.pivot = new Vector2(0f, 1f);
-        root.anchoredPosition = localPoint + new Vector2(12f, -12f);
+        root.anchoredPosition = localPoint + mouseOffset;
     }
 }
