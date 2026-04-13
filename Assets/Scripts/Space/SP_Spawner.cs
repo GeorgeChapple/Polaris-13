@@ -193,7 +193,6 @@ public class SP_Spawner : NetworkBehaviour
                 index++;
             }
         }
-        Debug.Log("index: " + index);
         return index;
     }
 
