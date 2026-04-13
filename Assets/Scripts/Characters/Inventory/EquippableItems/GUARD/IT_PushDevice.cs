@@ -69,8 +69,7 @@ public class IT_PushDevice : CC_INV_UsableItems
     public override void OnAltUseHeld(NetworkObjectReference netObjRef) { }
     public override void OnAltUseReleased(NetworkObjectReference netObjRef) { }
 
-    [Rpc(SendTo.Server)]
-    private void PushObjectRpc(Collider col)
+    private void PushObject(Collider col)
     {
         Rigidbody rb = col.GetComponent<Rigidbody>();
         if (rb != null)
@@ -81,13 +80,16 @@ public class IT_PushDevice : CC_INV_UsableItems
     }
 
     [Rpc(SendTo.Everyone)]
-    private void PushPlayerRpc(Collider col)
+    private void PushPlayerRpc(NetworkObjectReference netObjRef)
     {
-        Rigidbody rb = col.GetComponent<Rigidbody>();
-        if (rb != null)
-        { 
-            rb.AddForce(muzzlePoint.forward * pushForce);
-            rb.AddTorque(Vector3.one * Random.Range(-torqueForce, torqueForce));
+        if (netObjRef.TryGet(out NetworkObject netObj))
+        {
+            Rigidbody rb = netObj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.AddForce(muzzlePoint.forward * pushForce);
+                rb.AddTorque(Vector3.one * Random.Range(-torqueForce, torqueForce));
+            }
         }
     }
 
