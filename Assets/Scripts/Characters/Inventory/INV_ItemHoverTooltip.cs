@@ -11,6 +11,9 @@ using static INV_Inventory;
 
 public class INV_ItemHoverTooltip : MonoBehaviour
 {
+    [Header("Settings")]
+    [SerializeField] private Vector2 mouseOffset = Vector2.zero;
+
     [Header("Refs")]
     [SerializeField] private RectTransform root;
     [SerializeField] private TextMeshProUGUI itemNameText;
@@ -119,7 +122,7 @@ public class INV_ItemHoverTooltip : MonoBehaviour
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             canvasRect,
-            mouseScreenPos,
+            mouseScreenPos + mouseOffset,
             uiCamera,
             out localPoint
         );

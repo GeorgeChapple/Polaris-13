@@ -23,6 +23,9 @@ public class CC_CameraController : NetworkBehaviour
     [Tooltip("Canvas Component")]
     public Canvas canvas;
 
+    [Tooltip("Canvas Overlay Object")]
+    public GameObject canvasOverlayObj;
+
     [Tooltip("If true, non owners will disable their cameraRoot. If false, does nothing for now.")]
     public bool destroyNonOwnerCameraRoot = true;
 
@@ -257,9 +260,10 @@ public class CC_CameraController : NetworkBehaviour
                 cameraRoot.SetActive(false);
             }
 
-            if (canvasObj != null)
+            if (canvasObj != null && canvasOverlayObj != null)
             {
                 canvasObj.SetActive(false);
+                canvasOverlayObj.SetActive(false);
             }
         }
     }
