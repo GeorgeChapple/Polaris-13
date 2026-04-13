@@ -122,7 +122,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   muzzlePoint: {fileID: 8610571850413452298}
   pushVolumeBounds: {x: 5, y: 5, z: 10}
-  maxPushForce: 10
+  maxPushForce: 3000
   torqueForce: 1
-  chargeTime: 0
+  chargeTime: 2
   cooldown: 0.5
+  pushForce: 0
+  chargingTimer: 0
+  cooldownTimer: 0

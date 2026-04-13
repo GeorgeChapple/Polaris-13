@@ -6,42 +6,47 @@ public class IT_PushDevice : CC_INV_UsableItems
     private string itemId;
 
     [SerializeField] private Transform muzzlePoint;
-    [SerializeField] private Vector3 pushVolumeBounds = new Vector3(5f, 5f, 10f);
-    [SerializeField] private float maxPushForce = 10f;
-    [SerializeField] private float torqueForce = 1f;
-    [SerializeField] private float chargeTime = 2f;
-    [SerializeField] private float cooldown = 0.5f;
-    [SerializeField] private float pushForce = 0;
-    [SerializeField] private float chargingTimer = 0;
-    [SerializeField] private float cooldownTimer = 0;
+    public Vector3 pushVolumeBounds = new Vector3(5f, 5f, 10f);
+    public float maxPushForce = 10f;
+    public float torqueForce = 1f;
+    public float chargeTime = 2f;
+    public float cooldown = 0.5f;
+    public float pushForce = 0f;
+    public float chargingTimer = 0f;
+    public float cooldownTimer = 0f;
 
+    private NetworkObject playerWhoSent;
+
+    
     public override void SendItemId(string ItemId)
     {
         itemId = ItemId;
     }
 
-    public override void OnUse(NetworkObjectReference netObjRef)
+    public override void SendSender(NetworkObjectReference netObj)
     {
-        //Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Fired");
-
-        //GameObject testbulletFire = Instantiate(TestBullet, muzzlePoint.position, Quaternion.identity);
-        //NetworkObject netObj = testbulletFire.GetComponent<NetworkObject>();
-        //netObj.Spawn();
-
-        //Rigidbody rb = testbulletFire.GetComponent<Rigidbody>();
-        //rb.WakeUp();
-        //rb.linearVelocity = muzzlePoint.forward * bulletSpeed;
+        playerWhoSent = netObj;
     }
 
-    public override void OnUseHeld(NetworkObjectReference netObjRef) {
-        Debug.Log("HOLDING GUARD");
-        if (cooldownTimer < 0f)
+    public override void OnUse(NetworkObjectReference netObjRef) { }
+
+    public override void OnUseHeld(NetworkObjectReference netObjRef)
+    {
+        if (muzzlePoint == null)
         {
-            Debug.Log("HOLDING GUARD2");
-            TickForce();
-            //pushForce = Mathf.Lerp(0, maxPushForce, Mathf.Clamp(chargingTimer, float.MinValue, chargeTime) / chargeTime);
+            return;
+        }
+
+        if (cooldownTimer <= 0f)
+        {
+            chargingTimer += Time.deltaTime;
+            chargingTimer = Mathf.Clamp(chargingTimer, 0f, Mathf.Max(0.001f, chargeTime));
+
+            float safeChargeTime = Mathf.Max(0.001f, chargeTime);
+            pushForce = Mathf.Lerp(0f, maxPushForce, Mathf.Clamp(chargingTimer, 0f, safeChargeTime) / safeChargeTime);
         }
     }
+
     public override void OnUseReleased(NetworkObjectReference netObjRef) {
         cooldownTimer = cooldown;
         Collider[] colliders = Physics.OverlapBox(muzzlePoint.transform.position + (pushVolumeBounds.z / 2) * muzzlePoint.forward, pushVolumeBounds / 2, Quaternion.LookRotation(muzzlePoint.forward));
@@ -49,11 +54,11 @@ public class IT_PushDevice : CC_INV_UsableItems
         {
             if (collider.GetComponent<CC_Movement>())
             {
-                PushPlayerRpc(collider);
+                PushPlayerRpc(netObjRef, playerWhoSent); 
             }
             else
             {
-                PushObjectRpc(collider);
+                PushObject(collider);
             }
         }
         pushForce = 0;
@@ -63,13 +68,7 @@ public class IT_PushDevice : CC_INV_UsableItems
     public override void OnAltUseHeld(NetworkObjectReference netObjRef) { }
     public override void OnAltUseReleased(NetworkObjectReference netObjRef) { }
 
-    private void TickForce()
-    { 
-        chargingTimer += Time.deltaTime;
-    }
-
-    [Rpc(SendTo.Server)]
-    private void PushObjectRpc(Collider col)
+    private void PushObject(Collider col)
     {
         Rigidbody rb = col.GetComponent<Rigidbody>();
         if (rb != null)
@@ -80,13 +79,23 @@ public class IT_PushDevice : CC_INV_UsableItems
     }
 
     [Rpc(SendTo.Everyone)]
-    private void PushPlayerRpc(Collider col)
+    private void PushPlayerRpc(NetworkObjectReference netObjRef, NetworkObjectReference us)
     {
-        Rigidbody rb = col.GetComponent<Rigidbody>();
-        if (rb != null)
-        { 
-            rb.AddForce(muzzlePoint.forward * pushForce);
-            rb.AddTorque(Vector3.one * Random.Range(-torqueForce, torqueForce));
+        if (netObjRef.TryGet(out NetworkObject netObj) && us.TryGet(out NetworkObject usNetObj) && netObj != usNetObj)
+        {
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            if (player != null)
+            {
+                player.Body.AddForce(muzzlePoint.forward * pushForce);
+            }
+        }
+    }
+
+    private void Start()
+    {
+        if (!transform.root.GetComponent<CC_CharacterPlayerController>().enabled)
+        {
+            //this.enabled = false;
         }
     }
 
