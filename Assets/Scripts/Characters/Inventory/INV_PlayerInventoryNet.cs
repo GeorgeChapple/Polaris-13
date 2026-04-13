@@ -934,6 +934,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             }
 
             usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
             usableItem.OnUse(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
@@ -974,6 +975,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             }
 
             usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
             usableItem.OnUseHeld(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
@@ -1014,6 +1016,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             }
 
             usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
             usableItem.OnUseReleased(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
@@ -1054,6 +1057,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             }
 
             usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
             usableItem.OnAltUse(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
@@ -1094,6 +1098,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             }
 
             usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
             usableItem.OnAltUseHeld(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }
@@ -1134,6 +1139,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             }
 
             usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
             usableItem.OnAltUseReleased(gameObject.GetComponent<NetworkObject>());
             foundUsable = true;
         }

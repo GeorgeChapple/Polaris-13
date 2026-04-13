@@ -15,9 +15,17 @@ public class IT_PushDevice : CC_INV_UsableItems
     public float chargingTimer = 0f;
     public float cooldownTimer = 0f;
 
+    private NetworkObject playerWhoSent;
+
+    
     public override void SendItemId(string ItemId)
     {
         itemId = ItemId;
+    }
+
+    public override void SendSender(NetworkObjectReference netObj)
+    {
+        playerWhoSent = netObj;
     }
 
     public override void OnUse(NetworkObjectReference netObjRef) { }
@@ -46,7 +54,7 @@ public class IT_PushDevice : CC_INV_UsableItems
         {
             if (collider.GetComponent<CC_Movement>())
             {
-                PushPlayerRpc(netObjRef); 
+                PushPlayerRpc(netObjRef, playerWhoSent); 
             }
             else
             {
@@ -71,9 +79,9 @@ public class IT_PushDevice : CC_INV_UsableItems
     }
 
     [Rpc(SendTo.Everyone)]
-    private void PushPlayerRpc(NetworkObjectReference netObjRef)
+    private void PushPlayerRpc(NetworkObjectReference netObjRef, NetworkObjectReference us)
     {
-        if (netObjRef.TryGet(out NetworkObject netObj) && !netObj.IsOwner)
+        if (netObjRef.TryGet(out NetworkObject netObj) && us.TryGet(out NetworkObject usNetObj) && netObj != usNetObj)
         {
             CC_Movement player = netObj.GetComponent<CC_Movement>();
             if (player != null)
