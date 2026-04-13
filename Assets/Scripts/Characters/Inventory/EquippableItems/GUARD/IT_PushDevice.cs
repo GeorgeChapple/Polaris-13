@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-public class IT_PushDevice : MonoBehaviour, IUsableItem
+public class IT_PushDevice : CC_INV_UsableItems
 {
     private string itemId;
 
@@ -15,12 +15,12 @@ public class IT_PushDevice : MonoBehaviour, IUsableItem
     [SerializeField] private float chargingTimer = 0;
     [SerializeField] private float cooldownTimer = 0;
 
-    public void SendItemId(string ItemId)
+    public override void SendItemId(string ItemId)
     {
         itemId = ItemId;
     }
 
-    public void OnUse(NetworkObjectReference netObjRef)
+    public override void OnUse(NetworkObjectReference netObjRef)
     {
         //Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Fired");
 
@@ -33,7 +33,7 @@ public class IT_PushDevice : MonoBehaviour, IUsableItem
         //rb.linearVelocity = muzzlePoint.forward * bulletSpeed;
     }
 
-    public void OnUseHeld(NetworkObjectReference netObjRef) {
+    public override void OnUseHeld(NetworkObjectReference netObjRef) {
         Debug.Log("HOLDING GUARD");
         if (cooldownTimer < 0f)
         {
@@ -42,7 +42,7 @@ public class IT_PushDevice : MonoBehaviour, IUsableItem
             //pushForce = Mathf.Lerp(0, maxPushForce, Mathf.Clamp(chargingTimer, float.MinValue, chargeTime) / chargeTime);
         }
     }
-    public void OnUseReleased(NetworkObjectReference netObjRef) {
+    public override void OnUseReleased(NetworkObjectReference netObjRef) {
         cooldownTimer = cooldown;
         Collider[] colliders = Physics.OverlapBox(muzzlePoint.transform.position + (pushVolumeBounds.z / 2) * muzzlePoint.forward, pushVolumeBounds / 2, Quaternion.LookRotation(muzzlePoint.forward));
         foreach (Collider collider in colliders)
@@ -59,9 +59,9 @@ public class IT_PushDevice : MonoBehaviour, IUsableItem
         pushForce = 0;
         chargingTimer = 0;
     }
-    public void OnAltUse(NetworkObjectReference netObjRef) { }
-    public void OnAltUseHeld(NetworkObjectReference netObjRef) { }
-    public void OnAltUseReleased(NetworkObjectReference netObjRef) { }
+    public override void OnAltUse(NetworkObjectReference netObjRef) { }
+    public override void OnAltUseHeld(NetworkObjectReference netObjRef) { }
+    public override void OnAltUseReleased(NetworkObjectReference netObjRef) { }
 
     private void TickForce()
     { 

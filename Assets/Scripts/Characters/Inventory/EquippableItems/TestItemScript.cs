@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-public class TestItemScript : MonoBehaviour, IUsableItem
+public class TestItemScript : CC_INV_UsableItems
 {
     private string itemId;
 
@@ -9,12 +9,12 @@ public class TestItemScript : MonoBehaviour, IUsableItem
     [SerializeField] private Transform muzzlePoint;
     [SerializeField] private float bulletSpeed;
 
-    public void SendItemId(string ItemId)
+    public override void SendItemId(string ItemId)
     {
         itemId = ItemId;
     }
 
-    public void OnUse(NetworkObjectReference netObjRef)
+    public override void OnUse(NetworkObjectReference netObjRef)
     {
         Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Fired");
 
@@ -27,25 +27,25 @@ public class TestItemScript : MonoBehaviour, IUsableItem
         rb.linearVelocity = muzzlePoint.forward * bulletSpeed;
     }
 
-    public void OnUseHeld(NetworkObjectReference netObjRef)
+    public override void OnUseHeld(NetworkObjectReference netObjRef)
     {
         Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Held");
     }
 
-    public void OnUseReleased(NetworkObjectReference netObjRef)
+    public override void OnUseReleased(NetworkObjectReference netObjRef)
     {
         Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Released");
     }
 
-    public void OnAltUse(NetworkObjectReference netObjRef)
+    public override void OnAltUse(NetworkObjectReference netObjRef)
     {
         Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Alt Fired");
     }
-    public void OnAltUseHeld(NetworkObjectReference netObjRef)
+    public override void OnAltUseHeld(NetworkObjectReference netObjRef)
     {
         Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Alt Held");
     }
-    public void OnAltUseReleased(NetworkObjectReference netObjRef)
+    public override void OnAltUseReleased(NetworkObjectReference netObjRef)
     {
         Debug.Log($"Player Network Object {netObjRef.NetworkObjectId}: Test Object Alt Released");
     }
