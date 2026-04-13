@@ -54,12 +54,12 @@ public class IT_PushDevice : CC_INV_UsableItems
             {
                 if (collider.transform.root != transform.root)
                 {
-                    PushPlayerRpc(collider); 
+                    PushPlayerRpc(netObjRef); 
                 }
             }
             else
             {
-                PushObjectRpc(collider);
+                PushObject(collider);
             }
         }
         pushForce = 0;
