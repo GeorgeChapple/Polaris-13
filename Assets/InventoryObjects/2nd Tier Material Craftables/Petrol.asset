@@ -22,6 +22,8 @@ MonoBehaviour:
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
+  retailPrice: 0
+  shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
   amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
@@ -42,18 +44,20 @@ MonoBehaviour:
   icon: {fileID: 0}
   mesh: {fileID: -7387706064836869012, guid: 14294b95810c1f8478cc5e58f3f32c8c, type: 3}
   material: {fileID: 2100000, guid: 9a40cd60000cee0409e840fef117ccab, type: 2}
-  inventoryMeshOffset: {x: 0, y: 0, z: 0}
-  inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 1
   equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
   applyEquippedPrefabVisuals: 1
+  forwardAxisRot: 2
+  inventoryMeshOffset: {x: -20, y: 40, z: -20}
+  inventoryMeshRotation: {x: -90, y: 90, z: 0}
+  inventoryMeshScale: 12000
+  dropMeshScale: 100
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 1
-  craftingMeshOffset: {x: 0, y: 0, z: 0}
-  craftingMeshRotation: {x: 0, y: 0, z: 0}
-  craftingMeshScale: 1
+  craftingMeshOffset: {x: -10, y: 35, z: 0}
+  craftingMeshRotation: {x: -90, y: 90, z: 0}
+  craftingMeshScale: 8000
   inventorySpaceShape:
   - ++
-  - +-
+  - ++
   inventorySpace: {x: 1, y: 1}
