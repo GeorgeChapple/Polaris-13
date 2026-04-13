@@ -24,8 +24,6 @@ public class IT_PushDevice : CC_INV_UsableItems
 
     public override void OnUseHeld(NetworkObjectReference netObjRef)
     {
-        Debug.Log("HOLDING GUARD");
-
         if (muzzlePoint == null)
         {
             return;
@@ -33,15 +31,11 @@ public class IT_PushDevice : CC_INV_UsableItems
 
         if (cooldownTimer <= 0f)
         {
-            Debug.Log("HOLDING GUARD2");
-
             chargingTimer += Time.deltaTime;
             chargingTimer = Mathf.Clamp(chargingTimer, 0f, Mathf.Max(0.001f, chargeTime));
 
             float safeChargeTime = Mathf.Max(0.001f, chargeTime);
             pushForce = Mathf.Lerp(0f, maxPushForce, Mathf.Clamp(chargingTimer, 0f, safeChargeTime) / safeChargeTime);
-
-            Debug.Log($"Charging Timer: {chargingTimer}, Push Force: {pushForce}");
         }
     }
 
@@ -84,11 +78,10 @@ public class IT_PushDevice : CC_INV_UsableItems
     {
         if (netObjRef.TryGet(out NetworkObject netObj))
         {
-            Rigidbody rb = netObj.GetComponent<Rigidbody>();
-            if (rb != null)
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            if (player != null)
             {
-                rb.AddForce(muzzlePoint.forward * pushForce);
-                rb.AddTorque(Vector3.one * Random.Range(-torqueForce, torqueForce));
+                player.Body.AddForce(muzzlePoint.forward * pushForce);
             }
         }
     }
