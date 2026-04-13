@@ -17,7 +17,7 @@ public class INV_Item : ScriptableObject
     [Header("Info")]
     [SerializeField] private string itemID;
     [SerializeField] private string m_name;
-    [SerializeField][TextArea(1,5)] private string description;
+    [SerializeField, TextArea(1,5)] private string description;
 
     public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
     [SerializeField] private ItemType itemType = ItemType.Item;
@@ -30,6 +30,10 @@ public class INV_Item : ScriptableObject
     [SerializeField] private float hungerDrainDelay;
     [SerializeField] private float thirstReplenish;
     [SerializeField] private float thirstDrainDelay;
+
+    [Header("Shop")]
+    [SerializeField] private int retailPrice;
+    [SerializeField] private Vector2 shopMultiplierRange = new Vector2(0.75f, 2f);
 
     [Header("Probability")]
     [SerializeField, Range(0, 100)] private int chanceOfSpawnInChest = 0;

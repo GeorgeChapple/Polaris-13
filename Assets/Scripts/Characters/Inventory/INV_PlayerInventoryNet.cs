@@ -928,7 +928,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] is not IUsableItem usableItem)
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
             {
                 continue;
             }
@@ -940,7 +940,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components.", replicatedEquippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components.", replicatedEquippedVisual);
         }
     }
 
@@ -968,7 +968,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] is not IUsableItem usableItem)
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
             {
                 continue;
             }
@@ -1008,7 +1008,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] is not IUsableItem usableItem)
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
             {
                 continue;
             }
@@ -1048,7 +1048,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] is not IUsableItem usableItem)
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
             {
                 continue;
             }
@@ -1088,7 +1088,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] is not IUsableItem usableItem)
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
             {
                 continue;
             }
@@ -1128,7 +1128,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         for (int i = 0; i < behaviours.Length; i++)
         {
-            if (behaviours[i] is not IUsableItem usableItem)
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
             {
                 continue;
             }
