@@ -52,7 +52,7 @@ public class IT_PushDevice : CC_INV_UsableItems
         {
             if (collider.GetComponent<CC_Movement>())
             {
-                if (collider.GetComponent<CC_Movement>().Body.isKinematic)
+                if (collider.transform.root != transform.root)
                 {
                     PushPlayerRpc(collider); 
                 }
