@@ -112,7 +112,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
                 return;
             }
         }
-        if (eventData.button != PointerEventData.InputButton.Right) { return; }        
+        if (eventData.button != PointerEventData.InputButton.Right) { return; }
         inv.ShowContextMenuForItem(itemInst, eventData.position);
     }
 
@@ -305,28 +305,26 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
 
         // center placement
         meshVisualRoot.localPosition = rectCenterLocal + itemOffset;
-        meshVisualRoot.localRotation = Quaternion.Euler(itemRotation);
         meshVisualRoot.localScale = Vector3.one * itemScale;
 
-        // rotation handling
-        switch (itemInst.rotation)
-        {
-            case INV_Inventory.ItemInstance.Rotation.Up:
-                meshVisualRoot.localEulerAngles = itemRotation;
-                break;
+        // base rotation + pseudo forward axis item rotation
+        Quaternion baseRotation = Quaternion.Euler(itemRotation);
+        Quaternion gridRotation = GetGridRotationForPseudoForwardAxis(itemInst.data.ForwardAxisRotVal, itemInst.rotation);
 
-            case INV_Inventory.ItemInstance.Rotation.Right:
-                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z - 90f);
-                break;
+        meshVisualRoot.localRotation = baseRotation * gridRotation;
+    }
 
-            case INV_Inventory.ItemInstance.Rotation.Down:
-                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z - 180f);
-                break;
+    private Quaternion GetGridRotationForPseudoForwardAxis(INV_Item.ForwardAxisRot forwardAxis, INV_Inventory.ItemInstance.Rotation rotation)
+    {
+        float angle = rotation == INV_Inventory.ItemInstance.Rotation.Up ? 0f :
+                      rotation == INV_Inventory.ItemInstance.Rotation.Right ? -90f :
+                      rotation == INV_Inventory.ItemInstance.Rotation.Down ? -180f : -270f;
 
-            case INV_Inventory.ItemInstance.Rotation.Left:
-                meshVisualRoot.localEulerAngles = new Vector3(itemRotation.x, itemRotation.y, itemRotation.z - 270f);
-                break;
-        }
+        Vector3 axis = forwardAxis == INV_Item.ForwardAxisRot.X ? Vector3.right :
+                       forwardAxis == INV_Item.ForwardAxisRot.Y ? Vector3.up :
+                       Vector3.forward;
+
+        return Quaternion.AngleAxis(angle, axis);
     }
 
     public void SetHotbarSlotLabel(int slotIndex)
