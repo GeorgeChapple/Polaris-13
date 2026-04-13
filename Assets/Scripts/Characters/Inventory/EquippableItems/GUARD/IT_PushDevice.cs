@@ -95,7 +95,7 @@ public class IT_PushDevice : CC_INV_UsableItems
     {
         if (!transform.root.GetComponent<CC_CharacterPlayerController>().enabled)
         {
-            this.enabled = false;
+            //this.enabled = false;
         }
     }
 
