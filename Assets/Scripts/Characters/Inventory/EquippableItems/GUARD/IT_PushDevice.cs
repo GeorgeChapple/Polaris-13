@@ -35,6 +35,9 @@ public class IT_PushDevice : CC_INV_UsableItems
         {
             Debug.Log("HOLDING GUARD2");
 
+            chargingTimer += Time.deltaTime;
+            chargingTimer = Mathf.Clamp(chargingTimer, 0f, Mathf.Max(0.001f, chargeTime));
+
             float safeChargeTime = Mathf.Max(0.001f, chargeTime);
             pushForce = Mathf.Lerp(0f, maxPushForce, Mathf.Clamp(chargingTimer, 0f, safeChargeTime) / safeChargeTime);
 
