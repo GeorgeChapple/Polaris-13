@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: testitem1
   m_name: Test Item
-  description: Test Item for debugging purposes
+  description: 'Test Item for debugging purposes
+
+    This shoots a lot of balls'
   itemType: 4
   itemRarity: 0
   durability: 0
@@ -22,7 +24,10 @@ MonoBehaviour:
   hungerDrainDelay: 5
   thirstReplenish: 5
   thirstDrainDelay: 0
+  retailPrice: 0
+  shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
   stackable: 1
@@ -50,11 +55,13 @@ MonoBehaviour:
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: 8f7cea3e2c3b4ba46bc631dcbfa78cf2, type: 2}
+  equippedPrefab: {fileID: 5739193541798090591, guid: 7cad44b3fbd77fd4e860747c037be04e, type: 3}
+  applyEquippedPrefabVisuals: 1
+  forwardAxisRot: 2
   inventoryMeshOffset: {x: 0, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
   inventoryMeshScale: 80
-  equippedPrefab: {fileID: 5739193541798090591, guid: 7cad44b3fbd77fd4e860747c037be04e, type: 3}
-  applyEquippedPrefabVisuals: 1
+  dropMeshScale: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 0.3
