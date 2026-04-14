@@ -72,7 +72,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3336720753
+  GlobalObjectIdHash: 3757138520
   InScenePlacedSourceGlobalObjectIdHash: 3757138520
   DeferredDespawnTick: 0
   Ownership: 1
@@ -503,8 +503,8 @@ MonoBehaviour:
     rewireInteractListenersOnNetworkSpawn: 0
     invokeLegacyInteractEvent: 1
   oneShot: 0
-  requiresHold: 0
-  holdTime: 0
+  requiresHold: 1
+  holdTime: 999
   onStartHold:
     m_PersistentCalls:
       m_Calls: []
@@ -516,7 +516,7 @@ MonoBehaviour:
       m_Calls: []
   openMenuOnHold: 1
   interactMenuTitle: Door
-  menuHoldTime: 0.35
+  menuHoldTime: 0
 --- !u!64 &3948076971737082788
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -697,8 +697,8 @@ MonoBehaviour:
     rewireInteractListenersOnNetworkSpawn: 0
     invokeLegacyInteractEvent: 1
   oneShot: 0
-  requiresHold: 0
-  holdTime: 0
+  requiresHold: 1
+  holdTime: 999
   onStartHold:
     m_PersistentCalls:
       m_Calls: []
@@ -710,7 +710,7 @@ MonoBehaviour:
       m_Calls: []
   openMenuOnHold: 1
   interactMenuTitle: Door
-  menuHoldTime: 0.35
+  menuHoldTime: 0
 --- !u!64 &2919942081832881622
 MeshCollider:
   m_ObjectHideFlags: 0
