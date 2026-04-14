@@ -28,12 +28,10 @@ public class IT_Hook : CC_INV_UsableItems
         //rb.WakeUp();
         //rb.linearVelocity = muzzlePoint.forward * bulletSpeed;
 
-        hook.TriggerHook();
+        hook.ShootHook();
     }
-
-    public override void OnUseHeld(NetworkObjectReference netObjRef) { }
-    public override void OnUseReleased(NetworkObjectReference netObjRef) { }
-    public override void OnAltUse(NetworkObjectReference netObjRef) { }
-    public override void OnAltUseHeld(NetworkObjectReference netObjRef) { }
-    public override void OnAltUseReleased(NetworkObjectReference netObjRef) { }
+    public override void OnAltUse(NetworkObjectReference netObjRef) 
+    {
+        hook.ReelHook();
+    }
 }
