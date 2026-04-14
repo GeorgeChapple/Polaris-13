@@ -65,18 +65,41 @@ public class HookLineRenderer : NetworkBehaviour
             if (IsServer && state == HookState.ready)
             {
                 ropePoints[i].position = muzzle.position;
-                hookHead.transform.position = muzzle.position;
-                hookHead.transform.rotation = muzzle.rotation;
+                hookHead.transform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
             }
         }
     }
 
-    public void TriggerHook()
+    public void ShootHook()
     {
         switch (state)
         {
-            case 0:
-                StartCoroutine(FireHook()); 
+            case HookState.ready:
+                StartCoroutine(FireHookEnum()); 
+                break;
+            case HookState.launching:
+                break;
+            case HookState.deployed:
+                break;
+            case HookState.reeling:
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void ReelHook()
+    {
+        switch (state)
+        {
+            case HookState.ready:
+                break;
+            case HookState.launching:
+                break;
+            case HookState.deployed:
+                StartCoroutine(ReelHookEnum());
+                break;
+            case HookState.reeling:
                 break;
             default:
                 break;
@@ -92,7 +115,7 @@ public class HookLineRenderer : NetworkBehaviour
         hookHead.GetComponent<Rigidbody>().isKinematic = isKinematic;
     }
 
-    private IEnumerator FireHook()
+    private IEnumerator FireHookEnum()
     {
         state = HookState.launching;
         Vector3 forward = muzzle.transform.forward;
@@ -109,5 +132,10 @@ public class HookLineRenderer : NetworkBehaviour
         }
         SetKinematic(false);
         state = HookState.deployed;
+    }
+
+    private IEnumerator ReelHookEnum()
+    {
+        yield return null;
     }
 }

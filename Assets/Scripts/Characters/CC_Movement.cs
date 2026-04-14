@@ -607,7 +607,7 @@ public class CC_Movement : NetworkBehaviour
         float curve = stabiliseCurve != null ? stabiliseCurve.Evaluate(proximity01) : proximity01;
         return baseStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
     }
-
+    
     protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed, bool crouchPressed, bool stabilisePressed)
     {
         // add force as thrusters would have inertia
