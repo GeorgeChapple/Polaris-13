@@ -606,6 +606,36 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     // server rpc entry points
+    [Rpc(SendTo.SpecifiedInParams)]
+    public void TryAddWorldPickupLocalRpc(string itemId, NetworkObjectReference pickupRef, RpcParams rpcParams = default)
+    {
+        CacheRefs();
+
+        bool added = false;
+
+        if (inventory != null && !string.IsNullOrWhiteSpace(itemId))
+        {
+            INV_Item item = GetItemById(itemId);
+            if (item != null) { added = inventory.TryAddItem(item); }
+        }
+
+        ConfirmWorldPickupAddResultRpc(pickupRef, added);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void ConfirmWorldPickupAddResultRpc(NetworkObjectReference pickupRef, bool added, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams)) { return; }
+        if (!added) { return; }
+        if (!pickupRef.TryGet(out NetworkObject pickupNetObj) || pickupNetObj == null) { return; }
+        if (!pickupNetObj.IsSpawned) { return; }
+
+        SP_SpaceJunk junk = pickupNetObj.GetComponent<SP_SpaceJunk>();
+        if (junk != null) { junk.RemoveFromSpaceManager(); }
+
+        pickupNetObj.Despawn(true);
+    }
+
     [Rpc(SendTo.Server)]
     private void RequestDropItemRpc(string itemId, RpcParams rpcParams = default)
     {

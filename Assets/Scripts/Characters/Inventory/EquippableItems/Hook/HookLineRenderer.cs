@@ -1,141 +1,149 @@
-using UnityEngine;
-using System.Collections.Generic;
 using Unity.Netcode;
-using System.Collections;
+using UnityEngine;
 
-public class HookLineRenderer : NetworkBehaviour
+[RequireComponent(typeof(LineRenderer))]
+public class HookLineRenderer : MonoBehaviour
 {
-    [SerializeField] private GameObject ropePrefab;
-    [SerializeField] private GameObject hookPrefab;
-    [SerializeField] private IT_Hook hookManager;
-    private HookHead hookHead;
+    [Header("Refs")]
+    [SerializeField] private HookHead hookHeadPrefab;
+    [SerializeField] private Transform throwPoint;
+    [SerializeField] private GameObject hookVisual;
+
+    [Header("Visuals")]
+    [SerializeField] private bool hideLineWhenNoHook = true;
+
     private LineRenderer line;
-    private List<Transform> ropePoints = new List<Transform>();
-    private HookState state = HookState.ready;
-    [SerializeField] private Transform muzzle;
+    private NetworkObject ownerNetworkObject;
 
-    private enum HookState
-    {
-        ready,
-        launching,
-        deployed,
-        reeling
-    }
-
-    private void Start()
+    private void Awake()
     {
         line = GetComponent<LineRenderer>();
-        ropePoints.Add(transform);
-        Transform parent = transform;
-        NetworkObject netObj;
-        for (int i = 1; i < hookManager.segmentCount; i++)
-        {
-            GameObject newSegment = Instantiate(ropePrefab);
-            newSegment.transform.position = muzzle.position;
-            newSegment.transform.rotation = muzzle.rotation;
-            newSegment.GetComponent<HingeJoint>().connectedBody = parent.GetComponent<Rigidbody>();
-            netObj = newSegment.GetComponent<NetworkObject>();
-            if (netObj != null)
-            {
-                netObj.Spawn();
-            }
-            parent = newSegment.transform;
-            ropePoints.Add(parent);
-        }
-        GameObject newHook = Instantiate(hookPrefab);
-        newHook.transform.position = muzzle.position;
-        newHook.transform.rotation = muzzle.rotation;
-        newHook.GetComponent<HingeJoint>().connectedBody = parent.GetComponent<Rigidbody>();
-        netObj = null;
-        netObj = newHook.GetComponent<NetworkObject>();
-        if (netObj != null)
-        {
-            netObj.Spawn();
-        }
-        hookHead = newHook.GetComponent<HookHead>();
-        line.positionCount = ropePoints.Count;
-        SetKinematic(true);
+        ownerNetworkObject = GetComponentInParent<NetworkObject>();
+
+        if (line != null) { line.positionCount = 2; }
+
+        SetHookVisual(true);
     }
 
-    private void FixedUpdate()
+    private void LateUpdate()
     {
-        for (int i = 0; i < ropePoints.Count; i++)
-        {
-            line.SetPosition(i, ropePoints[i].position);
-            if (IsServer && state == HookState.ready)
-            {
-                ropePoints[i].position = muzzle.position;
-                hookHead.transform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
-            }
-        }
+        UpdateLine();
     }
 
-    public void ShootHook()
+    public bool HasActiveHook(NetworkObjectReference netObjRef)
     {
-        switch (state)
-        {
-            case HookState.ready:
-                StartCoroutine(FireHookEnum()); 
-                break;
-            case HookState.launching:
-                break;
-            case HookState.deployed:
-                break;
-            case HookState.reeling:
-                break;
-            default:
-                break;
-        }
+        NetworkObject shooterNetObj = ResolveShooter(netObjRef);
+        if (shooterNetObj == null) { return false; }
+
+        return HookHead.FindActiveHookForShooter(shooterNetObj.NetworkObjectId) != null;
     }
 
-    public void ReelHook()
+    public void ShootHook(NetworkObjectReference netObjRef, float throwPower, float maxDistance)
     {
-        switch (state)
+        if (hookHeadPrefab == null || throwPoint == null) { return; }
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) { return; }
+
+        NetworkObject shooterNetObj = ResolveShooter(netObjRef);
+        if (shooterNetObj == null) { return; }
+
+        HookHead existingHook = HookHead.FindActiveHookForShooter(shooterNetObj.NetworkObjectId);
+        if (existingHook != null) { return; }
+
+        HookHead newHook = Instantiate(hookHeadPrefab, throwPoint.position, throwPoint.rotation);
+        NetworkObject hookNetObj = newHook.GetComponent<NetworkObject>();
+        if (hookNetObj == null)
         {
-            case HookState.ready:
-                break;
-            case HookState.launching:
-                break;
-            case HookState.deployed:
-                StartCoroutine(ReelHookEnum());
-                break;
-            case HookState.reeling:
-                break;
-            default:
-                break;
+            Destroy(newHook.gameObject);
+            return;
         }
+
+        hookNetObj.Spawn(true);
+        newHook.Fire(shooterNetObj.NetworkObjectId, throwPoint, throwPower, maxDistance);
+
+        SetHookVisual(false);
     }
 
-    private void SetKinematic(bool isKinematic)
-    { 
-        for (int i = 1;  i < ropePoints.Count; i++)
-        {
-            ropePoints[i].GetComponent<Rigidbody>().isKinematic = isKinematic;
-        }
-        hookHead.GetComponent<Rigidbody>().isKinematic = isKinematic;
-    }
-
-    private IEnumerator FireHookEnum()
+    public void ReelHook(NetworkObjectReference netObjRef)
     {
-        state = HookState.launching;
-        Vector3 forward = muzzle.transform.forward;
-        Vector3 destination  = muzzle.transform.position + forward * hookManager.length;
-        while ((hookHead.transform.position - destination).magnitude > 0.1f && state == HookState.launching)
-        {
-            hookHead.transform.position = Vector3.Lerp(hookHead.transform.position, hookHead.transform.position + forward * hookManager.shootSpeed, Time.deltaTime);
-            for (int i = 0; i < ropePoints.Count; i++)
-            {
-                float t = i / (ropePoints.Count - 1);
-                ropePoints[i].position = Vector3.Lerp(transform.position, destination, t);
-            }
-            yield return null;
-        }
-        SetKinematic(false);
-        state = HookState.deployed;
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) { return; }
+
+        NetworkObject shooterNetObj = ResolveShooter(netObjRef);
+        if (shooterNetObj == null) { return; }
+
+        HookHead existingHook = HookHead.FindActiveHookForShooter(shooterNetObj.NetworkObjectId);
+        if (existingHook == null) { return; }
+
+        existingHook.BeginReturn(throwPoint);
     }
 
-    private IEnumerator ReelHookEnum()
+    private void UpdateLine()
     {
-        yield return null;
+        if (line == null || throwPoint == null) { return; }
+
+        ulong shooterId = GetShooterNetworkObjectId();
+        if (shooterId == 0)
+        {
+            DrawIdleLine();
+            SetHookVisual(true);
+            return;
+        }
+
+        HookHead activeHook = HookHead.FindActiveHookForShooter(shooterId);
+        if (activeHook == null)
+        {
+            DrawIdleLine();
+            SetHookVisual(true);
+            return;
+        }
+
+        SetHookVisual(false);
+
+        if (!line.enabled) { line.enabled = true; }
+
+        line.SetPosition(0, throwPoint.position);
+        line.SetPosition(1, activeHook.transform.position);
+    }
+
+    private void DrawIdleLine()
+    {
+        if (line == null || throwPoint == null) { return; }
+
+        if (hideLineWhenNoHook)
+        {
+            line.enabled = false;
+            return;
+        }
+
+        if (!line.enabled) { line.enabled = true; }
+
+        line.SetPosition(0, throwPoint.position);
+        line.SetPosition(1, throwPoint.position);
+    }
+
+    private void SetHookVisual(bool state)
+    {
+        if (hookVisual == null) { return; }
+
+        if (hookVisual.activeSelf != state) { hookVisual.SetActive(state); }
+    }
+
+    private NetworkObject ResolveShooter(NetworkObjectReference netObjRef)
+    {
+        if (netObjRef.TryGet(out NetworkObject netObj) && netObj != null) { return netObj; }
+
+        if (ownerNetworkObject != null) { return ownerNetworkObject; }
+
+        ownerNetworkObject = GetComponentInParent<NetworkObject>();
+        return ownerNetworkObject;
+    }
+
+    private ulong GetShooterNetworkObjectId()
+    {
+        if (ownerNetworkObject == null) { ownerNetworkObject = GetComponentInParent<NetworkObject>(); }
+
+        if (ownerNetworkObject == null) { return 0; }
+
+        return ownerNetworkObject.NetworkObjectId;
     }
 }
