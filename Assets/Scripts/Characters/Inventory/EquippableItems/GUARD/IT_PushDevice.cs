@@ -6,14 +6,14 @@ public class IT_PushDevice : CC_INV_UsableItems
     private string itemId;
 
     [SerializeField] private Transform muzzlePoint;
-    public Vector3 pushVolumeBounds = new Vector3(5f, 5f, 10f);
-    public float maxPushForce = 10f;
-    public float torqueForce = 1f;
-    public float chargeTime = 2f;
-    public float cooldown = 0.5f;
-    public float pushForce = 0f;
-    public float chargingTimer = 0f;
-    public float cooldownTimer = 0f;
+    [SerializeField] private Vector3 pushVolumeBounds = new Vector3(5f, 5f, 10f);
+    [SerializeField] private float maxPushForce = 10f;
+    [SerializeField] private float torqueForce = 1f;
+    [SerializeField] private float chargeTime = 2f;
+    [SerializeField] private float cooldown = 0.5f;
+    private float pushForce = 0f;
+    private float chargingTimer = 0f;
+    private float cooldownTimer = 0f;
 
     private NetworkObject playerWhoSent;
 
@@ -54,7 +54,7 @@ public class IT_PushDevice : CC_INV_UsableItems
         {
             if (collider.GetComponent<CC_Movement>())
             {
-                PushPlayerRpc(netObjRef, playerWhoSent); 
+                PushPlayerRpc(collider, playerWhoSent); 
             }
             else
             {
@@ -79,14 +79,17 @@ public class IT_PushDevice : CC_INV_UsableItems
     }
 
     [Rpc(SendTo.Everyone)]
-    private void PushPlayerRpc(NetworkObjectReference netObjRef, NetworkObjectReference us)
+    private void PushPlayerRpc(Collider col, NetworkObjectReference us)
     {
-        if (netObjRef.TryGet(out NetworkObject netObj) && us.TryGet(out NetworkObject usNetObj) && netObj != usNetObj)
-        {
-            CC_Movement player = netObj.GetComponent<CC_Movement>();
+        Debug.Log("1");
+        if (us.TryGet(out NetworkObject usNetObj) && col.GetComponent<CC_Movement>() != usNetObj.GetComponent<CC_Movement>())
+        { 
+            Debug.Log("col: " + col.GetComponent<CC_Movement>().gameObject.name + " | netObj: " + usNetObj.GetComponent<CC_Movement>());
+            CC_Movement player = col.GetComponent<CC_Movement>();
             if (player != null)
             {
-                player.Body.AddForce(muzzlePoint.forward * pushForce);
+                Debug.Log("3");
+                player.PushSelf(muzzlePoint.forward * pushForce);
             }
         }
     }
