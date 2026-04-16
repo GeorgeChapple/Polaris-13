@@ -25,7 +25,7 @@ MonoBehaviour:
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
-  amountSpawnedInChestRange: {x: 1, y: 5}
+  amountSpawnedInChestRange: {x: 0, y: 0}
   chanceOfSpawnAsDebris: 10
   biomeProbabilities: []
   stackable: 0
@@ -43,6 +43,9 @@ MonoBehaviour:
   inventoryMeshOffset: {x: -35.41, y: -9.45, z: -20}
   inventoryMeshRotation: {x: 0, y: 180, z: 0}
   inventoryMeshScale: 350
+  hotbarMestOffset: {x: 0, y: 0, z: 0}
+  hotbarMeshRotation: {x: 0, y: 0, z: 0}
+  hotbarMeshScale: 1
   dropMeshScale: 5
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
