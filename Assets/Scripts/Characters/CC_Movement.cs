@@ -814,4 +814,20 @@ public class CC_Movement : NetworkBehaviour
 
         groundedForward.Normalize();
     }
+
+    protected void AddPushForce(Vector3 force)
+    {
+        rb.AddForce(force);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    protected void AddPushForceRpc(Vector3 force)
+    {
+        AddPushForce(force);
+    }
+
+    public void PushSelf(Vector3 force)
+    {
+        AddPushForceRpc(force);
+    }
 }
