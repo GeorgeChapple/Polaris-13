@@ -18,8 +18,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [Header("Equipped Item")]
     [SerializeField] private Transform equippedItemRoot;
 
-    [Tooltip("Object root for the replicated equipped item for other players. If null, uses replicated camera direction root, then this objects transform.")]
-    [SerializeField] private Transform replicatedEquippedItemRoot;
+    [Tooltip("Fallback root used for non owners / server view. If null, uses replicated camera direction root, then this objects transform.")]
+    [SerializeField] private Transform observerEquippedItemRoot;
 
     [Header("Throw Power, Power is force, Torque is rotational vel added +/- what ever it is.")]
     [SerializeField] private float testThrowPower;
@@ -41,17 +41,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     // local only, used so equipped consumables can remove the correct inventory item on the owner
     private string localEquippedInventoryItemUniqueId;
 
-    // local owner only equipped visual
-    private GameObject localEquippedVisual;
-
-    // replicated visual built locally on non owners
-    // also used as the server authority equipped object on the server
-    private GameObject replicatedEquippedVisual;
+    // one local equipped visual per instance
+    // owner uses equippedItemRoot, non owners / server use observer root
+    private GameObject equippedVisual;
 
     private void Awake()
     {
         CacheRefs();
-        CacheReplicatedEquippedRoot();
+        CacheObserverEquippedRoot();
     }
 
     public override void OnNetworkSpawn()
@@ -66,16 +63,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         equippedItemId.OnValueChanged -= OnEquippedItemIdChanged;
 
-        ClearLocalEquippedVisual();
-        ClearReplicatedEquippedVisual();
+        ClearEquippedVisual();
 
         base.OnNetworkDespawn();
     }
 
     private void LateUpdate()
     {
-        FollowLocalEquippedRoot();
-        FollowReplicatedEquippedRoot();
+        FollowEquippedRoot();
     }
 
     private void CacheRefs()
@@ -96,9 +91,9 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
     }
 
-    private void CacheReplicatedEquippedRoot()
+    private void CacheObserverEquippedRoot()
     {
-        if (replicatedEquippedItemRoot != null)
+        if (observerEquippedItemRoot != null)
         {
             return;
         }
@@ -106,38 +101,26 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
         if (cameraController != null)
         {
-            replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
+            observerEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
         }
     }
 
-    private void FollowLocalEquippedRoot()
+    private void FollowEquippedRoot()
     {
-        if (localEquippedVisual == null || equippedItemRoot == null)
+        if (equippedVisual == null)
         {
             return;
         }
 
-        localEquippedVisual.transform.position = equippedItemRoot.position;
-        localEquippedVisual.transform.rotation = equippedItemRoot.rotation;
-        localEquippedVisual.transform.localScale = Vector3.one;
-    }
-
-    private void FollowReplicatedEquippedRoot()
-    {
-        if (replicatedEquippedVisual == null)
-        {
-            return;
-        }
-
-        Transform followRoot = GetReplicatedEquippedItemRoot();
+        Transform followRoot = GetEquippedItemRootForThisInstance();
         if (followRoot == null)
         {
             return;
         }
 
-        replicatedEquippedVisual.transform.position = followRoot.position;
-        replicatedEquippedVisual.transform.rotation = followRoot.rotation;
-        replicatedEquippedVisual.transform.localScale = Vector3.one;
+        equippedVisual.transform.position = followRoot.position;
+        equippedVisual.transform.rotation = followRoot.rotation;
+        equippedVisual.transform.localScale = Vector3.one;
     }
 
     private void OnEquippedItemIdChanged(FixedString128Bytes oldValue, FixedString128Bytes newValue)
@@ -431,10 +414,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         localEquippedInventoryItemUniqueId = inventoryItemUniqueId;
 
-        if (IsOwner)
-        {
-            ShowLocalEquippedVisual(itemId);
-        }
+        ShowEquippedVisual(itemId);
 
         if (IsServer)
         {
@@ -449,10 +429,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         localEquippedInventoryItemUniqueId = null;
 
-        if (IsOwner)
-        {
-            ClearLocalEquippedVisual();
-        }
+        ClearEquippedVisual();
 
         if (IsServer)
         {
@@ -935,7 +912,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         string itemId = equippedItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
         {
             return;
         }
@@ -953,7 +930,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
         for (int i = 0; i < behaviours.Length; i++)
@@ -971,7 +948,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components.", replicatedEquippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components.", equippedVisual);
         }
     }
 
@@ -983,7 +960,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         string itemId = equippedItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
         {
             return;
         }
@@ -994,7 +971,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
         for (int i = 0; i < behaviours.Length; i++)
@@ -1012,7 +989,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for hold use.", replicatedEquippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for hold use.", equippedVisual);
         }
     }
 
@@ -1024,7 +1001,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         string itemId = equippedItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
         {
             return;
         }
@@ -1035,7 +1012,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
         for (int i = 0; i < behaviours.Length; i++)
@@ -1053,7 +1030,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for release use.", replicatedEquippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for release use.", equippedVisual);
         }
     }
 
@@ -1065,7 +1042,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         string itemId = equippedItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
         {
             return;
         }
@@ -1076,7 +1053,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
         for (int i = 0; i < behaviours.Length; i++)
@@ -1094,7 +1071,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt use.", replicatedEquippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt use.", equippedVisual);
         }
     }
 
@@ -1106,7 +1083,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         string itemId = equippedItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
         {
             return;
         }
@@ -1117,7 +1094,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
         for (int i = 0; i < behaviours.Length; i++)
@@ -1135,7 +1112,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt hold use.", replicatedEquippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt hold use.", equippedVisual);
         }
     }
 
@@ -1147,7 +1124,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         string itemId = equippedItemId.Value.ToString();
-        if (string.IsNullOrWhiteSpace(itemId) || replicatedEquippedVisual == null)
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
         {
             return;
         }
@@ -1158,7 +1135,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        MonoBehaviour[] behaviours = replicatedEquippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
         bool foundUsable = false;
 
         for (int i = 0; i < behaviours.Length; i++)
@@ -1176,7 +1153,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt release use.", replicatedEquippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt release use.", equippedVisual);
         }
     }
 
@@ -1752,80 +1729,18 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     // equipped visuals
     private void RebuildEquippedVisuals(string itemId)
     {
-        RebuildOwnerEquippedVisual(itemId);
-        RebuildReplicatedEquippedVisual(itemId);
-    }
-
-    private void RebuildOwnerEquippedVisual(string itemId)
-    {
-        if (!IsOwner)
-        {
-            ClearLocalEquippedVisual();
-            return;
-        }
-
         if (string.IsNullOrWhiteSpace(itemId))
         {
-            ClearLocalEquippedVisual();
+            ClearEquippedVisual();
             return;
         }
 
-        ShowLocalEquippedVisual(itemId);
+        ShowEquippedVisual(itemId);
     }
 
-    private void RebuildReplicatedEquippedVisual(string itemId)
+    private void ShowEquippedVisual(string itemId)
     {
-        bool shouldHaveReplicatedVisual = IsServer || !IsOwner;
-        if (!shouldHaveReplicatedVisual)
-        {
-            ClearReplicatedEquippedVisual();
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(itemId))
-        {
-            ClearReplicatedEquippedVisual();
-            return;
-        }
-
-        ShowReplicatedEquippedVisual(itemId);
-    }
-
-    private void ShowLocalEquippedVisual(string itemId)
-    {
-        if (!IsOwner || equippedItemRoot == null)
-        {
-            return;
-        }
-
-        INV_Item item = GetItemById(itemId);
-        if (item == null || item.EquippedPrefab == null)
-        {
-            return;
-        }
-
-        ClearLocalEquippedVisual();
-
-        localEquippedVisual = InstantiateEquippedVisual(item, equippedItemRoot, $"LocalEquipped_{item.Name}");
-        if (localEquippedVisual == null)
-        {
-            return;
-        }
-
-        RemoveNetworkObjectIfPresent(localEquippedVisual);
-
-        CC_INV_EquippedItem equippedItem = localEquippedVisual.GetComponent<CC_INV_EquippedItem>();
-        if (equippedItem != null)
-        {
-            equippedItem.Init(item, true);
-        }
-
-        localEquippedVisual.SetActive(true);
-    }
-
-    private void ShowReplicatedEquippedVisual(string itemId)
-    {
-        Transform followRoot = GetReplicatedEquippedItemRoot();
+        Transform followRoot = GetEquippedItemRootForThisInstance();
         if (followRoot == null)
         {
             return;
@@ -1837,24 +1752,25 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        ClearReplicatedEquippedVisual();
+        ClearEquippedVisual();
 
-        replicatedEquippedVisual = InstantiateEquippedVisual(item, followRoot, $"ReplicatedEquipped_{item.Name}");
-        if (replicatedEquippedVisual == null)
+        string objectName = IsOwner ? $"Equipped_{item.Name}_Owner" : $"Equipped_{item.Name}_Observer";
+        equippedVisual = InstantiateEquippedVisual(item, followRoot, objectName);
+        if (equippedVisual == null)
         {
             return;
         }
 
-        RemoveNetworkObjectIfPresent(replicatedEquippedVisual);
+        RemoveNetworkObjectIfPresent(equippedVisual);
 
-        CC_INV_EquippedItem equippedItem = replicatedEquippedVisual.GetComponent<CC_INV_EquippedItem>();
+        CC_INV_EquippedItem equippedItem = equippedVisual.GetComponent<CC_INV_EquippedItem>();
         if (equippedItem != null)
         {
-            equippedItem.Init(item, false);
-            equippedItem.SetVisualVisible(!(IsServer && IsOwner));
+            equippedItem.Init(item, IsOwner);
+            equippedItem.SetVisualVisible(true);
         }
 
-        replicatedEquippedVisual.SetActive(true);
+        equippedVisual.SetActive(true);
     }
 
     private GameObject InstantiateEquippedVisual(INV_Item item, Transform parent, string objectName)
@@ -1876,38 +1792,33 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
     }
 
-    private void ClearLocalEquippedVisual()
+    private void ClearEquippedVisual()
     {
-        if (localEquippedVisual != null)
+        if (equippedVisual != null)
         {
-            Destroy(localEquippedVisual);
+            Destroy(equippedVisual);
         }
 
-        localEquippedVisual = null;
+        equippedVisual = null;
     }
 
-    private void ClearReplicatedEquippedVisual()
+    private Transform GetEquippedItemRootForThisInstance()
     {
-        if (replicatedEquippedVisual != null)
+        if (IsOwner && equippedItemRoot != null)
         {
-            Destroy(replicatedEquippedVisual);
+            return equippedItemRoot;
         }
 
-        replicatedEquippedVisual = null;
-    }
-
-    private Transform GetReplicatedEquippedItemRoot()
-    {
-        if (replicatedEquippedItemRoot != null)
+        if (observerEquippedItemRoot != null)
         {
-            return replicatedEquippedItemRoot;
+            return observerEquippedItemRoot;
         }
 
         CC_CameraController cameraController = GetComponentInParent<CC_CameraController>();
         if (cameraController != null && cameraController.ReplicatedCameraDirectionRoot != null)
         {
-            replicatedEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
-            return replicatedEquippedItemRoot;
+            observerEquippedItemRoot = cameraController.ReplicatedCameraDirectionRoot;
+            return observerEquippedItemRoot;
         }
 
         return transform;
@@ -1916,5 +1827,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     public string GetEquippedItemId()
     {
         return equippedItemId.Value.ToString();
+    }
+
+    public GameObject GetEquippedVisual()
+    {
+        return equippedVisual;
     }
 }
