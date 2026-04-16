@@ -106,6 +106,16 @@ public class INV_Item : ScriptableObject
     [Tooltip("Scale applied to the mesh visual when shown in inventory.")]
     [SerializeField] private float inventoryMeshScale = 1f;
 
+    [Header("Hotbar Mesh Visual")]
+    [Tooltip("Local offset applied to the mesh visual when shown in hotbar.")]
+    [SerializeField] private Vector3 hotbarMestOffset = Vector3.zero;
+
+    [Tooltip("Local rotation applied to the mesh visual when shown in hotbar.")]
+    [SerializeField] private Vector3 hotbarMeshRotation = Vector3.zero;
+
+    [Tooltip("Scale applied to the mesh visual when shown in hotbar.")]
+    [SerializeField] private float hotbarMeshScale = 1f;
+
     [Header("Drop Mesh Visual")]
     [Tooltip("Scale applied to the mesh when dropped from inventory.")]
     [SerializeField] private float dropMeshScale = 1f;
@@ -176,6 +186,10 @@ public class INV_Item : ScriptableObject
     public Vector3 InventoryMeshOffset => inventoryMeshOffset;
     public Vector3 InventoryMeshRotation => inventoryMeshRotation;
     public float InventoryMeshScale => inventoryMeshScale;
+
+    public Vector3 HotbarMeshOffset => hotbarMestOffset;
+    public Vector3 HotbarMeshRotation => hotbarMeshRotation;
+    public float HotbarMeshScale => hotbarMeshScale;
 
     public float DropMeshScale => dropMeshScale;
 

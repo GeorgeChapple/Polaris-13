@@ -163,7 +163,7 @@ public class SP_Spawner : NetworkBehaviour
 
             int minItemAmount = Mathf.Max(0, randomItem.AmountSpawnedInChestRange.x);
             int maxItemAmount = Mathf.Max(minItemAmount, randomItem.AmountSpawnedInChestRange.y);
-            int itemAmount = Random.Range(minItemAmount, maxItemAmount + 1);
+            int itemAmount = randomItem.Stackable ? Random.Range(minItemAmount, maxItemAmount + 1) : 1;
 
             if (!chest.TryStoreItemDataAutoPlace(randomItem,itemAmount)) { break; }
         }

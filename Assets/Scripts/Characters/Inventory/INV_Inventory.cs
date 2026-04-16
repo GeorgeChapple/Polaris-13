@@ -241,6 +241,70 @@ public class INV_Inventory : MonoBehaviour
         }
     }
 
+    public void RefreshVisualsGrid()
+    {
+        EnsureGrid(false);
+        EnsureGrid(true);
+
+        RefreshVisualsGrid(playerGrid, playerRuntime);
+        RefreshVisualsGrid(chestGrid, chestRuntime);
+    }
+
+    private void RefreshVisualsGrid(GridRefs refs, GridRuntime runtime)
+    {
+        if (!runtime.generated || refs.gridRoot == null || refs.itemRoot == null)
+        {
+            return;
+        }
+
+        // force ui layouts to update before we check cell world corners
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(refs.gridRoot);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(refs.itemRoot);
+        Canvas.ForceUpdateCanvases();
+
+        if (runtime.spaces != null)
+        {
+            for (int y = 0; y < refs.maxHeight; y++)
+            {
+                for (int x = 0; x < refs.maxWidth; x++)
+                {
+                    if (runtime.spaces[x, y] == null) { continue; }
+                    runtime.spaces[x, y].isOccupied = false;
+                    runtime.spaces[x, y].occupyingItem = null;
+                }
+            }
+        }
+
+        for (int i = 0; i < runtime.items.Count; i++)
+        {
+            ItemInstance inst = runtime.items[i];
+            if (inst == null || inst.ui == null || inst.data == null) { continue; }
+
+            // make sure shape data and size are correct before snapping
+            BuildShapeForInstance(inst, inst.rotation);
+            RebuildItemUISize(inst);
+
+            Vector2Int cell = inst.cell;
+
+            cell.x = Mathf.Clamp(cell.x, 0, refs.maxWidth - 1);
+            cell.y = Mathf.Clamp(cell.y, 0, refs.maxHeight - 1);
+
+            inst.cell = cell;
+
+            OccupySpaces(runtime, cell.x, cell.y, inst);
+            SnapItemToTopLeft(inst, GetAnchoredPosForCell(runtime, refs, cell.x, cell.y));
+
+            if (inst.uiHandler != null)
+            {
+                inst.uiHandler.RebuildOccupiedSpaceVisuals();
+                inst.uiHandler.ApplyUpdatedVisuals();
+            }
+        }
+
+        Canvas.ForceUpdateCanvases();
+    }
+
     // generates a grid to use for this inventory type
     private void GenerateGrid(GridRefs refs, GridRuntime runtime)
     {
@@ -395,7 +459,7 @@ public class INV_Inventory : MonoBehaviour
         bool succeeded = false;
         for (int i = 0; i < quantity; i++)
         {
-            succeeded = TryAddItem(item); 
+            succeeded = TryAddItem(item);
             if (!succeeded) { return succeeded; }
         }
         return succeeded;

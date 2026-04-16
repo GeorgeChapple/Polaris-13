@@ -222,7 +222,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4990378640101003292}
   - component: {fileID: 5385933744604683341}
-  - component: {fileID: 1224521175172753443}
+  - component: {fileID: 1311303769529549946}
   m_Layer: 5
   m_Name: Viewport
   m_TagString: Untagged
@@ -258,7 +258,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 221268709035651708}
   m_CullTransparentMesh: 1
---- !u!114 &1224521175172753443
+--- !u!114 &1311303769529549946
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -267,10 +267,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 221268709035651708}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 31a19414c41e5ae4aae2af33fee712f6, type: 3}
+  m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ShowMaskGraphic: 0
+  m_Padding: {x: 0, y: 0, z: 0, w: 0}
+  m_Softness: {x: 0, y: 0}
 --- !u!1 &221483119473626771
 GameObject:
   m_ObjectHideFlags: 0
@@ -834,8 +835,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1047,8 +1048,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1464,7 +1465,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8300266011381695584}
   m_HandleRect: {fileID: 4413220172885515415}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0.99999905
   m_Size: 0.895
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -1544,8 +1545,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -5044,8 +5045,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 2150773298
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 0.5}
+    rgba: 2164260863
+  m_fontColor: {r: 1, g: 1, b: 1, a: 0.5}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -7525,7 +7526,7 @@ MonoBehaviour:
   characterValues: {fileID: 6908361564922073646}
   crafting: {fileID: 6044450304141551363}
   equippedItemRoot: {fileID: 6389068181120928608}
-  replicatedEquippedItemRoot: {fileID: 348508103958163370}
+  observerEquippedItemRoot: {fileID: 348508103958163370}
   testThrowPower: 10
   testThrowTorque: 6
   logEquippedItem: 0

@@ -302,9 +302,9 @@ public class INV_HotBar : MonoBehaviour
             mr.sharedMaterial = inst.data.Material;
 
             // hotbar uses inventory visual setup
-            visualRoot.localPosition = inst.data.InventoryMeshOffset;
-            visualRoot.localRotation = Quaternion.Euler(inst.data.InventoryMeshRotation);
-            visualRoot.localScale = Vector3.one * inst.data.InventoryMeshScale;
+            visualRoot.localPosition = inst.data.HotbarMeshOffset;
+            visualRoot.localRotation = Quaternion.Euler(inst.data.HotbarMeshRotation);
+            visualRoot.localScale = Vector3.one * inst.data.HotbarMeshScale;
         }
     }
 

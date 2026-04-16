@@ -60,7 +60,7 @@ public class INV_ItemDrop : NetworkBehaviour
             return;
         }
 
-        
+
         networkItemId.Value = itemId;
 
 
@@ -248,29 +248,47 @@ public class INV_ItemDrop : NetworkBehaviour
         }
 
         // if this pickup is also space junk, remove it from the debris manager first
+        // only do this once we know the pickup is actually going through
         SP_SpaceJunk junk = GetComponent<SP_SpaceJunk>();
-        if (junk != null)
+
+        bool isHostPlayerPickup = senderClientId == NetworkManager.ServerClientId;
+
+        if (isHostPlayerPickup)
         {
-            junk.RemoveFromSpaceManager();
+            INV_Inventory playerInventory = player.GetComponentInChildren<INV_Inventory>();
+            if (playerInventory == null)
+            {
+                Debug.LogError("Couldn't find INV_Inventory on Player!", this);
+                return;
+            }
+
+            if (!playerInventory.TryAddItem(item)) { return; }
+
+            if (junk != null) { junk.RemoveFromSpaceManager(); }
+
+            if (NetworkObject == null)
+            {
+                Debug.LogError("INV_ItemDrop is missing NetworkObject!", this);
+                return;
+            }
+
+            if (!NetworkObject.IsSpawned)
+            {
+                Debug.LogWarning("Tried to despawn a pickup that is not spawned.", this);
+                return;
+            }
+
+            NetworkObject.Despawn(true);
+            return;
         }
 
-        playerInvNet.AddItemLocalRpc(
+        // ask the owning client to try add it locally first
+        // only despawn after that client confirms success back to the server
+        playerInvNet.TryAddWorldPickupLocalRpc
+        (
             itemId,
+            NetworkObject,
             RpcTarget.Single(senderClientId, RpcTargetUse.Temp)
         );
-
-        if (NetworkObject == null)
-        {
-            Debug.LogError("INV_ItemDrop is missing NetworkObject!", this);
-            return;
-        }
-
-        if (!NetworkObject.IsSpawned)
-        {
-            Debug.LogWarning("Tried to despawn a pickup that is not spawned.", this);
-            return;
-        }
-
-        NetworkObject.Despawn(true);
     }
 }

@@ -136,6 +136,11 @@ public class CC_CharacterValues : MonoBehaviour
     public float maxHealth = 100f;
     [SerializeField] float health = 100f;
 
+    private float damageToTakePerTick = 0;
+    private float damagePerSecRuntime = 0;
+    private int damageDebuffTicks = 0;
+    private float currentDamageTimer = 0;
+
     [Header("Stamina")]
     public float maxStamina = 100f;
     [SerializeField] float stamina = 100f;
@@ -263,6 +268,7 @@ public class CC_CharacterValues : MonoBehaviour
     {
         if (CanSimulateLocally())
         {
+            TickDamage();
             TickHunger();
             TickThirst();
 
@@ -456,6 +462,51 @@ public class CC_CharacterValues : MonoBehaviour
         RefreshUI();
         UpdateDeathScreenState();
     }
+    /// <summary>
+    /// Damage This Player over time.
+    /// Damage thrown in will be applied for every damagePerSec until debuffTicks is 0.
+    /// If You need instant just use RemoveHealth().
+    /// Keep in mind that if a request to take damage is received, it will update the current values the player is receiving unless the new one is weaker than the old.
+    /// </summary>
+    /// <param name="damage">How much damage the player receives per tick.</param>
+    /// <param name="damagePerSec">How many seconds per tick of damage.</param>
+    /// <param name="debuffTicks">How many times this damage will trigger.</param>
+    public void TakeDamage(float damage, float damagePerSec, int debuffTicks)
+    {
+        damage = Mathf.Clamp(damage, 0.1f, 5);
+        damagePerSec = Mathf.Clamp(damagePerSec, 0.1f, 5);
+        debuffTicks = Mathf.Clamp(debuffTicks, 1, 50);
+
+        // if any variable is greater than the current variables just add it on.
+        // pretty simple way to do poison damage.
+        // if we do want it to be multiple debuffs it wont be hard to do.
+        if (damagePerSec > damagePerSecRuntime)
+        {
+            damagePerSecRuntime = damagePerSec;
+        }
+        if (debuffTicks > damageDebuffTicks)
+        {
+            damageDebuffTicks = debuffTicks;
+        }
+        if (damage > damageToTakePerTick)
+        {
+            damageToTakePerTick = damage;
+        }
+    }
+
+    public void TickDamage()
+    {
+        // if we've used all of our poison damage ticks, don't do anything.
+        if (damageDebuffTicks <= 0) { return; }
+        currentDamageTimer -= Time.deltaTime;
+
+        if (currentDamageTimer <= 0)
+        {
+            RemoveHealth(damageToTakePerTick);
+            currentDamageTimer = damagePerSecRuntime;
+            damageDebuffTicks--;
+        }
+    }
 
     public void Kill()
     {
@@ -532,9 +583,9 @@ public class CC_CharacterValues : MonoBehaviour
         StartCoroutine(TickHungerDelay());
     }
 
-    private IEnumerator TickHungerDelay() 
+    private IEnumerator TickHungerDelay()
     {
-        while (hungerDrainDelay > 0) 
+        while (hungerDrainDelay > 0)
         {
             hungerDrainDelay -= Time.deltaTime;
             yield return null;
@@ -571,9 +622,9 @@ public class CC_CharacterValues : MonoBehaviour
     public void TickThirst(bool drain = true)
     {
         thirstDrainDelay = Mathf.Clamp(thirstDrainDelay, 0f, maxThirstDrainDelay);
-        if (thirstDrainDelay > 0) 
+        if (thirstDrainDelay > 0)
         {
-            return; 
+            return;
         }
         if (!drain)
         {

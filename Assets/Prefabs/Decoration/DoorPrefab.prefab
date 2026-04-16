@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4568531008954945485}
   - component: {fileID: 1041231989261616578}
   - component: {fileID: 5345500342861485330}
+  - component: {fileID: 7757828218109351565}
   m_Layer: 6
   m_Name: DoorPrefab
   m_TagString: Untagged
@@ -72,7 +73,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3336720753
+  GlobalObjectIdHash: 3757138520
   InScenePlacedSourceGlobalObjectIdHash: 3757138520
   DeferredDespawnTick: 0
   Ownership: 1
@@ -127,6 +128,21 @@ MonoBehaviour:
       Synchronize: 1
       ParameterType: 9
   AnimatorParametersExpanded: 0
+--- !u!114 &7757828218109351565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1642486582369418354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42b80fcbe1c610147aa8cdd19da06b86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  targetAnimator: {fileID: 4568531008954945485}
+  networkAnimator: {fileID: 5345500342861485330}
 --- !u!1 &5716111885417030974
 GameObject:
   m_ObjectHideFlags: 0
@@ -440,8 +456,8 @@ MonoBehaviour:
     onInteract:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: SetTrigger
           m_Mode: 5
           m_Arguments:
@@ -452,8 +468,8 @@ MonoBehaviour:
             m_StringArgument: Open
             m_BoolArgument: 0
           m_CallState: 2
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: ResetTrigger
           m_Mode: 5
           m_Arguments:
@@ -473,8 +489,8 @@ MonoBehaviour:
     onInteract:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: SetTrigger
           m_Mode: 5
           m_Arguments:
@@ -485,8 +501,8 @@ MonoBehaviour:
             m_StringArgument: Close
             m_BoolArgument: 0
           m_CallState: 2
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: ResetTrigger
           m_Mode: 5
           m_Arguments:
@@ -503,8 +519,8 @@ MonoBehaviour:
     rewireInteractListenersOnNetworkSpawn: 0
     invokeLegacyInteractEvent: 1
   oneShot: 0
-  requiresHold: 0
-  holdTime: 0
+  requiresHold: 1
+  holdTime: 999
   onStartHold:
     m_PersistentCalls:
       m_Calls: []
@@ -516,7 +532,7 @@ MonoBehaviour:
       m_Calls: []
   openMenuOnHold: 1
   interactMenuTitle: Door
-  menuHoldTime: 0.35
+  menuHoldTime: 0
 --- !u!64 &3948076971737082788
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -634,8 +650,8 @@ MonoBehaviour:
     onInteract:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: SetTrigger
           m_Mode: 5
           m_Arguments:
@@ -646,8 +662,8 @@ MonoBehaviour:
             m_StringArgument: Open
             m_BoolArgument: 0
           m_CallState: 2
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: ResetTrigger
           m_Mode: 5
           m_Arguments:
@@ -667,8 +683,8 @@ MonoBehaviour:
     onInteract:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: SetTrigger
           m_Mode: 5
           m_Arguments:
@@ -679,8 +695,8 @@ MonoBehaviour:
             m_StringArgument: Close
             m_BoolArgument: 0
           m_CallState: 2
-        - m_Target: {fileID: 4568531008954945485}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        - m_Target: {fileID: 7757828218109351565}
+          m_TargetAssemblyTypeName: NET_AnimatorSync, Assembly-CSharp
           m_MethodName: ResetTrigger
           m_Mode: 5
           m_Arguments:
@@ -697,8 +713,8 @@ MonoBehaviour:
     rewireInteractListenersOnNetworkSpawn: 0
     invokeLegacyInteractEvent: 1
   oneShot: 0
-  requiresHold: 0
-  holdTime: 0
+  requiresHold: 1
+  holdTime: 999
   onStartHold:
     m_PersistentCalls:
       m_Calls: []
@@ -710,7 +726,7 @@ MonoBehaviour:
       m_Calls: []
   openMenuOnHold: 1
   interactMenuTitle: Door
-  menuHoldTime: 0.35
+  menuHoldTime: 0
 --- !u!64 &2919942081832881622
 MeshCollider:
   m_ObjectHideFlags: 0

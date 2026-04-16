@@ -629,6 +629,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             monitoringMenuRoot.SetActive(state);
         }
 
+        if (state)
+        {
+            inventory.RefreshVisualsGrid();
+        }
+
         // make sure chest visuals are cleaned up when the menu closes
         if (!state && inventory != null)
         {
