@@ -74,7 +74,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 6ac8c56f15d7b444b96a5208d3b0d45d, type: 2}
     - target: {fileID: 919132149155446097, guid: b8c3a9443bbfdf340b27a78d3b5b85bc, type: 3}
       propertyPath: m_Name
-      value: island parkour
+      value: Island Parkour
       objectReference: {fileID: 0}
     - target: {fileID: 1189174723371476060, guid: b8c3a9443bbfdf340b27a78d3b5b85bc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -122,12 +122,20 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 30ca2eaa4e4915c4f951f943d8187cf0, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: b8c3a9443bbfdf340b27a78d3b5b85bc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4442956629054010676}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b8c3a9443bbfdf340b27a78d3b5b85bc, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3769977818989010175}
   m_SourcePrefab: {fileID: 100100000, guid: b8c3a9443bbfdf340b27a78d3b5b85bc, type: 3}
+--- !u!4 &203347934051151540 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b8c3a9443bbfdf340b27a78d3b5b85bc, type: 3}
+  m_PrefabInstance: {fileID: 385293764250356063}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &691794517419750414 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: b8c3a9443bbfdf340b27a78d3b5b85bc, type: 3}
@@ -155,3 +163,65 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!1001 &564044927128740668
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 203347934051151540}
+    m_Modifications:
+    - target: {fileID: 766809813825591996, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_Name
+      value: Debris Elite Chest
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.57
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 26.219
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 70.49
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+--- !u!4 &4442956629054010676 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
+  m_PrefabInstance: {fileID: 564044927128740668}
+  m_PrefabAsset: {fileID: 0}
