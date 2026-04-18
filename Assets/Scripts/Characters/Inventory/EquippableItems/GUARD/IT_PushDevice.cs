@@ -6,14 +6,16 @@ public class IT_PushDevice : CC_INV_UsableItems
     private string itemId;
 
     [SerializeField] private Transform muzzlePoint;
-    public Vector3 pushVolumeBounds = new Vector3(5f, 5f, 10f);
-    public float maxPushForce = 10f;
-    public float torqueForce = 1f;
-    public float chargeTime = 2f;
-    public float cooldown = 0.5f;
-    public float pushForce = 0f;
-    public float chargingTimer = 0f;
-    public float cooldownTimer = 0f;
+    [SerializeField] private Vector3 pushVolumeBounds = new Vector3(5f, 5f, 10f);
+    [SerializeField] private float pushVolumeForwardOffset = 0f;
+    [SerializeField] private float maxPushForce = 10f;
+    [SerializeField] private float torqueForce = 1f;
+    [SerializeField] private float chargeTime = 2f;
+    [SerializeField] private float cooldown = 0.5f;
+    [SerializeField] private bool ignoreSelf = true;
+    private float pushForce = 0f;
+    private float chargingTimer = 0f;
+    private float cooldownTimer = 0f;
 
     private NetworkObject playerWhoSent;
 
@@ -49,12 +51,12 @@ public class IT_PushDevice : CC_INV_UsableItems
 
     public override void OnUseReleased(NetworkObjectReference netObjRef) {
         cooldownTimer = cooldown;
-        Collider[] colliders = Physics.OverlapBox(muzzlePoint.transform.position + (pushVolumeBounds.z / 2) * muzzlePoint.forward, pushVolumeBounds / 2, Quaternion.LookRotation(muzzlePoint.forward));
+        Collider[] colliders = Physics.OverlapBox(muzzlePoint.transform.position + (pushVolumeForwardOffset + pushVolumeBounds.z / 2) * muzzlePoint.forward, pushVolumeBounds / 2, Quaternion.LookRotation(muzzlePoint.forward));
         foreach (Collider collider in colliders)
         {
             if (collider.GetComponent<CC_Movement>())
             {
-                PushPlayerRpc(netObjRef, playerWhoSent); 
+                PushPlayerRpc(collider, playerWhoSent); 
             }
             else
             {
@@ -79,23 +81,15 @@ public class IT_PushDevice : CC_INV_UsableItems
     }
 
     [Rpc(SendTo.Everyone)]
-    private void PushPlayerRpc(NetworkObjectReference netObjRef, NetworkObjectReference us)
+    private void PushPlayerRpc(Collider col, NetworkObjectReference us)
     {
-        if (netObjRef.TryGet(out NetworkObject netObj) && us.TryGet(out NetworkObject usNetObj) && netObj != usNetObj)
-        {
-            CC_Movement player = netObj.GetComponent<CC_Movement>();
+        if (us.TryGet(out NetworkObject usNetObj) && (col.GetComponent<CC_Movement>() != usNetObj.GetComponent<CC_Movement>() || !ignoreSelf))
+        { 
+            CC_Movement player = col.GetComponent<CC_Movement>();
             if (player != null)
             {
-                player.Body.AddForce(muzzlePoint.forward * pushForce);
+                player.PushSelf(muzzlePoint.forward * pushForce);
             }
-        }
-    }
-
-    private void Start()
-    {
-        if (!transform.root.GetComponent<CC_CharacterPlayerController>().enabled)
-        {
-            //this.enabled = false;
         }
     }
 
@@ -106,6 +100,6 @@ public class IT_PushDevice : CC_INV_UsableItems
 
     private void OnDrawGizmos()
     {
-        CustomGizmos.DrawBox(muzzlePoint.transform.position + (pushVolumeBounds.z / 2) * muzzlePoint.forward, Quaternion.LookRotation(muzzlePoint.forward), pushVolumeBounds, Color.cyan);
+        CustomGizmos.DrawBox(muzzlePoint.transform.position + (pushVolumeForwardOffset + pushVolumeBounds.z / 2) * muzzlePoint.forward, Quaternion.LookRotation(muzzlePoint.forward), pushVolumeBounds, Color.cyan);
     }
 }

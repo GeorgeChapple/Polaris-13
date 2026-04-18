@@ -25,7 +25,7 @@ MonoBehaviour:
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
-  amountSpawnedInChestRange: {x: 1, y: 5}
+  amountSpawnedInChestRange: {x: 0, y: 0}
   chanceOfSpawnAsDebris: 40
   biomeProbabilities: []
   stackable: 0
@@ -38,15 +38,18 @@ MonoBehaviour:
   mesh: {fileID: 7903581986307672064, guid: 9e7031f0b2561224780f8edf549ff445, type: 3}
   material: {fileID: 0}
   equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
-  applyEquippedPrefabVisuals: 0
+  applyEquippedPrefabVisuals: 1
   forwardAxisRot: 2
   inventoryMeshOffset: {x: -5, y: -7.66, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
   inventoryMeshScale: 460.7
+  hotbarMestOffset: {x: 5, y: 10, z: -20}
+  hotbarMeshRotation: {x: 0, y: 0, z: 0}
+  hotbarMeshScale: 140
   dropMeshScale: 5
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
-  equippedMeshScale: 0.3
+  equippedMeshScale: 1
   craftingMeshOffset: {x: 0, y: 0, z: 0}
   craftingMeshRotation: {x: 0, y: 0, z: 0}
   craftingMeshScale: 100

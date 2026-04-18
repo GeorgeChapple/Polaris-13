@@ -24,8 +24,8 @@ MonoBehaviour:
   thirstDrainDelay: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
-  chanceOfSpawnInChest: 15
-  amountSpawnedInChestRange: {x: 1, y: 5}
+  chanceOfSpawnInChest: 0
+  amountSpawnedInChestRange: {x: 0, y: 0}
   chanceOfSpawnAsDebris: 10
   biomeProbabilities: []
   stackable: 0
@@ -40,12 +40,15 @@ MonoBehaviour:
   equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
   applyEquippedPrefabVisuals: 1
   forwardAxisRot: 0
-  inventoryMeshOffset: {x: 0, y: 0, z: -20}
+  inventoryMeshOffset: {x: -19.3, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 90, z: 0}
   inventoryMeshScale: 120
+  hotbarMestOffset: {x: 0, y: 20, z: -20}
+  hotbarMeshRotation: {x: 0, y: 90, z: 0}
+  hotbarMeshScale: 70
   dropMeshScale: 2
   equippedMeshOffset: {x: 0, y: 0, z: 0}
-  equippedMeshRotation: {x: 0, y: 0, z: 0}
+  equippedMeshRotation: {x: 0, y: 90, z: 0}
   equippedMeshScale: 0.3
   craftingMeshOffset: {x: 0, y: 0, z: -20}
   craftingMeshRotation: {x: 0, y: 0, z: 0}

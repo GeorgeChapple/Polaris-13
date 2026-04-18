@@ -16,7 +16,7 @@ MonoBehaviour:
   m_name: Conductive Alloy
   description: An extremely conductive mix of silver and copper
   itemType: 4
-  itemRarity: 0
+  itemRarity: 2
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
@@ -46,10 +46,13 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: e4bb2fe6da36efb4399f644170381b5e, type: 2}
   equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
   applyEquippedPrefabVisuals: 1
-  forwardAxisRot: 2
+  forwardAxisRot: 0
   inventoryMeshOffset: {x: -6, y: -3.53, z: -20}
-  inventoryMeshRotation: {x: 0, y: 90, z: 0}
+  inventoryMeshRotation: {x: 90, y: 90, z: 0}
   inventoryMeshScale: 300
+  hotbarMestOffset: {x: 5, y: 15, z: -20}
+  hotbarMeshRotation: {x: 0, y: 90, z: 0}
+  hotbarMeshScale: 200
   dropMeshScale: 3
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}

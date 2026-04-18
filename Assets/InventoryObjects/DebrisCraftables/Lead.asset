@@ -16,7 +16,7 @@ MonoBehaviour:
   m_name: Lead
   description: A bar of lead
   itemType: 4
-  itemRarity: 0
+  itemRarity: 2
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
@@ -53,11 +53,14 @@ MonoBehaviour:
   inventoryMeshOffset: {x: 0, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 180, z: 0}
   inventoryMeshScale: 300
+  hotbarMestOffset: {x: 5, y: 15, z: -20}
+  hotbarMeshRotation: {x: 0, y: 0, z: 0}
+  hotbarMeshScale: 150
   dropMeshScale: 2
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 180, z: 0}
   equippedMeshScale: 1
-  craftingMeshOffset: {x: 0, y: 0, z: 0}
+  craftingMeshOffset: {x: 0, y: 5, z: 0}
   craftingMeshRotation: {x: 0, y: 180, z: 0}
   craftingMeshScale: 200
   inventorySpaceShape:

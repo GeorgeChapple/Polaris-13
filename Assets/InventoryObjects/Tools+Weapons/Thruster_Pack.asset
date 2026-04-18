@@ -16,12 +16,14 @@ MonoBehaviour:
   m_name: Thruster Pack
   description: Allows more efficient space travel
   itemType: 3
-  itemRarity: 0
+  itemRarity: 2
   durability: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
+  retailPrice: 0
+  shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
   amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
@@ -42,11 +44,16 @@ MonoBehaviour:
   icon: {fileID: 0}
   mesh: {fileID: 0}
   material: {fileID: 0}
+  equippedPrefab: {fileID: 0}
+  applyEquippedPrefabVisuals: 0
+  forwardAxisRot: 2
   inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
   inventoryMeshScale: 1
-  equippedPrefab: {fileID: 0}
-  applyEquippedPrefabVisuals: 0
+  hotbarMestOffset: {x: 0, y: 0, z: 0}
+  hotbarMeshRotation: {x: 0, y: 0, z: 0}
+  hotbarMeshScale: 1
+  dropMeshScale: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 1
