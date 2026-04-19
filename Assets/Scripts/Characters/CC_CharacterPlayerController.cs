@@ -85,9 +85,14 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         get
         {
 #if ENABLE_INPUT_SYSTEM
-            return playerInput != null && playerInput.currentControlScheme == "KeyboardMouse";
-#else
+            if (Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
+            {
+                return true;
+            }
+
             return false;
+#else
+        return false;
 #endif
         }
     }
@@ -273,7 +278,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         if (values != null && values.isDead)
         {
-            if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
+            if (cameraController != null) { cameraController.TickLate(Vector2.zero, 0f, isMouse); }
             if (movement != null) { movement.TickLateState(); }
             if (interaction != null) { interaction.TickInteract(false); }
             return;
@@ -281,13 +286,13 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         if (inMenu)
         {
-            if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
+            if (cameraController != null) { cameraController.TickLate(Vector2.zero, 0f, isMouse); }
             if (movement != null) { movement.TickLateState(); }
             if (interaction != null) { interaction.TickInteract(false); }
             return;
         }
 
-        if (cameraController != null) { cameraController.TickLate(input.look, isMouse); }
+        if (cameraController != null) { cameraController.TickLate(input.look, input.roll, isMouse); }
         if (movement != null) { movement.TickLateState(); }
         if (interaction != null) { interaction.TickInteract(input.interact); }
     }
