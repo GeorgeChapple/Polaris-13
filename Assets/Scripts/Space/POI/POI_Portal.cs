@@ -128,7 +128,7 @@ public class POI_Portal : NetworkBehaviour
 
     private void ToggleSpaceMovement(AddToSpaceJunk toggle, GameObject obj)
     {
-        if (toggle == AddToSpaceJunk.none)
+        if (toggle == AddToSpaceJunk.none || obj.tag == "Space")
         {
             return;
         }

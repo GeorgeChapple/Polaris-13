@@ -2351,7 +2351,6 @@ GameObject:
   m_Component:
   - component: {fileID: 709164550}
   - component: {fileID: 709164552}
-  - component: {fileID: 709164551}
   - component: {fileID: 709164553}
   - component: {fileID: 709164555}
   - component: {fileID: 709164554}
@@ -2377,28 +2376,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &709164551
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 709164548}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!114 &709164552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2441,9 +2418,11 @@ MonoBehaviour:
   rocket: {fileID: 0}
   spawnerSettings:
   - {fileID: 11400000, guid: 618e5ee6909c13a47a595d6359a40e5c, type: 2}
+  - {fileID: 11400000, guid: 1a399ccc00b159a41b49e69b519f4581, type: 2}
   cannotTeleport: []
   spaceBounds: {x: 1000, y: 1000, z: 400}
   maxDebrisReached: 0
+  debrisDebugList: []
 --- !u!65 &709164554
 BoxCollider:
   m_ObjectHideFlags: 0

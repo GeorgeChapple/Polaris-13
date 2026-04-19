@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,7 @@ public class SP_SpaceManager : NetworkBehaviour
     [HideInInspector] public List<Collider> cannotTeleport = new List<Collider>();
     public Vector3 spaceBounds = new Vector3(20, 20, 20);
     [HideInInspector] public bool maxDebrisReached;
+    [SerializeField] private List<GameObject> debrisDebugList = new List<GameObject>();
 
     private void Awake()
     {
@@ -43,6 +45,7 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void InitialiseComponents()
     {
+        gameObject.tag = "Space";
         GetComponent<BoxCollider>().size = spaceBounds;
         rocket = FindFirstObjectByType<RS_Move>();
     }
@@ -76,6 +79,12 @@ public class SP_SpaceManager : NetworkBehaviour
         //{
         //    foundObjects.Add(col.gameObject);
         //}
+
+        debrisDebugList.Clear();
+        foreach(GameObject obj in debris.Keys)
+        {
+            debrisDebugList.Add(obj);
+        }
     }
 
     private void OnTriggerExit(Collider col)
