@@ -30,45 +30,40 @@ MonoBehaviour:
   amountSpawnedInChestRange: {x: 1, y: 5}
   chanceOfSpawnAsDebris: 0
   biomeProbabilities: []
-  stackable: 1
-  maxStack: 3
+  stackable: 0
+  maxStack: 1
   craftable: 1
-  canCraftAnywhere: 1
-  craftingRequirements:
-  - item: {fileID: 11400000, guid: 6969b1a448f6d844dab9db5bedc20ad5, type: 2}
-    amount: 1
+  canCraftAnywhere: 0
+  craftingRequirements: []
   craftingRecipes:
-  - recipeName: TestItem 1
+  - recipeName: G.U.A.R.D
     requirements:
-    - item: {fileID: 11400000, guid: 6969b1a448f6d844dab9db5bedc20ad5, type: 2}
-      amount: 1
-    - item: {fileID: 11400000, guid: 855f6c5dff7711244bb2d75cf852567b, type: 2}
-      amount: 1
-    amountGiven: 1
-  - recipeName: TestItem 1
-    requirements:
-    - item: {fileID: 11400000, guid: 6969b1a448f6d844dab9db5bedc20ad5, type: 2}
-      amount: 1
-    - item: {fileID: 11400000, guid: 8c42545ce6ccc5843b9f3b1c45235ae1, type: 2}
-      amount: 1
+    - item: {fileID: 11400000, guid: 194c739935d7e684da91d2adfe3e3215, type: 2}
+      amount: 2
+    - item: {fileID: 11400000, guid: 7706ef987409a2040b335a94929d90ff, type: 2}
+      amount: 2
     amountGiven: 1
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
-  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  mesh: {fileID: 1375436555846179411, guid: 38bace38e5341c84b8944ac14739eeb1, type: 3}
   material: {fileID: 2100000, guid: 0b6182d223b1d834094e501121887da3, type: 2}
   equippedPrefab: {fileID: 5739193541798090591, guid: 477a7d20586d9e341adf6b4bbd661434, type: 3}
   applyEquippedPrefabVisuals: 1
   forwardAxisRot: 2
-  inventoryMeshOffset: {x: 0, y: 0, z: -20}
+  inventoryMeshOffset: {x: -12.87, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 80
+  inventoryMeshScale: 120
+  hotbarMestOffset: {x: 5, y: 10, z: -20}
+  hotbarMeshRotation: {x: 0, y: 0, z: 90}
+  hotbarMeshScale: 48
   dropMeshScale: 1
-  equippedMeshOffset: {x: 0, y: 0, z: 0}
-  equippedMeshRotation: {x: 0, y: 0, z: 0}
-  equippedMeshScale: 0.3
-  craftingMeshOffset: {x: 0, y: 0, z: -20}
-  craftingMeshRotation: {x: 0, y: 0, z: 0}
-  craftingMeshScale: 80
+  equippedMeshOffset: {x: -0.1, y: 0, z: 0}
+  equippedMeshRotation: {x: 270, y: 0, z: 0}
+  equippedMeshScale: 0.4
+  craftingMeshOffset: {x: 15, y: 5, z: -20}
+  craftingMeshRotation: {x: 0, y: 0, z: 90}
+  craftingMeshScale: 50
   inventorySpaceShape:
   - ++
-  - +-
+  - ++
+  - ++
   inventorySpace: {x: 2, y: 1}
