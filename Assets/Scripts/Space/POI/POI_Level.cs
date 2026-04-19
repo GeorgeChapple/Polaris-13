@@ -36,8 +36,7 @@ public class POI_Level : NetworkBehaviour
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
         GetComponent<BoxCollider>().size = bounds;
-        mainPortal.portalEntered.AddListener(AddPlayers);
-        exitPortal.portalEntered.AddListener(SubtractPlayers);
+        
     }
 
     private void Update()
@@ -52,6 +51,14 @@ public class POI_Level : NetworkBehaviour
         }
     }
 
+    private void OnTriggerEnter(Collider col)
+    {
+        if (IsServer && col.GetComponent<CC_Movement>())
+        {
+            players++;
+        }
+    }
+
     private void OnTriggerExit(Collider col)
     {
         StartCoroutine(WaitTriggerExit(col));
@@ -59,6 +66,7 @@ public class POI_Level : NetworkBehaviour
 
     private IEnumerator WaitTriggerExit(Collider col)
     {
+        Debug.Log("GAY");
         float t = 0;
         while (t < 0.1f)
         {
@@ -70,12 +78,21 @@ public class POI_Level : NetworkBehaviour
         {
             if (netObj.GetComponent<CC_Movement>() && !spaceManager.cannotTeleport.Contains(col))
             {
+                if (IsServer)
+                {
+                    players--;
+                }
                 PlayerExitSpacePOIRpc(netObj);
             }
             else
             {
                 ObjectExitSpacePOIRpc(netObj);
             }
+        } 
+        if (!spaceManager.cannotTeleport.Contains(col))
+        {
+            spaceManager.cannotTeleport.Add(col);
+            StartCoroutine(ObjectTeleportCooldown(0.5f, col));
         }
     }
 
@@ -104,6 +121,10 @@ public class POI_Level : NetworkBehaviour
                 if (exitPortal.destination != null)
                 {
                     player.Body.position = exitPortal.destination.position;
+                    if (!spaceManager.debris.ContainsKey(netObj.gameObject))
+                    {
+                        spaceManager.debris.Add(netObj.gameObject, spaceManager.rocket.worldDirection);
+                    }
                 }
                 else
                 { 
@@ -113,49 +134,22 @@ public class POI_Level : NetworkBehaviour
         }
     }
 
-    private void AddPlayers()
+    private IEnumerator ObjectTeleportCooldown(float duration, Collider col)
     {
-        players++;
-    }
-
-    private void SubtractPlayers()
-    {
-        players--;
+        float t = 0;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
+        if (col != null)
+        {
+            spaceManager.cannotTeleport.Remove(col);
+        }
     }
 
     private void OnDrawGizmos()
     {
-        DrawBox(transform.position, transform.rotation, bounds, Color.red);
-    }
-
-    public void DrawBox(Vector3 pos, Quaternion rot, Vector3 scale, Color c)
-    {
-        Matrix4x4 m = new Matrix4x4();
-        m.SetTRS(pos, rot, scale);
-
-        var point1 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, 0.5f));
-        var point2 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, 0.5f));
-        var point3 = m.MultiplyPoint(new Vector3(0.5f, -0.5f, -0.5f));
-        var point4 = m.MultiplyPoint(new Vector3(-0.5f, -0.5f, -0.5f));
-
-        var point5 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, 0.5f));
-        var point6 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, 0.5f));
-        var point7 = m.MultiplyPoint(new Vector3(0.5f, 0.5f, -0.5f));
-        var point8 = m.MultiplyPoint(new Vector3(-0.5f, 0.5f, -0.5f));
-
-        Debug.DrawLine(point1, point2, c);
-        Debug.DrawLine(point2, point3, c);
-        Debug.DrawLine(point3, point4, c);
-        Debug.DrawLine(point4, point1, c);
-
-        Debug.DrawLine(point5, point6, c);
-        Debug.DrawLine(point6, point7, c);
-        Debug.DrawLine(point7, point8, c);
-        Debug.DrawLine(point8, point5, c);
-
-        Debug.DrawLine(point1, point5, c);
-        Debug.DrawLine(point2, point6, c);
-        Debug.DrawLine(point3, point7, c);
-        Debug.DrawLine(point4, point8, c);
+        CustomGizmos.DrawBox(transform.position, transform.rotation, bounds, Color.red);
     }
 }
