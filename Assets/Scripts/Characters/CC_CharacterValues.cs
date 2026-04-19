@@ -85,10 +85,7 @@ public class CC_CharacterValues : MonoBehaviour
                 currentAlpha = Mathf.Lerp(currentAlpha, 1f, alphaLerpInSpeed * Time.deltaTime);
 
                 // snap close values to 1
-                if (currentAlpha >= 0.99f)
-                {
-                    currentAlpha = 1f;
-                }
+                if (currentAlpha >= 0.99f) { currentAlpha = 1f; }
 
                 if (hideTimer > 0f)
                 {
@@ -105,10 +102,7 @@ public class CC_CharacterValues : MonoBehaviour
                 currentAlpha = Mathf.Lerp(currentAlpha, 0f, alphaLerpOutSpeed * Time.deltaTime);
 
                 // snap small values to 0
-                if (currentAlpha <= 0.01f)
-                {
-                    currentAlpha = 0f;
-                }
+                if (currentAlpha <= 0.01f) { currentAlpha = 0f; }
             }
 
             SetAlpha(currentAlpha);
@@ -136,10 +130,13 @@ public class CC_CharacterValues : MonoBehaviour
     public float maxHealth = 100f;
     [SerializeField] float health = 100f;
 
-    private float damageToTakePerTick = 0;
-    private float damagePerSecRuntime = 0;
+    private float damageToTakePerTick = 0f;
+    private float damageTickRateRuntime = 0f;
     private int damageDebuffTicks = 0;
-    private float currentDamageTimer = 0;
+    private float damageStartDelayRuntime = 0f;
+    private float currentDamageDelayTimer = 0f;
+    private float currentDamageTickTimer = 0f;
+    private bool damageStarted = false;
 
     [Header("Stamina")]
     public float maxStamina = 100f;
@@ -167,6 +164,20 @@ public class CC_CharacterValues : MonoBehaviour
     [SerializeField, Min(0)] private float hungerDrainDelay = 0f;
     [SerializeField] private float maxHungerDrainDelay = 120f;
 
+    [Header("Hunger Empty Damage Settings")]
+    [Tooltip("How long to wait after hunger becomes empty before taking damage.")]
+    public float hungerEmptyDamageDelay = 5f;
+
+    [Tooltip("How much damage to apply each tick while hunger is empty.")]
+    public float hungerEmptyDamagePerTick = 2f;
+
+    [Tooltip("How often to apply hunger empty damage.")]
+    public float hungerEmptyDamageTickRate = 1f;
+
+    float hungerEmptyDamageDelayTimer;
+    float hungerEmptyDamageTickTimer;
+    bool hungerEmptyDamageStarted;
+
     [Header("Thirst")]
     public float maxThirst = 100f;
     [SerializeField] private float thirst = 100f;
@@ -176,6 +187,20 @@ public class CC_CharacterValues : MonoBehaviour
     [SerializeField, Min(0)] private float thirstDrainDelay = 0f;
     [SerializeField] private float maxThirstDrainDelay = 120f;
 
+    [Header("Thirst Empty Damage Settings")]
+    [Tooltip("How long to wait after thirst becomes empty before taking damage.")]
+    public float thirstEmptyDamageDelay = 3f;
+
+    [Tooltip("How much damage to apply each tick while thirst is empty.")]
+    public float thirstEmptyDamagePerTick = 4f;
+
+    [Tooltip("How often to apply thirst empty damage.")]
+    public float thirstEmptyDamageTickRate = 1f;
+
+    float thirstEmptyDamageDelayTimer;
+    float thirstEmptyDamageTickTimer;
+    bool thirstEmptyDamageStarted;
+
     [Header("Oxygen")]
     public float maxOxygen = 100f;
     [SerializeField] float oxygen = 100f;
@@ -183,6 +208,20 @@ public class CC_CharacterValues : MonoBehaviour
     [Header("Oxygen Settings")]
     [Tooltip("Passive oxygen drain per second while in space mode.")]
     public float oxygenDrainPerSecondInSpace = 1f;
+
+    [Header("Oxygen Empty Damage Settings")]
+    [Tooltip("How long to wait after oxygen becomes empty before taking damage.")]
+    public float oxygenEmptyDamageDelay = 1f;
+
+    [Tooltip("How much damage to apply each tick while oxygen is empty.")]
+    public float oxygenEmptyDamagePerTick = 8f;
+
+    [Tooltip("How often to apply oxygen empty damage.")]
+    public float oxygenEmptyDamageTickRate = 1f;
+
+    float oxygenEmptyDamageDelayTimer;
+    float oxygenEmptyDamageTickTimer;
+    bool oxygenEmptyDamageStarted;
 
     [Header("Oxygen Thruster Settings")]
     [Tooltip("Base oxygen drain per second for thruster usage. Use the multipliers below per use case.")]
@@ -245,13 +284,33 @@ public class CC_CharacterValues : MonoBehaviour
         SetMaxStamina(maxStamina, true);
         SetMaxOxygen(maxOxygen, true);
 
-        isDead = (health <= 0f || oxygen <= 0f);
+        isDead = (health <= 0f);
 
         staminaRegenDelayTimer = 0f;
         staminaWasDepleted = (stamina <= 0f);
 
         oxygenRegenDelayTimer = 0f;
         oxygenWasDepleted = (oxygen <= 0f);
+
+        damageToTakePerTick = 0f;
+        damageTickRateRuntime = 0f;
+        damageDebuffTicks = 0;
+        damageStartDelayRuntime = 0f;
+        currentDamageDelayTimer = 0f;
+        currentDamageTickTimer = 0f;
+        damageStarted = false;
+
+        hungerEmptyDamageDelayTimer = 0f;
+        hungerEmptyDamageTickTimer = 0f;
+        hungerEmptyDamageStarted = false;
+
+        thirstEmptyDamageDelayTimer = 0f;
+        thirstEmptyDamageTickTimer = 0f;
+        thirstEmptyDamageStarted = false;
+
+        oxygenEmptyDamageDelayTimer = 0f;
+        oxygenEmptyDamageTickTimer = 0f;
+        oxygenEmptyDamageStarted = false;
 
         InitUI();
         RefreshUI(false);
@@ -271,9 +330,10 @@ public class CC_CharacterValues : MonoBehaviour
             TickDamage();
             TickHunger();
             TickThirst();
+            TickEmptyValueDamage();
 
             // rudimentary death checks
-            if (!isDead && (health <= 0f || oxygen <= 0f))
+            if (!isDead && health <= 0f)
             {
                 Kill();
             }
@@ -307,6 +367,18 @@ public class CC_CharacterValues : MonoBehaviour
         hungerDrainPerSecond = Mathf.Max(0f, hungerDrainPerSecond);
         thirstDrainPerSecond = Mathf.Max(0f, thirstDrainPerSecond);
 
+        hungerEmptyDamageDelay = Mathf.Max(0f, hungerEmptyDamageDelay);
+        hungerEmptyDamagePerTick = Mathf.Max(0f, hungerEmptyDamagePerTick);
+        hungerEmptyDamageTickRate = Mathf.Max(0.01f, hungerEmptyDamageTickRate);
+
+        thirstEmptyDamageDelay = Mathf.Max(0f, thirstEmptyDamageDelay);
+        thirstEmptyDamagePerTick = Mathf.Max(0f, thirstEmptyDamagePerTick);
+        thirstEmptyDamageTickRate = Mathf.Max(0.01f, thirstEmptyDamageTickRate);
+
+        oxygenEmptyDamageDelay = Mathf.Max(0f, oxygenEmptyDamageDelay);
+        oxygenEmptyDamagePerTick = Mathf.Max(0f, oxygenEmptyDamagePerTick);
+        oxygenEmptyDamageTickRate = Mathf.Max(0.01f, oxygenEmptyDamageTickRate);
+
         oxygenThrusterDrainPerSecond = Mathf.Max(0f, oxygenThrusterDrainPerSecond);
         oxygenDrainPerSecondInSpace = Mathf.Max(0f, oxygenDrainPerSecondInSpace);
         oxygenRegenPerSecond = Mathf.Max(0f, oxygenRegenPerSecond);
@@ -315,7 +387,7 @@ public class CC_CharacterValues : MonoBehaviour
 
         deathRespawnDelay = Mathf.Max(0f, deathRespawnDelay);
 
-        isDead = (health <= 0f || oxygen <= 0f);
+        isDead = (health <= 0f);
 
         InitUI();
         RefreshUI(false);
@@ -325,10 +397,7 @@ public class CC_CharacterValues : MonoBehaviour
 
     void UpdateDeathScreenState()
     {
-        if (deathScreenRoot == null)
-        {
-            return;
-        }
+        if (deathScreenRoot == null) { return; }
 
         if (deathScreenRoot.activeSelf != isDead)
         {
@@ -437,7 +506,7 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetHealth(float value, bool clamp = true)
     {
         health = clamp ? Mathf.Clamp(value, 0f, maxHealth) : value;
-        isDead = (health <= 0f || oxygen <= 0f);
+        isDead = (health <= 0f);
         RefreshUI();
         UpdateDeathScreenState();
     }
@@ -455,56 +524,188 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetMaxHealth(float value, bool refill = false)
     {
         maxHealth = Mathf.Max(0f, value);
+
         if (refill) { health = maxHealth; }
         else { health = Mathf.Clamp(health, 0f, maxHealth); }
 
-        isDead = (health <= 0f || oxygen <= 0f);
+        isDead = (health <= 0f);
         RefreshUI();
         UpdateDeathScreenState();
     }
+
     /// <summary>
     /// Damage This Player over time.
-    /// Damage thrown in will be applied for every damagePerSec until debuffTicks is 0.
+    /// Damage thrown in will be applied per tick until debuffTicks is 0.
     /// If You need instant just use RemoveHealth().
     /// Keep in mind that if a request to take damage is received, it will update the current values the player is receiving unless the new one is weaker than the old.
     /// </summary>
     /// <param name="damage">How much damage the player receives per tick.</param>
-    /// <param name="damagePerSec">How many seconds per tick of damage.</param>
+    /// <param name="damageTickRate">How many seconds between each tick of damage.</param>
     /// <param name="debuffTicks">How many times this damage will trigger.</param>
-    public void TakeDamage(float damage, float damagePerSec, int debuffTicks)
+    /// <param name="damageStartDelay">How long before the first damage tick starts.</param>
+    public void TakeDamage(float damage, float damageTickRate, int debuffTicks, float damageStartDelay = 0f)
     {
-        damage = Mathf.Clamp(damage, 0.1f, 5);
-        damagePerSec = Mathf.Clamp(damagePerSec, 0.1f, 5);
-        debuffTicks = Mathf.Clamp(debuffTicks, 1, 50);
+        damage = Mathf.Clamp(damage, 0.1f, 100f);
+        damageTickRate = Mathf.Clamp(damageTickRate, 0.01f, 60f);
+        debuffTicks = Mathf.Clamp(debuffTicks, 1, 500);
+        damageStartDelay = Mathf.Clamp(damageStartDelay, 0f, 60f);
 
         // if any variable is greater than the current variables just add it on.
         // pretty simple way to do poison damage.
         // if we do want it to be multiple debuffs it wont be hard to do.
-        if (damagePerSec > damagePerSecRuntime)
+        if (damageTickRate > damageTickRateRuntime) { damageTickRateRuntime = damageTickRate; }
+        if (debuffTicks > damageDebuffTicks) { damageDebuffTicks = debuffTicks; }
+        if (damage > damageToTakePerTick) { damageToTakePerTick = damage; }
+        if (damageStartDelay > damageStartDelayRuntime) { damageStartDelayRuntime = damageStartDelay; }
+
+        if (!damageStarted)
         {
-            damagePerSecRuntime = damagePerSec;
-        }
-        if (debuffTicks > damageDebuffTicks)
-        {
-            damageDebuffTicks = debuffTicks;
-        }
-        if (damage > damageToTakePerTick)
-        {
-            damageToTakePerTick = damage;
+            currentDamageDelayTimer = damageStartDelayRuntime;
+            currentDamageTickTimer = 0f;
+            damageStarted = true;
         }
     }
 
     public void TickDamage()
     {
         // if we've used all of our poison damage ticks, don't do anything.
-        if (damageDebuffTicks <= 0) { return; }
-        currentDamageTimer -= Time.deltaTime;
+        if (damageDebuffTicks <= 0)
+        {
+            damageToTakePerTick = 0f;
+            damageTickRateRuntime = 0f;
+            damageStartDelayRuntime = 0f;
+            currentDamageDelayTimer = 0f;
+            currentDamageTickTimer = 0f;
+            damageStarted = false;
+            return;
+        }
 
-        if (currentDamageTimer <= 0)
+        if (!damageStarted)
+        {
+            currentDamageDelayTimer = damageStartDelayRuntime;
+            currentDamageTickTimer = 0f;
+            damageStarted = true;
+        }
+
+        if (currentDamageDelayTimer > 0f)
+        {
+            currentDamageDelayTimer -= Time.deltaTime;
+            return;
+        }
+
+        currentDamageTickTimer -= Time.deltaTime;
+
+        if (currentDamageTickTimer <= 0f)
         {
             RemoveHealth(damageToTakePerTick);
-            currentDamageTimer = damagePerSecRuntime;
+            currentDamageTickTimer = damageTickRateRuntime;
             damageDebuffTicks--;
+        }
+    }
+
+    // damage the player while survival values are empty
+    void TickEmptyValueDamage()
+    {
+        if (isDead) { return; }
+
+        TickHungerEmptyDamage();
+        TickThirstEmptyDamage();
+        TickOxygenEmptyDamage();
+    }
+
+    void TickHungerEmptyDamage()
+    {
+        if (hunger > 0f)
+        {
+            hungerEmptyDamageDelayTimer = 0f;
+            hungerEmptyDamageTickTimer = 0f;
+            hungerEmptyDamageStarted = false;
+            return;
+        }
+
+        if (!hungerEmptyDamageStarted)
+        {
+            hungerEmptyDamageDelayTimer = hungerEmptyDamageDelay;
+            hungerEmptyDamageTickTimer = 0f;
+            hungerEmptyDamageStarted = true;
+        }
+
+        if (hungerEmptyDamageDelayTimer > 0f)
+        {
+            hungerEmptyDamageDelayTimer -= Time.deltaTime;
+            return;
+        }
+
+        hungerEmptyDamageTickTimer -= Time.deltaTime;
+
+        if (hungerEmptyDamageTickTimer <= 0f)
+        {
+            RemoveHealth(hungerEmptyDamagePerTick);
+            hungerEmptyDamageTickTimer = hungerEmptyDamageTickRate;
+        }
+    }
+
+    void TickThirstEmptyDamage()
+    {
+        if (thirst > 0f)
+        {
+            thirstEmptyDamageDelayTimer = 0f;
+            thirstEmptyDamageTickTimer = 0f;
+            thirstEmptyDamageStarted = false;
+            return;
+        }
+
+        if (!thirstEmptyDamageStarted)
+        {
+            thirstEmptyDamageDelayTimer = thirstEmptyDamageDelay;
+            thirstEmptyDamageTickTimer = 0f;
+            thirstEmptyDamageStarted = true;
+        }
+
+        if (thirstEmptyDamageDelayTimer > 0f)
+        {
+            thirstEmptyDamageDelayTimer -= Time.deltaTime;
+            return;
+        }
+
+        thirstEmptyDamageTickTimer -= Time.deltaTime;
+
+        if (thirstEmptyDamageTickTimer <= 0f)
+        {
+            RemoveHealth(thirstEmptyDamagePerTick);
+            thirstEmptyDamageTickTimer = thirstEmptyDamageTickRate;
+        }
+    }
+
+    void TickOxygenEmptyDamage()
+    {
+        if (oxygen > 0f)
+        {
+            oxygenEmptyDamageDelayTimer = 0f;
+            oxygenEmptyDamageTickTimer = 0f;
+            oxygenEmptyDamageStarted = false;
+            return;
+        }
+
+        if (!oxygenEmptyDamageStarted)
+        {
+            oxygenEmptyDamageDelayTimer = oxygenEmptyDamageDelay;
+            oxygenEmptyDamageTickTimer = 0f;
+            oxygenEmptyDamageStarted = true;
+        }
+
+        if (oxygenEmptyDamageDelayTimer > 0f)
+        {
+            oxygenEmptyDamageDelayTimer -= Time.deltaTime;
+            return;
+        }
+
+        oxygenEmptyDamageTickTimer -= Time.deltaTime;
+
+        if (oxygenEmptyDamageTickTimer <= 0f)
+        {
+            RemoveHealth(oxygenEmptyDamagePerTick);
+            oxygenEmptyDamageTickTimer = oxygenEmptyDamageTickRate;
         }
     }
 
@@ -545,6 +746,7 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetMaxHunger(float value, bool refill = false)
     {
         maxHunger = Mathf.Max(0f, value);
+
         if (refill) { hunger = maxHunger; }
         else { hunger = Mathf.Clamp(hunger, 0f, maxHunger); }
 
@@ -555,14 +757,9 @@ public class CC_CharacterValues : MonoBehaviour
     public void TickHunger(bool drain = true)
     {
         hungerDrainDelay = Mathf.Clamp(hungerDrainDelay, 0f, maxHungerDrainDelay);
-        if (hungerDrainDelay > 0)
-        {
-            return;
-        }
-        if (!drain)
-        {
-            return;
-        }
+
+        if (hungerDrainDelay > 0f) { return; }
+        if (!drain) { return; }
 
         DrainHunger(hungerDrainPerSecond * Time.deltaTime);
     }
@@ -585,7 +782,7 @@ public class CC_CharacterValues : MonoBehaviour
 
     private IEnumerator TickHungerDelay()
     {
-        while (hungerDrainDelay > 0)
+        while (hungerDrainDelay > 0f)
         {
             hungerDrainDelay -= Time.deltaTime;
             yield return null;
@@ -612,6 +809,7 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetMaxThirst(float value, bool refill = false)
     {
         maxThirst = Mathf.Max(0f, value);
+
         if (refill) { thirst = maxThirst; }
         else { thirst = Mathf.Clamp(thirst, 0f, maxThirst); }
 
@@ -622,14 +820,9 @@ public class CC_CharacterValues : MonoBehaviour
     public void TickThirst(bool drain = true)
     {
         thirstDrainDelay = Mathf.Clamp(thirstDrainDelay, 0f, maxThirstDrainDelay);
-        if (thirstDrainDelay > 0)
-        {
-            return;
-        }
-        if (!drain)
-        {
-            return;
-        }
+
+        if (thirstDrainDelay > 0f) { return; }
+        if (!drain) { return; }
 
         DrainThirst(thirstDrainPerSecond * Time.deltaTime);
     }
@@ -643,6 +836,7 @@ public class CC_CharacterValues : MonoBehaviour
     {
         return thirst > min;
     }
+
     public void AddThirstDelay(float delay)
     {
         thirstDrainDelay += delay;
@@ -651,7 +845,7 @@ public class CC_CharacterValues : MonoBehaviour
 
     private IEnumerator TickThirstDelay()
     {
-        while (thirstDrainDelay > 0)
+        while (thirstDrainDelay > 0f)
         {
             thirstDrainDelay -= Time.deltaTime;
             yield return null;
@@ -682,6 +876,7 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetMaxStamina(float value, bool refill = false)
     {
         maxStamina = Mathf.Max(0f, value);
+
         if (refill) { stamina = maxStamina; }
         else { stamina = Mathf.Clamp(stamina, 0f, maxStamina); }
 
@@ -708,14 +903,12 @@ public class CC_CharacterValues : MonoBehaviour
                 // regen delay after any drain
                 staminaRegenDelayTimer = staminaRegenDelay;
             }
+
             return;
         }
 
         // if we are not allowed to regen, hold timer
-        if (!allowRegen)
-        {
-            return;
-        }
+        if (!allowRegen) { return; }
 
         // regen after delay
         if (staminaRegenDelayTimer > 0f)
@@ -772,7 +965,6 @@ public class CC_CharacterValues : MonoBehaviour
 
         if (oxygen <= 0f) { oxygenWasDepleted = true; }
 
-        isDead = (health <= 0f || oxygen <= 0f);
         RefreshUI();
         UpdateDeathScreenState();
     }
@@ -790,12 +982,12 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetMaxOxygen(float value, bool refill = false)
     {
         maxOxygen = Mathf.Max(0f, value);
+
         if (refill) { oxygen = maxOxygen; }
         else { oxygen = Mathf.Clamp(oxygen, 0f, maxOxygen); }
 
         oxygenWasDepleted = (oxygen <= 0f);
 
-        isDead = (health <= 0f || oxygen <= 0f);
         RefreshUI();
         UpdateDeathScreenState();
     }
@@ -815,13 +1007,11 @@ public class CC_CharacterValues : MonoBehaviour
             {
                 oxygenRegenDelayTimer = oxygenRegenDelay;
             }
+
             return;
         }
 
-        if (!allowRegen)
-        {
-            return;
-        }
+        if (!allowRegen) { return; }
 
         if (oxygenRegenDelayTimer > 0f)
         {
@@ -834,10 +1024,7 @@ public class CC_CharacterValues : MonoBehaviour
 
     public void TickPassiveOxygenDrainInSpace(bool inSpace)
     {
-        if (!inSpace)
-        {
-            return;
-        }
+        if (!inSpace) { return; }
 
         DrainOxygen(oxygenDrainPerSecondInSpace * Time.deltaTime);
 
@@ -901,6 +1088,26 @@ public class CC_CharacterValues : MonoBehaviour
         oxygenRegenDelayTimer = 0f;
         oxygenWasDepleted = false;
 
+        damageToTakePerTick = 0f;
+        damageTickRateRuntime = 0f;
+        damageDebuffTicks = 0;
+        damageStartDelayRuntime = 0f;
+        currentDamageDelayTimer = 0f;
+        currentDamageTickTimer = 0f;
+        damageStarted = false;
+
+        hungerEmptyDamageDelayTimer = 0f;
+        hungerEmptyDamageTickTimer = 0f;
+        hungerEmptyDamageStarted = false;
+
+        thirstEmptyDamageDelayTimer = 0f;
+        thirstEmptyDamageTickTimer = 0f;
+        thirstEmptyDamageStarted = false;
+
+        oxygenEmptyDamageDelayTimer = 0f;
+        oxygenEmptyDamageTickTimer = 0f;
+        oxygenEmptyDamageStarted = false;
+
         RefreshUI();
         UpdateDeathScreenState();
     }
@@ -936,15 +1143,9 @@ public class CC_CharacterValues : MonoBehaviour
     private bool CanSimulateLocally()
     {
         NetworkObject netObj = GetComponent<NetworkObject>();
-        if (netObj == null || !netObj.IsSpawned)
-        {
-            return true;
-        }
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-        {
-            return true;
-        }
+        if (netObj == null || !netObj.IsSpawned) { return true; }
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) { return true; }
 
         return NetworkManager.Singleton.IsServer;
     }
