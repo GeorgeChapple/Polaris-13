@@ -42,17 +42,17 @@ MonoBehaviour:
       amount: 2
     amountGiven: 1
   icon: {fileID: 0}
-  mesh: {fileID: 0}
-  material: {fileID: 0}
-  equippedPrefab: {fileID: 0}
+  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  material: {fileID: 2100000, guid: ebb9c42232027ec409eeb4c521814ea4, type: 2}
+  equippedPrefab: {fileID: 5739193541798090591, guid: 1f3f79a2ffe2d7a4aa51eb46b6316ff0, type: 3}
   applyEquippedPrefabVisuals: 0
   forwardAxisRot: 2
-  inventoryMeshOffset: {x: 0, y: 0, z: 0}
+  inventoryMeshOffset: {x: 0, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 1
-  hotbarMestOffset: {x: 0, y: 0, z: 0}
+  inventoryMeshScale: 80
+  hotbarMestOffset: {x: 0, y: 0, z: -20}
   hotbarMeshRotation: {x: 0, y: 0, z: 0}
-  hotbarMeshScale: 1
+  hotbarMeshScale: 80
   dropMeshScale: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
@@ -61,6 +61,6 @@ MonoBehaviour:
   craftingMeshRotation: {x: 0, y: 0, z: 0}
   craftingMeshScale: 1
   inventorySpaceShape:
-  - ++
-  - +-
+  - +
+  - +
   inventorySpace: {x: 1, y: 1}

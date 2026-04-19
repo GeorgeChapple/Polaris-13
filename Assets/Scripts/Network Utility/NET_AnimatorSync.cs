@@ -5,9 +5,10 @@ using UnityEngine;
 // Made By: Jason Lodge
 // Summary: Network animator sync script.
 // Turns out network animator is harder that I thought. So I made this RPC sender.
-// Network animator doesnt magically sync animator states or variables,
-// so server needs to receive a request to set them in which net animator will sync them to clients.
-// Will be adding the other things like bool, float, etc, so we can use it for every animator to sync.
+// I was wrong, Network animator doesnt magically sync animator states or variables BOTH ways,
+// so owner (would be server if its a world object like a door) needs to receive a request to set them
+// in which net animator will sync them to non-owners (a client or host etc thats viewing this object).
+// Net Animator doesnt set bool, float etc, only animator triggers need this kind of treatment.
 
 public class NET_AnimatorSync : NetworkBehaviour
 {
