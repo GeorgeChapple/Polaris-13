@@ -39,6 +39,10 @@ public class POI_Portal : NetworkBehaviour
     private void Start()
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
+        if (!IsSpawned)
+        {
+            GetComponent<NetworkObject>().Spawn();
+        }
     }
 
     private void OnTriggerEnter(Collider col)

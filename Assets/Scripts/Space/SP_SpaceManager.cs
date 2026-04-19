@@ -89,7 +89,6 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void OnTriggerExit(Collider col)
     {
-        Debug.Log("Exit " + col.gameObject);
         StartCoroutine(WaitTriggerExit(col));
     }
 
