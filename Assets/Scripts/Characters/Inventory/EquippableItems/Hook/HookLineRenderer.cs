@@ -41,7 +41,6 @@ public class HookLineRenderer : MonoBehaviour
     public void ShootHook(NetworkObjectReference netObjRef, float throwPower, float maxDistance)
     {
         if (hookHeadPrefab == null || throwPoint == null) { return; }
-
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) { return; }
 
         NetworkObject shooterNetObj = ResolveShooter(netObjRef);
@@ -124,14 +123,12 @@ public class HookLineRenderer : MonoBehaviour
     private void SetHookVisual(bool state)
     {
         if (hookVisual == null) { return; }
-
         if (hookVisual.activeSelf != state) { hookVisual.SetActive(state); }
     }
 
     private NetworkObject ResolveShooter(NetworkObjectReference netObjRef)
     {
         if (netObjRef.TryGet(out NetworkObject netObj) && netObj != null) { return netObj; }
-
         if (ownerNetworkObject != null) { return ownerNetworkObject; }
 
         ownerNetworkObject = GetComponentInParent<NetworkObject>();
@@ -141,7 +138,6 @@ public class HookLineRenderer : MonoBehaviour
     private ulong GetShooterNetworkObjectId()
     {
         if (ownerNetworkObject == null) { ownerNetworkObject = GetComponentInParent<NetworkObject>(); }
-
         if (ownerNetworkObject == null) { return 0; }
 
         return ownerNetworkObject.NetworkObjectId;

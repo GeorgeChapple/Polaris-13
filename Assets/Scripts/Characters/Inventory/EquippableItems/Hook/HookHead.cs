@@ -27,6 +27,25 @@ public class HookHead : NetworkBehaviour
     [Header("Return")]
     [SerializeField] private float returnStopDistance = 0.75f;
 
+    [Header("Anchor")]
+    [Tooltip("If true, the hook will anchor the shooter when it deploys into the world.")]
+    [SerializeField] private bool anchorShooterOnDeploy = true;
+
+    [Tooltip("Maximum distance the shooter can move away from the hook while anchored.")]
+    [SerializeField] private float anchorMaxDistance = 8f;
+
+    [Tooltip("Extra distance allowed before hard clamping back to max rope length.")]
+    [SerializeField] private float anchorDistancePadding = 0.1f;
+
+    [Tooltip("How strongly the hook pulls inward when outside rope length. Higher = snappier.")]
+    [SerializeField] private float anchorPullLerpStrength = 0.1f;
+
+    [Tooltip("Maximum inward correction speed applied by the rope.")]
+    [SerializeField] private float anchorMaxPullSpeed = 1f;
+
+    [Tooltip("How much outward rope velocity gets removed when fully extended. 1 = fully remove.")]
+    [SerializeField, Range(0f, 1f)] private float anchorOutwardVelocityDamping = 1f;
+
     private readonly NetworkVariable<ulong> shooterNetworkObjectId = new NetworkVariable<ulong>
     (
         0,
@@ -48,6 +67,10 @@ public class HookHead : NetworkBehaviour
     private Rigidbody draggedBody;
     private INV_ItemDrop draggedItemDrop;
 
+    private NetworkObject anchoredShooterNetObj;
+    private Rigidbody anchoredShooterRb;
+    private bool shooterIsAnchored;
+
     public ulong ShooterNetworkObjectId => shooterNetworkObjectId.Value;
 
     private void Awake()
@@ -64,6 +87,7 @@ public class HookHead : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        ClearShooterAnchor();
         activeHooks.Remove(this);
         base.OnNetworkDespawn();
     }
@@ -78,6 +102,10 @@ public class HookHead : NetworkBehaviour
         {
             case HookState.Launching:
                 TickLaunching();
+                break;
+
+            case HookState.Deployed:
+                TickDeployed();
                 break;
 
             case HookState.Returning:
@@ -99,11 +127,14 @@ public class HookHead : NetworkBehaviour
         draggedBody = null;
         draggedItemDrop = null;
 
+        ClearShooterAnchor();
+
         transform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
 
         if (rb != null)
         {
             rb.isKinematic = false;
+            rb.constraints = RigidbodyConstraints.None;
             rb.WakeUp();
             rb.linearVelocity = muzzle.forward * throwPower;
             rb.angularVelocity = Vector3.zero;
@@ -116,12 +147,15 @@ public class HookHead : NetworkBehaviour
     {
         if (!IsServer || muzzle == null) { return; }
 
+        ClearShooterAnchor();
+
         returnTarget = muzzle;
         currentState.Value = (int)HookState.Returning;
 
         if (rb != null)
         {
             rb.isKinematic = false;
+            rb.constraints = RigidbodyConstraints.None;
             rb.WakeUp();
         }
     }
@@ -129,7 +163,14 @@ public class HookHead : NetworkBehaviour
     private void TickLaunching()
     {
         float distanceTravelled = Vector3.Distance(fireStartPosition, transform.position);
-        if (distanceTravelled >= maxDistance) { StopAndDeploy(); }
+
+        // if we didnt hit anything by max distance, just return
+        if (distanceTravelled >= maxDistance) { BeginReturn(returnTarget); }
+    }
+
+    private void TickDeployed()
+    {
+        TickShooterAnchor();
     }
 
     private void TickReturning()
@@ -167,16 +208,110 @@ public class HookHead : NetworkBehaviour
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-            rb.isKinematic = true;
+            if (!rb.isKinematic) { rb.isKinematic = true; }
         }
+
+        TryStartShooterAnchor();
+    }
+
+    private void TryStartShooterAnchor()
+    {
+        if (!IsServer) { return; }
+        if (!anchorShooterOnDeploy) { return; }
+        if (draggedBody != null) { return; }
+
+        anchoredShooterNetObj = GetShooterNetworkObject();
+        if (anchoredShooterNetObj == null) { return; }
+
+        anchoredShooterRb = anchoredShooterNetObj.GetComponent<Rigidbody>();
+        shooterIsAnchored = true;
+
+        if (anchoredShooterRb != null)
+        {
+            // remove initial outward rope motion but keep any other movement
+            Vector3 toShooter = anchoredShooterRb.position - transform.position;
+            float distance = toShooter.magnitude;
+
+            if (distance > 0.001f)
+            {
+                Vector3 ropeDirection = toShooter / distance;
+                Vector3 velocity = anchoredShooterRb.linearVelocity;
+                float outwardSpeed = Vector3.Dot(velocity, ropeDirection);
+
+                if (outwardSpeed > 0f)
+                {
+                    anchoredShooterRb.linearVelocity -= ropeDirection * outwardSpeed;
+                }
+            }
+        }
+    }
+
+    private void TickShooterAnchor()
+    {
+        if (!IsServer) { return; }
+        if (!shooterIsAnchored) { return; }
+
+        if (anchoredShooterNetObj == null)
+        {
+            ClearShooterAnchor();
+            return;
+        }
+
+        Vector3 anchorPosition = transform.position;
+        Vector3 shooterPosition = anchoredShooterNetObj.transform.position;
+        Vector3 fromAnchorToShooter = shooterPosition - anchorPosition;
+        float distance = fromAnchorToShooter.magnitude;
+
+        if (distance <= 0.001f) { return; }
+
+        Vector3 ropeDirection = fromAnchorToShooter / distance;
+        float overshoot = distance - anchorMaxDistance;
+
+        // inside rope length, let physics do its thing
+        if (overshoot <= 0f) { return; }
+
+        if (anchoredShooterRb != null)
+        {
+            Vector3 velocity = anchoredShooterRb.linearVelocity;
+
+            // split current velocity into rope direction and sideways movement
+            float radialSpeed = Vector3.Dot(velocity, ropeDirection);
+            Vector3 radialVelocity = ropeDirection * radialSpeed;
+            Vector3 tangentialVelocity = velocity - radialVelocity;
+
+            // stop movement that continues further away from the hook
+            if (radialSpeed > 0f)
+            {
+                radialVelocity -= ropeDirection * (radialSpeed * anchorOutwardVelocityDamping);
+            }
+
+            // pull inward based on how far beyond rope length we are
+            float pullSpeed = Mathf.Min(overshoot * anchorPullLerpStrength, anchorMaxPullSpeed);
+            Vector3 inwardVelocity = -ropeDirection * pullSpeed;
+
+            // keep swing, remove outward motion, add inward pull
+            anchoredShooterRb.linearVelocity = tangentialVelocity + radialVelocity + inwardVelocity;
+        }
+    }
+
+    private void ClearShooterAnchor()
+    {
+        if (!IsServer) { return; }
+
+        anchoredShooterNetObj = null;
+        anchoredShooterRb = null;
+        shooterIsAnchored = false;
     }
 
     private void DespawnHook()
     {
+        ClearShooterAnchor();
+
         if (rb != null)
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+            rb.constraints = RigidbodyConstraints.None;
         }
 
         if (draggedBody != null) { draggedBody.linearVelocity = Vector3.zero; }
@@ -192,7 +327,6 @@ public class HookHead : NetworkBehaviour
         if (state != HookState.Launching) { return; }
 
         if (collision == null || collision.transform == null) { return; }
-
         if (IsCollisionWithShooter(collision)) { return; }
 
         Rigidbody otherRb = collision.rigidbody;
@@ -226,17 +360,13 @@ public class HookHead : NetworkBehaviour
     private void TryHandleDraggedItemPickup()
     {
         if (!IsServer) { return; }
-
         if (draggedItemDrop == null) { return; }
 
         NetworkObject shooterNetObj = GetShooterNetworkObject();
         if (shooterNetObj == null) { return; }
 
         // if the dragged object is an item drop, try to add it straight to inventory
-        if (draggedItemDrop.GetComponent<INV_ItemDrop>() != null)
-        {
-            draggedItemDrop.TryAddToInventory(shooterNetObj.gameObject);
-        }
+        if (draggedItemDrop != null) { draggedItemDrop.TryAddToInventory(shooterNetObj.gameObject); }
     }
 
     private NetworkObject GetShooterNetworkObject()
@@ -253,9 +383,7 @@ public class HookHead : NetworkBehaviour
         {
             HookHead hook = activeHooks[i];
             if (hook == null) { continue; }
-
             if (!hook.IsSpawned) { continue; }
-
             if (hook.ShooterNetworkObjectId != shooterId) { continue; }
 
             return hook;

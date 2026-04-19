@@ -7,7 +7,6 @@ public class IT_Hook : CC_INV_UsableItems
 
     [Header("Refs")]
     [SerializeField] private HookLineRenderer hook;
-    [SerializeField] private Transform throwPoint;
     [SerializeField] private Animator hookAnimator;
 
     [Header("Charge")]
@@ -32,7 +31,8 @@ public class IT_Hook : CC_INV_UsableItems
         if (hook.HasActiveHook(netObjRef)) { return; }
 
         isCharging = true;
-        hookAnimator.SetBool("IsCharging", isCharging);
+        if (hookAnimator != null) { hookAnimator.SetBool("IsCharging", isCharging); }
+
         currentChargePower = minThrowPower;
     }
 
@@ -48,8 +48,7 @@ public class IT_Hook : CC_INV_UsableItems
     {
         if (!isCharging) { return; }
 
-        isCharging = false;
-        hookAnimator.SetBool("IsCharging", isCharging);
+        StopCharging();
 
         if (hook == null)
         {
@@ -65,6 +64,13 @@ public class IT_Hook : CC_INV_UsableItems
     {
         if (hook == null) { return; }
 
+        StopCharging();
         hook.ReelHook(netObjRef);
+    }
+
+    private void StopCharging()
+    {
+        isCharging = false;
+        if (hookAnimator != null) { hookAnimator.SetBool("IsCharging", isCharging); }
     }
 }
