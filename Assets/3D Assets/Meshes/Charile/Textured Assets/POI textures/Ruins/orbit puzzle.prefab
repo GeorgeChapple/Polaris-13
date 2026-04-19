@@ -121,7 +121,33 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 33e0b26092d973f469074c8663aabda5, type: 2}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 2283418361457870467, guid: de2ac36c293d5f04c834b7d1e2e5c6ad, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -812505159505217395, guid: de2ac36c293d5f04c834b7d1e2e5c6ad, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3640766398770455413}
   m_SourcePrefab: {fileID: 100100000, guid: de2ac36c293d5f04c834b7d1e2e5c6ad, type: 3}
+--- !u!1 &8540679095613130017 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -812505159505217395, guid: de2ac36c293d5f04c834b7d1e2e5c6ad, type: 3}
+  m_PrefabInstance: {fileID: 162112817676484012}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3640766398770455413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8540679095613130017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26db57f8fbf1ee2408ec85d64e8339d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gravity: 9.81
+  innerFalloffRadius: 1
+  innerRadius: 5
+  outerRadius: 10
+  outerFalloffRadius: 15
