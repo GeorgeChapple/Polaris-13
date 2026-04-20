@@ -482,13 +482,16 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         HandleHotbarSlotPress(input.hotbarSlot4, ref hotbarSlot4Held, 3, monitoringMenuOpen);
 
         int scrollDirection = 0;
-        if (input.hotBar > 0f) { scrollDirection = 1; }
-        else if (input.hotBar < 0f) { scrollDirection = -1; }
-
-        if (scrollDirection != 0 && lastHotbarScrollDirection == 0)
+        if (!inMenu)
         {
-            hotBar.CycleSelection(scrollDirection);
-        }
+            if (input.hotBar > 0f) { scrollDirection = 1; }
+            else if (input.hotBar < 0f) { scrollDirection = -1; }
+
+            if (scrollDirection != 0 && lastHotbarScrollDirection == 0)
+            {
+                hotBar.CycleSelection(scrollDirection);
+            }
+        }        
 
         lastHotbarScrollDirection = scrollDirection;
 
@@ -523,7 +526,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
                     hotBar.AssignHoverItemToSlot(slotIndex);
                 }
             }
-            else
+            else if (!monitoringMenuOpen)
             {
                 hotBar.SelectSlot(slotIndex);
             }
