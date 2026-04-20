@@ -36,14 +36,22 @@ public class IT_Scanner : CC_INV_UsableItems
     [Tooltip("How long it takes the scanner shader to play from start to finish once.")]
     [SerializeField] private float scanSweepDuration = 1f;
 
+    [Tooltip("Renderer that owns the scanner 3d material.")]
+    [SerializeField] private Renderer scannerVisualRenderer;
+
+    [Tooltip("Material float property name for the scan progress.")]
+    [SerializeField] private string scanProgressProperty = "_ScanProgress";
+
     private bool isAnalysing;
     private bool showingResults;
     private float analysisTimer;
     private float resultsTimer;
     private float cooldownTimer;
+    private float scanVisualTimer;
 
     private CC_CharacterPlayerController cachedPlayer;
     private Camera cachedCamera;
+    private Material scannerVisualMaterial;
 
     private readonly List<UI_ScannerOverlay.ScannerTrackedData> trackedItems = new List<UI_ScannerOverlay.ScannerTrackedData>();
 
@@ -55,6 +63,12 @@ public class IT_Scanner : CC_INV_UsableItems
     public override void SendSender(NetworkObjectReference netObj)
     {
         senderRef = netObj;
+    }
+
+    private void Awake()
+    {
+        CacheScannerVisualMaterial();
+        SetScanShaderProgress(0f);
     }
 
     private void Update()
@@ -81,11 +95,7 @@ public class IT_Scanner : CC_INV_UsableItems
         if (isAnalysing)
         {
             analysisTimer -= Time.deltaTime;
-
-            if (scannerOverlay != null)
-            {
-                scannerOverlay.TickScannerVisual(scanSweepDuration);
-            }
+            TickScannerVisual();
 
             UpdateWorldText();
 
@@ -148,7 +158,9 @@ public class IT_Scanner : CC_INV_UsableItems
         analysisTimer = scanAnalysisDelay;
         resultsTimer = 0f;
         cooldownTimer = scanCooldown;
+        scanVisualTimer = 0f;
 
+        SetScanShaderProgress(0f);
         scannerOverlay.SetScannerActive(true);
 
         UpdateWorldText();
@@ -169,6 +181,8 @@ public class IT_Scanner : CC_INV_UsableItems
         isAnalysing = false;
         showingResults = true;
         resultsTimer = scanResultVisibleTime;
+
+        SetScanShaderProgress(1f);
 
         if (cachedCamera == null && cachedPlayer != null)
         {
@@ -195,8 +209,11 @@ public class IT_Scanner : CC_INV_UsableItems
 
         analysisTimer = 0f;
         resultsTimer = 0f;
+        scanVisualTimer = 0f;
 
         trackedItems.Clear();
+
+        SetScanShaderProgress(0f);
 
         if (scannerOverlay != null)
         {
@@ -214,8 +231,11 @@ public class IT_Scanner : CC_INV_UsableItems
         analysisTimer = 0f;
         resultsTimer = 0f;
         cooldownTimer = 0f;
+        scanVisualTimer = 0f;
 
         trackedItems.Clear();
+
+        SetScanShaderProgress(0f);
 
         if (scannerOverlay != null)
         {
@@ -277,6 +297,42 @@ public class IT_Scanner : CC_INV_UsableItems
                 distance = distance
             });
         }
+    }
+
+    private void TickScannerVisual()
+    {
+        if (scanSweepDuration <= 0f)
+        {
+            SetScanShaderProgress(1f);
+            return;
+        }
+
+        scanVisualTimer += Time.deltaTime;
+
+        float t = scanVisualTimer / scanSweepDuration;
+        if (t > 1f) { t = 1f; }
+
+        SetScanShaderProgress(t);
+    }
+
+    private void CacheScannerVisualMaterial()
+    {
+        if (scannerVisualRenderer == null) { return; }
+
+        scannerVisualMaterial = scannerVisualRenderer.material;
+    }
+
+    private void SetScanShaderProgress(float value)
+    {
+        if (scannerVisualMaterial == null)
+        {
+            CacheScannerVisualMaterial();
+        }
+
+        if (scannerVisualMaterial == null) { return; }
+        if (string.IsNullOrWhiteSpace(scanProgressProperty)) { return; }
+
+        scannerVisualMaterial.SetFloat(scanProgressProperty, value);
     }
 
     private void UpdateWorldText()

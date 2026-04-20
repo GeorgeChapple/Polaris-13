@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UI;
 
 // Made by: Jason Lodge
 // Summary: Handles overlay scanner ui for scanned world items.
@@ -20,13 +19,6 @@ public class UI_ScannerOverlay : MonoBehaviour
     [SerializeField] private RectTransform markerParent;
     [SerializeField] private UI_ScannerTrackedItem markerPrefab;
 
-    [Header("Scan Screen Effect")]
-    [Tooltip("Shadergraph material for the scan.")]
-    [SerializeField] private Material scanSweepMat;
-
-    [Tooltip("Material float property name for the scan progress.")]
-    [SerializeField] private string scanProgressProperty = "_ScanProgress";
-
     [Header("Settings")]
     [SerializeField] private Vector3 markerWorldOffset = new Vector3(0f, 0.2f, 0f);
     [SerializeField] private float edgePadding = 32f;
@@ -34,7 +26,6 @@ public class UI_ScannerOverlay : MonoBehaviour
     private readonly Dictionary<ulong, UI_ScannerTrackedItem> activeMarkers = new Dictionary<ulong, UI_ScannerTrackedItem>();
 
     private bool scannerActive;
-    private float scanVisualTimer;
 
     public void SetScannerActive(bool state)
     {
@@ -42,28 +33,8 @@ public class UI_ScannerOverlay : MonoBehaviour
 
         if (!scannerActive)
         {
-            scanVisualTimer = 0f;
-            SetScanShaderProgress(0f);
             ClearMarkers();
         }
-    }
-
-    public void TickScannerVisual(float scanDuration)
-    {
-        if (!scannerActive) { return; }
-
-        if (scanDuration <= 0f)
-        {
-            SetScanShaderProgress(1f);
-            return;
-        }
-
-        scanVisualTimer += Time.deltaTime;
-
-        float t = scanVisualTimer / scanDuration;
-        if (t > 1f) { t = 0f; scanVisualTimer = 0f; }
-
-        SetScanShaderProgress(t);
     }
 
     public void SetTrackedItems(Camera cam, List<ScannerTrackedData> trackedItems)
@@ -174,13 +145,5 @@ public class UI_ScannerOverlay : MonoBehaviour
         }
 
         activeMarkers.Clear();
-    }
-
-    private void SetScanShaderProgress(float value)
-    {
-        if (scanSweepMat == null) { return; }
-        if (string.IsNullOrWhiteSpace(scanProgressProperty)) { return; }
-
-        scanSweepMat.SetFloat(scanProgressProperty, value);
     }
 }
