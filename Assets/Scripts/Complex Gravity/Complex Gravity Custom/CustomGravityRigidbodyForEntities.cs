@@ -8,9 +8,19 @@ using UnityEngine;
 
 public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 {
+    [Header("Gravity Reference")]
+    [Tooltip("Transform to use for gravity sampling instead of the rigidbody position.")]
+    [SerializeField] private Transform gravitySampleObj;
+
     [Header("Grounded Check")]
     [SerializeField] private bool useGroundedCheck = true;
+
+    [Tooltip("Object used as the grounded check origin.")]
     [SerializeField] private Transform groundedCheckObj;
+
+    [Tooltip("Transform used for forward/right raycast orientation. If null, uses groundedCheckObj, then this transform.")]
+    [SerializeField] private Transform groundedOrientationObj;
+
     [SerializeField] private float groundedRayLength = 0.75f;
     [SerializeField] private float groundedRayRadius = 0.2f;
     [SerializeField] private LayerMask groundLayers;
@@ -65,7 +75,8 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     {
         if (useGravity)
         {
-            currentGravity = CustomGravity.GetGravity(body.position, out upAxis);
+            Vector3 gravitySamplePosition = GetGravitySamplePosition();
+            currentGravity = CustomGravity.GetGravity(gravitySamplePosition, out upAxis);
 
             if (groundedIgnoreTimer > 0f)
             {
@@ -92,6 +103,36 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
                 body.AddForce(currentGravity, ForceMode.Acceleration);
             }
         }
+    }
+
+    private Vector3 GetGravitySamplePosition()
+    {
+        if (gravitySampleObj != null)
+        {
+            return gravitySampleObj.position;
+        }
+
+        if (groundedCheckObj != null)
+        {
+            return groundedCheckObj.position;
+        }
+
+        return body.position;
+    }
+
+    private Transform GetGroundOrientationTransform()
+    {
+        if (groundedOrientationObj != null)
+        {
+            return groundedOrientationObj;
+        }
+
+        if (groundedCheckObj != null)
+        {
+            return groundedCheckObj;
+        }
+
+        return transform;
     }
 
     private void UpdateGroundedState()
@@ -153,10 +194,20 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         Vector3 origin = groundedCheckObj.position;
         Vector3 down = -upAxis;
 
-        Vector3 forward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        Transform orientation = GetGroundOrientationTransform();
+
+        Vector3 forward = Vector3.ProjectOnPlane(orientation.forward, upAxis);
         if (forward.sqrMagnitude < 0.0001f)
         {
-            forward = Vector3.ProjectOnPlane(transform.up, upAxis);
+            forward = Vector3.ProjectOnPlane(orientation.up, upAxis);
+        }
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            forward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        }
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            forward = Vector3.forward;
         }
         forward.Normalize();
 
@@ -254,17 +305,28 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         if (groundedCheckObj == null) { return; }
 
         Vector3 origin = groundedCheckObj.position;
-        Vector3 up = transform.up;
-        Vector3 down = -up;
+        Vector3 gizmoUp = upAxis.sqrMagnitude > 0.0001f ? upAxis.normalized : transform.up;
+        Vector3 down = -gizmoUp;
 
-        Vector3 forward = Vector3.ProjectOnPlane(transform.forward, up);
+        Transform orientation = groundedOrientationObj != null ? groundedOrientationObj : groundedCheckObj;
+
+        Vector3 forward = Vector3.ProjectOnPlane(orientation.forward, gizmoUp);
+        if (forward.sqrMagnitude < 0.0001f)
+        {
+            forward = Vector3.ProjectOnPlane(orientation.up, gizmoUp);
+        }
         if (forward.sqrMagnitude < 0.0001f)
         {
             forward = Vector3.forward;
         }
         forward.Normalize();
 
-        Vector3 right = Vector3.Cross(up, forward).normalized;
+        Vector3 right = Vector3.Cross(gizmoUp, forward);
+        if (right.sqrMagnitude < 0.0001f)
+        {
+            right = Vector3.right;
+        }
+        right.Normalize();
 
         Vector3[] origins = new Vector3[5];
         origins[0] = origin;

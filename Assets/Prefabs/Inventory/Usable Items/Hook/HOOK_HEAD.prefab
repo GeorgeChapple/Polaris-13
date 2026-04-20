@@ -145,6 +145,9 @@ PrefabInstance:
       addedObject: {fileID: 5631153378985731917}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 39199769ae86bc247ba6fb1c008b71bf, type: 3}
       insertIndex: -1
+      addedObject: {fileID: 161052851225208189}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 39199769ae86bc247ba6fb1c008b71bf, type: 3}
+      insertIndex: -1
       addedObject: {fileID: 4753774366408892132}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 39199769ae86bc247ba6fb1c008b71bf, type: 3}
       insertIndex: -1
@@ -187,10 +190,25 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 1
+  m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 3
+--- !u!114 &161052851225208189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5455995009095727641}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  floatToSleep: 0
+  useGravity: 1
+  triggered: 0
 --- !u!135 &4753774366408892132
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -204,7 +222,7 @@ SphereCollider:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
@@ -320,3 +338,9 @@ MonoBehaviour:
   draggedObjectPullSpeed: 30
   returnSpeedMultiplier: 1.2
   returnStopDistance: 0.5
+  anchorShooterOnDeploy: 1
+  anchorMaxDistance: 8
+  anchorDistancePadding: 0.1
+  anchorPullLerpStrength: 0.1
+  anchorMaxPullSpeed: 1
+  anchorOutwardVelocityDamping: 1

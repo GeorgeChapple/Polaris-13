@@ -61,6 +61,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Tooltip("Hotbar")]
     [SerializeField] private INV_HotBar hotBar;
 
+    [Header("Overlay UI")]
+    [SerializeField] private UI_ScannerOverlay scannerOverlay;
+
+    public UI_ScannerOverlay ScannerOverlay => scannerOverlay;
+
     private bool cursorLocked;
 
     // internal press guards so hold wont spam toggle
@@ -85,9 +90,14 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         get
         {
 #if ENABLE_INPUT_SYSTEM
-            return playerInput != null && playerInput.currentControlScheme == "KeyboardMouse";
-#else
+            if (Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
+            {
+                return true;
+            }
+
             return false;
+#else
+        return false;
 #endif
         }
     }
@@ -273,7 +283,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         if (values != null && values.isDead)
         {
-            if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
+            if (cameraController != null) { cameraController.TickLate(Vector2.zero, 0f, isMouse); }
             if (movement != null) { movement.TickLateState(); }
             if (interaction != null) { interaction.TickInteract(false); }
             return;
@@ -281,13 +291,13 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         if (inMenu)
         {
-            if (cameraController != null) { cameraController.TickLate(Vector2.zero, isMouse); }
+            if (cameraController != null) { cameraController.TickLate(Vector2.zero, 0f, isMouse); }
             if (movement != null) { movement.TickLateState(); }
             if (interaction != null) { interaction.TickInteract(false); }
             return;
         }
 
-        if (cameraController != null) { cameraController.TickLate(input.look, isMouse); }
+        if (cameraController != null) { cameraController.TickLate(input.look, input.roll, isMouse); }
         if (movement != null) { movement.TickLateState(); }
         if (interaction != null) { interaction.TickInteract(input.interact); }
     }
@@ -332,12 +342,14 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             if (usePrimaryHeld)
             {
                 usePrimaryHeld = false;
+                inventoryNet.RequestReleaseEquippedItemLocally();
                 inventoryNet.RequestReleaseEquippedItem();
             }
 
             if (useSecondaryHeld)
             {
                 useSecondaryHeld = false;
+                inventoryNet.RequestReleaseAltUseEquippedItemLocally();
                 inventoryNet.RequestReleaseAltUseEquippedItem();
             }
 
@@ -355,11 +367,13 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
         else if (primaryPressed && usePrimaryHeld)
         {
+            inventoryNet.RequestHoldUseEquippedItemLocally();
             inventoryNet.RequestHoldUseEquippedItem();
         }
         else if (!primaryPressed && usePrimaryHeld)
         {
             usePrimaryHeld = false;
+            inventoryNet.RequestReleaseEquippedItemLocally();
             inventoryNet.RequestReleaseEquippedItem();
         }
 
@@ -371,11 +385,13 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
         else if (secondaryPressed && useSecondaryHeld)
         {
+            inventoryNet.RequestHoldAltUseEquippedItemLocally();
             inventoryNet.RequestHoldAltUseEquippedItem();
         }
         else if (!secondaryPressed && useSecondaryHeld)
         {
             useSecondaryHeld = false;
+            inventoryNet.RequestReleaseAltUseEquippedItemLocally();
             inventoryNet.RequestReleaseAltUseEquippedItem();
         }
     }
@@ -387,6 +403,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         string equippedItemId = inventoryNet.GetEquippedItemId();
         if (string.IsNullOrWhiteSpace(equippedItemId)) { return; }
 
+        inventoryNet.RequestUseEquippedItemLocally();
         inventoryNet.RequestUseEquippedItem();
     }
 
@@ -397,6 +414,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         string equippedItemId = inventoryNet.GetEquippedItemId();
         if (string.IsNullOrWhiteSpace(equippedItemId)) { return; }
 
+        inventoryNet.RequestAltUseEquippedItemLocally();
         inventoryNet.RequestAltUseEquippedItem();
     }
 

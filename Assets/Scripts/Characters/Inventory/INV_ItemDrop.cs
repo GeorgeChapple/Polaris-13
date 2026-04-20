@@ -18,6 +18,8 @@ public class INV_ItemDrop : NetworkBehaviour
     [Tooltip("If true, renames the drop object to include the item name.")]
     [SerializeField] private bool renameToItemName = true;
 
+    public INV_Item Item => item;
+
     private MeshFilter mf;
     private MeshRenderer mr;
 

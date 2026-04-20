@@ -1,6 +1,6 @@
 using Unity.Cinemachine;
-using UnityEngine;
 using Unity.Netcode;
+using UnityEngine;
 
 // Made by: Jason Lodge
 // Summary: Handles camera ownership, look rotation, crouch camera offset, FOV, bobbing and replicated camera direction.
@@ -63,8 +63,18 @@ public class CC_CameraController : NetworkBehaviour
     [Tooltip("How far in degrees you can move the camera down")]
     public float bottomClamp = -90.0f;
 
+    [Header("Gravity Camera Recovery")]
+    [Tooltip("How quickly leftover space tilt/roll recovers once gravity takes over.")]
+    public float gravityRecoverySharpness = 8f;
+
+    [Tooltip("Maximum recovery speed when close enough to a gravity surface that body alignment snaps.")]
+    public float gravityRecoverySnapSharpness = 20f;
+
+    [Tooltip("When recovery is smaller than this angle, snap it fully to identity.")]
+    public float gravityRecoverySnapAngle = 0.5f;
+
     [Header("Camera Bobbing")]
-    [Tooltip("If true, camera bobbing is enabled (ground mode only).")]
+    [Tooltip("If true, camera bobbing is enabled while grounded in usable gravity.")]
     public bool enableCameraBobbing = true;
 
     [Tooltip("Bobbing frequency at full speed.")]
@@ -85,6 +95,16 @@ public class CC_CameraController : NetworkBehaviour
     [Tooltip("Bob multiplier while crouching.")]
     public float crouchBobMult = 0.5f;
 
+    [Header("Space Roll")]
+    [Tooltip("Maximum roll speed in degrees per second.")]
+    public float rollMaxSpeed = 120f;
+
+    [Tooltip("How quickly roll accelerates toward target speed.")]
+    public float rollAccel = 4f;
+
+    [Tooltip("How quickly roll slows back to zero when no input is held.")]
+    public float rollDamping = 2f;
+
     [Header("Look Sensitivity")]
     [Tooltip("Overall horizontal multiplier (applies to mouse + stick).")]
     public float lookMultX = 1f;
@@ -102,9 +122,23 @@ public class CC_CameraController : NetworkBehaviour
 
     public bool invertY = false;
 
+    // space roll state
+    protected float rollSpeed;
+
     // cinemachine
-    protected float cinemachineTargetPitch;
     protected float baseFov;
+
+    // free camera rotation state in world space
+    protected Quaternion cameraWorldRotation = Quaternion.identity;
+    protected bool cameraWorldRotationInitialised;
+
+    // grounded look state
+    protected Vector3 gravityAlignedForward = Vector3.forward;
+    protected float gravityAlignedPitch;
+
+    // smooth recovery state while gravity is active
+    protected Quaternion gravityRecoveryRotation = Quaternion.identity;
+    protected bool wasUsingGravityLastFrame;
 
     // crouch state
     Vector3 camTargetBaseLocalPos;
@@ -169,6 +203,79 @@ public class CC_CameraController : NetworkBehaviour
             {
                 replicatedCameraSource = cameraRoot.transform;
             }
+        }
+
+        InitialiseCameraWorldRotation();
+        SyncGravityStateFromWorldRotation();
+        gravityRecoveryRotation = Quaternion.identity;
+        wasUsingGravityLastFrame = movement != null && movement.HasUsableGravity();
+        ApplyCameraWorldRotation();
+    }
+
+    void InitialiseCameraWorldRotation()
+    {
+        if (cameraWorldRotationInitialised) { return; }
+
+        if (cinemachineCameraTarget != null)
+        {
+            cameraWorldRotation = cinemachineCameraTarget.rotation;
+        }
+        else if (movement != null && movement.Body != null)
+        {
+            cameraWorldRotation = movement.Body.rotation;
+        }
+        else
+        {
+            cameraWorldRotation = transform.rotation;
+        }
+
+        cameraWorldRotationInitialised = true;
+    }
+
+    void SyncGravityStateFromWorldRotation()
+    {
+        if (movement == null) { return; }
+
+        Vector3 upAxis = movement.UpAxis;
+        Vector3 forward = cameraWorldRotation * Vector3.forward;
+        Vector3 right = cameraWorldRotation * Vector3.right;
+
+        gravityAlignedForward = Vector3.ProjectOnPlane(forward, upAxis);
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        }
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f && movement.Body != null)
+        {
+            gravityAlignedForward = Vector3.ProjectOnPlane(movement.Body.rotation * Vector3.forward, upAxis);
+        }
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.forward;
+        }
+
+        gravityAlignedForward.Normalize();
+
+        gravityAlignedPitch = Vector3.SignedAngle(gravityAlignedForward, forward, right);
+        gravityAlignedPitch = Mathf.Clamp(gravityAlignedPitch, bottomClamp, topClamp);
+    }
+
+    void ApplyCameraWorldRotation()
+    {
+        if (cinemachineCameraTarget == null) { return; }
+
+        Transform parent = cinemachineCameraTarget.parent;
+
+        if (parent != null)
+        {
+            cinemachineCameraTarget.localRotation = Quaternion.Inverse(parent.rotation) * cameraWorldRotation;
+        }
+        else
+        {
+            cinemachineCameraTarget.rotation = cameraWorldRotation;
         }
     }
 
@@ -269,11 +376,11 @@ public class CC_CameraController : NetworkBehaviour
     }
 
     // Call in LateUpdate.
-    public virtual void TickLate(Vector2 lookInput, bool isMouse)
+    public virtual void TickLate(Vector2 lookInput, float rollInput, bool isMouse)
     {
         if (!IsLocallyControlled()) { return; }
 
-        CameraRotation(lookInput, isMouse);
+        CameraRotation(lookInput, rollInput, isMouse);
         UpdateCrouch();
         UpdateSprintFov();
         UpdateCameraBobbing();
@@ -286,45 +393,137 @@ public class CC_CameraController : NetworkBehaviour
         }
     }
 
-    protected virtual void CameraRotation(Vector2 look, bool isMouse)
+    protected virtual void CameraRotation(Vector2 look, float rollInput, bool isMouse)
     {
-        const float threshold = 0.0001f;
-        if (look.sqrMagnitude < threshold || cinemachineCameraTarget == null || movement == null) { return; }
+        if (cinemachineCameraTarget == null || movement == null) { return; }
 
+        InitialiseCameraWorldRotation();
+
+        float sx = isMouse ? mouseBaseX * lookMultX : stickBaseX * lookMultX;
+        float sy = isMouse ? mouseBaseY * lookMultY : stickBaseY * lookMultY;
         float dt = isMouse ? 1f : Time.deltaTime;
 
-        float baseX = isMouse ? mouseBaseX : stickBaseX;
-        float baseY = isMouse ? mouseBaseY : stickBaseY;
+        float yawDelta = look.x * sx * dt;
+        float pitchDelta = look.y * sy * dt;
 
-        float sx = baseX * lookMultX;
-        float sy = baseY * lookMultY;
+        if (invertY) { pitchDelta = -pitchDelta; }
 
-        float lookX = look.x * sx * dt;
-        float lookY = look.y * sy * dt;
+        bool hasUsableGravity = movement.HasUsableGravity();
 
-        if (invertY) { lookY = -lookY; }
-
-        // pitch always affects camera target first
-        cinemachineTargetPitch -= lookY;
-        cinemachineTargetPitch = ClampAngle(cinemachineTargetPitch, bottomClamp, topClamp);
-        cinemachineCameraTarget.localRotation = Quaternion.Euler(cinemachineTargetPitch, 0f, 0f);
-
-        // in ground mode, apply yaw immediately
-        if (movement.locomotionType == CC_Movement.LocomotionType.GroundMode)
+        if (!hasUsableGravity)
         {
-            movement.AddGroundYaw(lookX);
+            // fully free camera in space
+            Vector3 currentUp = cameraWorldRotation * Vector3.up;
+            Vector3 currentRight = cameraWorldRotation * Vector3.right;
+            Vector3 currentForward = cameraWorldRotation * Vector3.forward;
+
+            Quaternion yawQ = Quaternion.AngleAxis(yawDelta, currentUp);
+            Quaternion pitchQ = Quaternion.AngleAxis(-pitchDelta, currentRight);
+
+            // thruster-style roll acceleration
+            float targetRollSpeed = -rollInput * rollMaxSpeed;
+            rollSpeed = Mathf.MoveTowards(rollSpeed, targetRollSpeed, rollAccel * rollMaxSpeed * Time.deltaTime);
+
+            if (Mathf.Abs(rollInput) < 0.001f)
+            {
+                rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * Time.deltaTime);
+            }
+
+            float rollDelta = rollSpeed * Time.deltaTime;
+            Quaternion rollQ = Quaternion.AngleAxis(rollDelta, currentForward);
+
+            cameraWorldRotation = rollQ * pitchQ * yawQ * cameraWorldRotation;
+            cameraWorldRotation = Quaternion.Normalize(cameraWorldRotation);
+
+            wasUsingGravityLastFrame = false;
+            ApplyCameraWorldRotation();
             return;
         }
 
-        // in space mode cache look for fixed update rotation
-        movement.SetPendingLook(new Vector2(lookX, lookY));
+        // entering gravity: stop space roll momentum
+        if (!wasUsingGravityLastFrame)
+        {
+            rollSpeed = 0f;
+        }
+
+        wasUsingGravityLastFrame = true;
+
+        // gravity mode should keep camera forward from player look
+        // gravity only recovers roll toward the up axis
+        Vector3 upAxis = movement.UpAxis;
+
+        Vector3 lookForward = cameraWorldRotation * Vector3.forward;
+        Vector3 lookRight = cameraWorldRotation * Vector3.right;
+        Vector3 lookUp = cameraWorldRotation * Vector3.up;
+
+        // yaw around gravity up
+        if (Mathf.Abs(yawDelta) > 0.0001f)
+        {
+            Quaternion yawQ = Quaternion.AngleAxis(yawDelta, upAxis);
+            lookForward = yawQ * lookForward;
+            lookRight = yawQ * lookRight;
+            lookUp = yawQ * lookUp;
+        }
+
+        // pitch around current camera right
+        if (Mathf.Abs(pitchDelta) > 0.0001f)
+        {
+            Quaternion pitchQ = Quaternion.AngleAxis(-pitchDelta, lookRight);
+            lookForward = pitchQ * lookForward;
+            lookUp = pitchQ * lookUp;
+        }
+
+        lookForward.Normalize();
+
+        // recover only roll so camera up moves toward gravity up around current forward
+        Vector3 desiredUp = Vector3.ProjectOnPlane(upAxis, lookForward);
+        if (desiredUp.sqrMagnitude < 0.0001f)
+        {
+            desiredUp = Vector3.ProjectOnPlane(lookUp, lookForward);
+        }
+        if (desiredUp.sqrMagnitude < 0.0001f)
+        {
+            desiredUp = lookUp;
+        }
+        desiredUp.Normalize();
+
+        Vector3 currentUpOnPlane = Vector3.ProjectOnPlane(lookUp, lookForward);
+        if (currentUpOnPlane.sqrMagnitude < 0.0001f)
+        {
+            currentUpOnPlane = desiredUp;
+        }
+        currentUpOnPlane.Normalize();
+
+        float signedRollError = Vector3.SignedAngle(currentUpOnPlane, desiredUp, lookForward);
+
+        float alignStrength = movement.GetGravityAlignmentSharpness();
+        float recoverySharpness = Mathf.Max(gravityRecoverySharpness, alignStrength > 0f ? alignStrength : 0f);
+
+        float t = 1f - Mathf.Exp(-recoverySharpness * Time.deltaTime);
+        float recoveredRollStep = signedRollError * t;
+
+        Quaternion rollRecoveryQ = Quaternion.AngleAxis(recoveredRollStep, lookForward);
+
+        Vector3 finalUp = rollRecoveryQ * lookUp;
+
+        cameraWorldRotation = Quaternion.LookRotation(lookForward, finalUp);
+        cameraWorldRotation = Quaternion.Normalize(cameraWorldRotation);
+
+        // keep body yaw state roughly synced from planar forward when gravity exists
+        Vector3 planarForward = Vector3.ProjectOnPlane(lookForward, upAxis);
+        if (planarForward.sqrMagnitude > 0.0001f)
+        {
+            movement.SetGroundForward(planarForward.normalized);
+        }
+
+        ApplyCameraWorldRotation();
     }
 
     protected virtual void UpdateCrouch()
     {
         if (movement == null || cinemachineCameraTarget == null) { return; }
 
-        bool canCrouch = movement.locomotionType == CC_Movement.LocomotionType.GroundMode && movement.IsGrounded && !movement.JumpedThisTick;
+        bool canCrouch = movement.HasUsableGravity() && movement.IsGrounded && !movement.JumpedThisTick;
 
         // change cam height
         Vector3 target = camTargetBaseLocalPos;
@@ -354,8 +553,8 @@ public class CC_CameraController : NetworkBehaviour
     {
         if (!enableCameraBobbing || cinemachineCameraTarget == null || movement == null) { return; }
 
-        // bob only in ground mode and grounded
-        bool allowBob = movement.locomotionType == CC_Movement.LocomotionType.GroundMode && movement.IsGrounded;
+        // bob only with usable gravity and grounded
+        bool allowBob = movement.HasUsableGravity() && movement.IsGrounded;
 
         // use planar speed for intensity
         Vector3 planarVel = Vector3.ProjectOnPlane(movement.Velocity, movement.UpAxis);

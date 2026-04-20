@@ -40,6 +40,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     // local only, used so equipped consumables can remove the correct inventory item on the owner
     private string localEquippedInventoryItemUniqueId;
+    private string localVisualItemId;
+    private bool localEquipCallbackAlreadyFired;
 
     // one local equipped visual per instance
     // owner uses equippedItemRoot, non owners / server use observer root
@@ -416,6 +418,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         ShowEquippedVisual(itemId);
 
+        // fire local equip immediately for owner visual
+        localVisualItemId = itemId;
+        localEquipCallbackAlreadyFired = true;
+        NotifyEquipped_Locally(itemId);
+
         if (IsServer)
         {
             EquipItem_Server(itemId);
@@ -427,7 +434,14 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     public void RequestClearEquippedItem()
     {
+        if (!string.IsNullOrWhiteSpace(localVisualItemId) && equippedVisual != null)
+        {
+            NotifyUnequipped_Locally(localVisualItemId);
+        }
+
         localEquippedInventoryItemUniqueId = null;
+        localVisualItemId = null;
+        localEquipCallbackAlreadyFired = false;
 
         ClearEquippedVisual();
 
@@ -534,6 +548,65 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         RequestReleaseAltUseEquippedItemRpc();
+    }
+    public void RequestUseEquippedItemLocally()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        UseEquippedItem_Locally();
+    }
+
+    public void RequestHoldUseEquippedItemLocally()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        HoldUseEquippedItem_Locally();
+    }
+
+    public void RequestReleaseEquippedItemLocally()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        ReleaseUseEquippedItem_Locally();
+    }
+
+    public void RequestAltUseEquippedItemLocally()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        AltUseEquippedItem_Locally();
+    }
+
+    public void RequestHoldAltUseEquippedItemLocally()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        HoldAltUseEquippedItem_Locally();
+    }
+
+    public void RequestReleaseAltUseEquippedItemLocally()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        ReleaseAltUseEquippedItem_Locally();
     }
 
     public void RequestUseItemInInventory(string inventoryItemUniqueId, string itemId)
@@ -881,6 +954,19 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
+        string oldItemId = equippedItemId.Value.ToString();
+
+        // if something is already equipped, notify before swapping
+        if (!string.IsNullOrWhiteSpace(oldItemId) && equippedVisual != null)
+        {
+            NotifyUnequipped_Server(oldItemId);
+
+            if (IsOwner)
+            {
+                NotifyUnequipped_Locally(oldItemId);
+            }
+        }
+
         equippedItemId.Value = itemId;
 
         if (logEquippedItem)
@@ -896,11 +982,107 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
+        string oldItemId = equippedItemId.Value.ToString();
+
+        if (!string.IsNullOrWhiteSpace(oldItemId) && equippedVisual != null)
+        {
+            NotifyUnequipped_Server(oldItemId);
+
+            if (IsOwner)
+            {
+                NotifyUnequipped_Locally(oldItemId);
+            }
+        }
+
         equippedItemId.Value = default;
 
         if (logEquippedItem)
         {
             Debug.Log("Cleared equipped item on server.", this);
+        }
+    }
+
+    private void NotifyEquipped_Server(string itemId)
+    {
+        if (!IsServer) { return; }
+        if (string.IsNullOrWhiteSpace(itemId)) { return; }
+        if (equippedVisual == null) { return; }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnEquipped(gameObject.GetComponent<NetworkObject>());
+        }
+    }
+
+    private void NotifyUnequipped_Server(string itemId)
+    {
+        if (!IsServer) { return; }
+        if (string.IsNullOrWhiteSpace(itemId)) { return; }
+        if (equippedVisual == null) { return; }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnUnequipped(gameObject.GetComponent<NetworkObject>());
+        }
+    }
+
+    private void NotifyEquipped_Locally(string itemId)
+    {
+        if (!IsOwner) { return; }
+        if (string.IsNullOrWhiteSpace(itemId)) { return; }
+        if (equippedVisual == null) { return; }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnEquippedLocally(gameObject.GetComponent<NetworkObject>());
+        }
+    }
+
+    private void NotifyUnequipped_Locally(string itemId)
+    {
+        if (!IsOwner) { return; }
+        if (string.IsNullOrWhiteSpace(itemId)) { return; }
+        if (equippedVisual == null) { return; }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnUnequippedLocally(gameObject.GetComponent<NetworkObject>());
         }
     }
 
@@ -1154,6 +1336,222 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         if (!foundUsable && logEquippedItem)
         {
             Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt release use.", equippedVisual);
+        }
+    }
+
+    private void UseEquippedItem_Locally()
+    {
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnUseLocally(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for local use.", equippedVisual);
+        }
+    }
+
+    private void HoldUseEquippedItem_Locally()
+    {
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnUseHeldLocally(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for local hold use.", equippedVisual);
+        }
+    }
+
+    private void ReleaseUseEquippedItem_Locally()
+    {
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnUseReleasedLocally(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for local release use.", equippedVisual);
+        }
+    }
+
+    private void AltUseEquippedItem_Locally()
+    {
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnAltUseLocally(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for local alt use.", equippedVisual);
+        }
+    }
+
+    private void HoldAltUseEquippedItem_Locally()
+    {
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnAltUseHeldLocally(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for local alt hold use.", equippedVisual);
+        }
+    }
+
+    private void ReleaseAltUseEquippedItem_Locally()
+    {
+        string itemId = equippedItemId.Value.ToString();
+        if (string.IsNullOrWhiteSpace(itemId) || equippedVisual == null)
+        {
+            return;
+        }
+
+        INV_Item item = GetItemById(itemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = equippedVisual.GetComponentsInChildren<MonoBehaviour>(true);
+        bool foundUsable = false;
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not CC_INV_UsableItems usableItem)
+            {
+                continue;
+            }
+
+            usableItem.SendItemId(itemId);
+            usableItem.SendSender(gameObject.GetComponent<NetworkObject>());
+            usableItem.OnAltUseReleasedLocally(gameObject.GetComponent<NetworkObject>());
+            foundUsable = true;
+        }
+
+        if (!foundUsable && logEquippedItem)
+        {
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for local alt release use.", equippedVisual);
         }
     }
 
@@ -1731,11 +2129,31 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         if (string.IsNullOrWhiteSpace(itemId))
         {
+            localVisualItemId = null;
+            localEquipCallbackAlreadyFired = false;
             ClearEquippedVisual();
             return;
         }
 
         ShowEquippedVisual(itemId);
+
+        if (IsServer)
+        {
+            NotifyEquipped_Server(itemId);
+        }
+
+        if (IsOwner)
+        {
+            // if we already fired local equip when the owner preview visual was shown,
+            // dont fire it again for the same item rebuild
+            if (!localEquipCallbackAlreadyFired || localVisualItemId != itemId)
+            {
+                NotifyEquipped_Locally(itemId);
+            }
+
+            localVisualItemId = itemId;
+            localEquipCallbackAlreadyFired = true;
+        }
     }
 
     private void ShowEquippedVisual(string itemId)

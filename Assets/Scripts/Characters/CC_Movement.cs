@@ -1,7 +1,7 @@
-using UnityEngine;
-using Unity.Netcode;
-using TMPro;
 using System.Collections;
+using TMPro;
+using Unity.Netcode;
+using UnityEngine;
 
 // Made by: Jason Lodge
 // Summary: Handles locomotion, gravity, jumping, body rotation and stamina / oxygen usage.
@@ -9,10 +9,6 @@ using System.Collections;
 [RequireComponent(typeof(Rigidbody))]
 public class CC_Movement : NetworkBehaviour
 {
-    public enum LocomotionType { GroundMode, SpaceMode }
-
-    public LocomotionType locomotionType = LocomotionType.GroundMode;
-
     [Header("References")]
     public CC_CharacterValues values;
     public CC_CameraController cameraController;
@@ -49,14 +45,11 @@ public class CC_Movement : NetworkBehaviour
     public float groundThrusterUpSpeedCap = 8f;
 
     [Header("Ground Air Control")]
-    [Tooltip("Allow horizontal airborne movement in ground mode using the space thruster settings.")]
+    [Tooltip("Allow horizontal airborne movement in gravity using the space thruster settings.")]
     [Range(0f, 1f)] public float airborneGroundControl = 1f;
 
     [Header("Surface Stabalisation")]
     public float torqueStrength = 5f;
-
-    [Tooltip("How much stronger stabilisation is while grounded.")]
-    public float groundedTorqueStrength = 20f;
 
     [Tooltip("How far to check for a surface to start ramping stabilisation.")]
     public float stabiliseRange = 10f;
@@ -77,12 +70,6 @@ public class CC_Movement : NetworkBehaviour
     [Tooltip("Acceleration applied opposite to current velocity while stabilising in space.")]
     public float spaceStabiliseAccel = 8f;
 
-    [Header("Space Rotation")]
-    public float spaceTurnSpeed = 30f;
-    public float rollMaxSpeed = 30f;
-    public float rollAccel = 4f;
-    public float rollDamping = 2f;
-
     [Header("Gravity Detection")]
     public float zeroGravityThreshold = 0.25f;
 
@@ -90,6 +77,19 @@ public class CC_Movement : NetworkBehaviour
     public bool grounded = true;
     public float jumpTimeout = 0.1f;
     public float fallTimeout = 0.15f;
+
+    [Header("Replicated Visual Body")]
+    [Tooltip("Local-only visual body root. Enabled for owner, disabled for non owners.")]
+    [SerializeField] private Transform localVisualBodyRoot;
+
+    [Tooltip("Always-active transform used as the replicated version of the local visual body. Disabled for owner, enabled for non owners.")]
+    [SerializeField] private Transform replicatedVisualBodyRoot;
+
+    [Tooltip("Source transform to copy for replicated visual body. If null, uses replicatedVisualBodyRoot.")]
+    [SerializeField] private Transform replicatedVisualBodySource;
+
+    [Tooltip("If true, owner updates the replicated visual body root from the local visual body source.")]
+    [SerializeField] private bool replicateVisualBody = true;
 
     [Header("Network Ownership")]
     [Tooltip("If True, will work without network manager/ownership interference.")]
@@ -106,11 +106,6 @@ public class CC_Movement : NetworkBehaviour
     protected bool sprinting;
     protected bool crouching;
     protected bool jumpedThisTick;
-
-    // look
-    protected Vector2 pendingLook;
-    protected float pendingRoll;
-    protected float rollSpeed;
 
     // body orientation state
     protected Quaternion bodyRotation = Quaternion.identity;
@@ -138,20 +133,37 @@ public class CC_Movement : NetworkBehaviour
     bool initialised;
     bool deathRespawnRunning;
 
+    // replicated visual body
+    private NetworkVariable<Vector3> replicatedVisualBodyLocalPosition = new NetworkVariable<Vector3>(
+        Vector3.zero,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    private NetworkVariable<Quaternion> replicatedVisualBodyLocalRotation = new NetworkVariable<Quaternion>(
+        Quaternion.identity,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
     // public read for other components like camera/interaction
     public Rigidbody Body => rb;
     public Vector3 UpAxis => upAxis;
     public Vector3 Velocity => rb != null ? rb.linearVelocity : Vector3.zero;
+    public Vector3 CurrentGravity => currentGravity;
+    public float GravityMagnitude => currentGravity.magnitude;
     public bool IsGrounded => grounded;
     public bool IsSprinting => sprinting;
     public bool IsCrouching => crouching;
     public bool JumpedThisTick => jumpedThisTick;
     public bool SinglePlayer => singlePlayer;
     public Transform CameraTarget => cameraController != null ? cameraController.cinemachineCameraTarget : null;
+    public Transform ReplicatedVisualBodyRoot => replicatedVisualBodyRoot;
 
     protected virtual void Awake()
     {
         InitialiseComponents();
+        ApplyVisualOwnershipState();
 
         // only do player text immediately in single player mode.
         if (singlePlayer && playerText != null)
@@ -195,6 +207,11 @@ public class CC_Movement : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+
+        if (replicatedVisualBodySource == null && replicatedVisualBodyRoot != null)
+        {
+            replicatedVisualBodySource = replicatedVisualBodyRoot;
+        }
     }
 
     public bool IsLocallyControlled()
@@ -202,18 +219,59 @@ public class CC_Movement : NetworkBehaviour
         return singlePlayer || (IsSpawned && IsOwner);
     }
 
+    void ApplyVisualOwnershipState()
+    {
+        bool local = IsLocallyControlled();
+
+        if (localVisualBodyRoot != null)
+        {
+            localVisualBodyRoot.gameObject.SetActive(local);
+        }
+
+        if (replicatedVisualBodyRoot != null)
+        {
+            replicatedVisualBodyRoot.gameObject.SetActive(!local);
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
         InitialiseComponents();
+        ApplyVisualOwnershipState();
 
         if (playerText != null && !singlePlayer)
         {
             playerText.text = (OwnerClientId + 1).ToString();
         }
 
+        replicatedVisualBodyLocalPosition.OnValueChanged += OnReplicatedVisualBodyLocalPositionChanged;
+        replicatedVisualBodyLocalRotation.OnValueChanged += OnReplicatedVisualBodyLocalRotationChanged;
+
+        ApplyReplicatedVisualBody();
+
         StartCoroutine(WaitSpawn(true));
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        replicatedVisualBodyLocalPosition.OnValueChanged -= OnReplicatedVisualBodyLocalPositionChanged;
+        replicatedVisualBodyLocalRotation.OnValueChanged -= OnReplicatedVisualBodyLocalRotationChanged;
+
+        base.OnNetworkDespawn();
+    }
+
+    public override void OnGainedOwnership()
+    {
+        base.OnGainedOwnership();
+        ApplyVisualOwnershipState();
+    }
+
+    public override void OnLostOwnership()
+    {
+        base.OnLostOwnership();
+        ApplyVisualOwnershipState();
     }
 
     private IEnumerator WaitSpawn(bool networked)
@@ -249,7 +307,8 @@ public class CC_Movement : NetworkBehaviour
 
         // keep our up axis updated from gravity
         UpdateGravity();
-        UpdateLocomotionMode();
+
+        bool hasUsableGravity = HasUsableGravity();
 
         // dead = no movement/input handling
         if (values != null && values.isDead)
@@ -259,9 +318,6 @@ public class CC_Movement : NetworkBehaviour
             usingSpaceMoveThrusters = false;
             usingSpaceStabiliseThrusters = false;
             oxygenDrainMultiplierThisTick = 0f;
-
-            pendingLook = Vector2.zero;
-            pendingRoll = 0f;
 
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
@@ -274,10 +330,8 @@ public class CC_Movement : NetworkBehaviour
             return;
         }
 
-        pendingRoll = -rollInput;
-
-        // grounded should only matter in ground mode
-        grounded = locomotionType == LocomotionType.GroundMode && customGravityBody != null && customGravityBody.Grounded;
+        // grounded should only matter while gravity is strong enough to support grounded movement
+        grounded = hasUsableGravity && customGravityBody != null && customGravityBody.Grounded;
 
         // detect jump press this tick so ground jump and airborne thrusters act like separate presses
         bool jumpPressedThisTick = jumpInput && !jumpHeldLastTick;
@@ -296,8 +350,8 @@ public class CC_Movement : NetworkBehaviour
             groundThrustersRequiresRelease = false;
         }
 
-        // crouch only in ground mode + grounded
-        bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded;
+        // crouch only with usable gravity + grounded
+        bool canCrouch = hasUsableGravity && grounded;
 
         // crouch wins over sprint
         crouching = crouchInput && canCrouch;
@@ -309,52 +363,56 @@ public class CC_Movement : NetworkBehaviour
             sprinting = false;
         }
 
-        if (locomotionType == LocomotionType.SpaceMode)
-        {
-            SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
-            SpaceBodyRotation();
-        }
-        else
+        if (hasUsableGravity)
         {
             GroundMove(moveInput);
             Jump(jumpPressedThisTick);
             GroundThrusters(jumpInput, jumpPressedThisTick);
-            GroundBodyRotation();
         }
+        else
+        {
+            SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
+        }
+
+        UpdateBodyRotation();
 
         // cache jump held for edge detection next tick
         jumpHeldLastTick = jumpInput;
-
-        // clear pending look after we use it in physics
-        pendingLook = Vector2.zero;
     }
 
     // Call in LateUpdate.
     public virtual void TickLateState()
     {
-        if (!IsLocallyControlled() || rb == null || values == null) { return; }
-
-        if (values.isDead)
+        if (!IsLocallyControlled() || rb == null || values == null)
         {
+            ApplyReplicatedVisualBody();
             return;
         }
 
-        // only drain stamina when sprinting in ground mode and grounded
-        bool shouldDrainStamina = sprinting && locomotionType == LocomotionType.GroundMode && grounded;
+        if (values.isDead)
+        {
+            UpdateReplicatedVisualBody();
+            return;
+        }
+
+        // only drain stamina when sprinting with usable gravity and grounded
+        bool shouldDrainStamina = sprinting && HasUsableGravity() && grounded;
         values.TickStamina(shouldDrainStamina, true);
 
         // oxygen regens when not being used for thrusters
         bool usingOxygenForThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;
         values.TickOxygenThrusterUsage(usingOxygenForThrusters, true, oxygenDrainMultiplierThisTick);
 
-        // passive oxygen drain while in space mode
-        values.TickPassiveOxygenDrainInSpace(locomotionType == LocomotionType.SpaceMode);
+        // passive oxygen drain while not in usable gravity
+        values.TickPassiveOxygenDrainInSpace(!HasUsableGravity());
 
         // if we run out of stamina, force sprint off
         if (sprinting && !values.HasStamina())
         {
             sprinting = false;
         }
+
+        UpdateReplicatedVisualBody();
     }
 
     void UpdateGravity()
@@ -370,16 +428,56 @@ public class CC_Movement : NetworkBehaviour
         }
     }
 
-    protected virtual void UpdateLocomotionMode()
+    public bool HasUsableGravity()
     {
-        if (customGravityBody.useGravity && currentGravity.magnitude >= zeroGravityThreshold)
+        if (customGravityBody != null && !customGravityBody.useGravity)
         {
-            locomotionType = LocomotionType.GroundMode;
+            return false;
         }
-        else
+
+        return currentGravity.magnitude >= zeroGravityThreshold;
+    }
+
+    public float GetGravityAlignment01()
+    {
+        float gravity01 = Mathf.Clamp01(currentGravity.magnitude / Mathf.Max(0.0001f, zeroGravityThreshold));
+
+        float proximity01 = 0f;
+
+        if (customGravityBody != null)
         {
-            locomotionType = LocomotionType.SpaceMode;
+            if (customGravityBody.Grounded)
+            {
+                proximity01 = 1f;
+            }
+            else
+            {
+                float range = Mathf.Max(0.01f, stabiliseRange);
+                float castDist = range + stabilisePadding;
+
+                Ray ray = new Ray(rb.position, -upAxis);
+                Debug.DrawRay(rb.position, -upAxis * castDist, Color.red);
+
+                RaycastHit hit;
+                if (Physics.Raycast(ray, out hit, castDist, customGravityBody.GroundLayers, QueryTriggerInteraction.Ignore))
+                {
+                    float d = Mathf.Clamp(hit.distance - stabilisePadding, 0f, range);
+                    proximity01 = 1f - (d / range);
+                }
+            }
         }
+
+        float curve = stabiliseCurve != null ? stabiliseCurve.Evaluate(proximity01) : proximity01;
+        return Mathf.Clamp01(gravity01 * Mathf.Clamp01(curve));
+    }
+
+    public float GetGravityAlignmentSharpness()
+    {
+        float align01 = GetGravityAlignment01();
+
+        if (align01 >= 0.9999f) { return -1f; }
+
+        return torqueStrength * stabiliseMaxMult * align01;
     }
 
     protected virtual void GroundMove(Vector2 moveInput)
@@ -391,7 +489,7 @@ public class CC_Movement : NetworkBehaviour
         Vector3 verticalVel = Vector3.Project(vel, -upAxis);
         Vector3 planarVel = vel - verticalVel;
 
-        // when in air in ground mode, allow limited thruster movement
+        // when in air with gravity, allow limited thruster movement
         if (!grounded)
         {
             Vector3 camForward = Vector3.ProjectOnPlane(CameraTarget.forward, upAxis);
@@ -497,7 +595,7 @@ public class CC_Movement : NetworkBehaviour
     protected virtual void GroundThrusters(bool jumpHeld, bool jumpPressedThisTick)
     {
         if (rb == null || values == null) { return; }
-        if (locomotionType != LocomotionType.GroundMode || grounded || !values.HasOxygen()) { return; }
+        if (!HasUsableGravity() || grounded || !values.HasOxygen()) { return; }
 
         // holding jump from the initial ground jump shouldn't activate thrusters
         // player must release jump after jumping, then press again while airborne to activate thrusters
@@ -530,84 +628,6 @@ public class CC_Movement : NetworkBehaviour
         oxygenDrainMultiplierThisTick += values.groundThrusterOxygenDrainMult;
     }
 
-    protected virtual void GroundBodyRotation()
-    {
-        if (rb == null) { return; }
-
-        // keep our forward projected onto the gravity plane so yaw is preserved
-        groundedForward = Vector3.ProjectOnPlane(groundedForward, upAxis);
-
-        if (groundedForward.sqrMagnitude < 0.0001f)
-        {
-            groundedForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
-        }
-        if (groundedForward.sqrMagnitude < 0.0001f)
-        {
-            groundedForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
-        }
-        if (groundedForward.sqrMagnitude < 0.0001f)
-        {
-            groundedForward = Vector3.forward;
-        }
-
-        groundedForward.Normalize();
-
-        Quaternion current = rb.rotation;
-
-        // yaw should not be smoothed, so pass through immediately
-        Quaternion yawTarget = Quaternion.LookRotation(groundedForward, current * Vector3.up);
-
-        // only stabilisation should be smoothed
-        float strength = GetStabiliseStrength();
-        if (strength <= 0.0001f)
-        {
-            bodyRotation = yawTarget;
-            rb.MoveRotation(bodyRotation);
-            return;
-        }
-
-        // align body up to gravity up axis with curve ramp, while preserving yaw
-        Quaternion toUp = Quaternion.FromToRotation(yawTarget * Vector3.up, upAxis);
-        Quaternion target = toUp * yawTarget;
-
-        float alignT = 1f - Mathf.Exp(-Mathf.Max(0f, strength) * Time.fixedDeltaTime);
-        bodyRotation = Quaternion.Slerp(yawTarget, target, alignT);
-
-        rb.MoveRotation(bodyRotation);
-    }
-
-    protected virtual float GetStabiliseStrength()
-    {
-        if (locomotionType == LocomotionType.SpaceMode || rb == null) { return 0f; }
-
-        float proximity01 = 0f;
-
-        if (grounded)
-        {
-            proximity01 = 1f;
-        }
-        else
-        {
-            float range = Mathf.Max(0.01f, stabiliseRange);
-            float castDist = range + stabilisePadding;
-
-            Ray ray = new Ray(rb.position, -upAxis);
-            Debug.DrawRay(rb.position, -upAxis * castDist, Color.red);
-
-            RaycastHit hit;
-            if (customGravityBody != null &&
-                Physics.Raycast(ray, out hit, castDist, customGravityBody.GroundLayers, QueryTriggerInteraction.Ignore))
-            {
-                float d = Mathf.Clamp(hit.distance - stabilisePadding, 0f, range);
-                proximity01 = 1f - (d / range);
-            }
-        }
-
-        float baseStrength = grounded ? groundedTorqueStrength : torqueStrength;
-        float curve = stabiliseCurve != null ? stabiliseCurve.Evaluate(proximity01) : proximity01;
-        return baseStrength * stabiliseMaxMult * Mathf.Clamp01(curve);
-    }
-    
     protected virtual void SpaceThrusters(Vector2 moveInput, bool jumpPressed, bool crouchPressed, bool stabilisePressed)
     {
         // add force as thrusters would have inertia
@@ -661,74 +681,94 @@ public class CC_Movement : NetworkBehaviour
 
         rb.AddForce(accel, ForceMode.Acceleration);
 
-        // stabilising should also settle roll faster
-        rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * Time.fixedDeltaTime);
-
         usingSpaceStabiliseThrusters = true;
         oxygenDrainMultiplierThisTick += values.spaceStabiliseOxygenDrainMult;
     }
 
-    protected virtual void SpaceBodyRotation()
+    protected virtual void UpdateBodyRotation()
     {
         if (rb == null || CameraTarget == null) { return; }
 
-        Quaternion current = rb.rotation;
-        float dt = Time.fixedDeltaTime;
+        float alignStrength = GetGravityAlignmentSharpness();
 
-        Vector2 look = pendingLook;
-
-        Vector3 camUp = CameraTarget.up.normalized;
-        Vector3 camRight = CameraTarget.right.normalized;
-        Vector3 camForward = CameraTarget.forward.normalized;
-
-        // yaw/pitch
-        float yawDelta = look.x * spaceTurnSpeed * dt;
-        float pitchDelta = -look.y * spaceTurnSpeed * dt;
-
-        Quaternion yawQ = Quaternion.AngleAxis(yawDelta, camUp);
-        Quaternion pitchQ = Quaternion.AngleAxis(pitchDelta, camRight);
-
-        // acceleration oriented roll
-        float targetRollSpeed = pendingRoll * rollMaxSpeed;
-        rollSpeed = Mathf.MoveTowards(rollSpeed, targetRollSpeed, rollAccel * rollMaxSpeed * dt);
-
-        if (Mathf.Abs(pendingRoll) < 0.001f)
+        if (!HasUsableGravity() || alignStrength <= 0.0001f)
         {
-            rollSpeed = Mathf.MoveTowards(rollSpeed, 0f, rollDamping * rollMaxSpeed * dt);
+            // in free space the body should always face exactly where the camera is facing
+            bodyRotation = CameraTarget.rotation;
+            rb.MoveRotation(bodyRotation);
+            return;
         }
 
-        float rollDelta = rollSpeed * dt;
-        Quaternion rollQ = Quaternion.AngleAxis(rollDelta, camForward);
+        // when gravity is influencing us, unwind back toward the gravity up axis
+        // using the camera forward projected onto the gravity plane.
+        Vector3 targetForward = Vector3.ProjectOnPlane(CameraTarget.forward, upAxis);
 
-        bodyRotation = rollQ * pitchQ * yawQ * current;
+        if (targetForward.sqrMagnitude < 0.0001f)
+        {
+            targetForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
+        }
+
+        if (targetForward.sqrMagnitude < 0.0001f)
+        {
+            targetForward = groundedForward;
+        }
+
+        if (targetForward.sqrMagnitude < 0.0001f)
+        {
+            targetForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        }
+
+        if (targetForward.sqrMagnitude < 0.0001f)
+        {
+            targetForward = Vector3.forward;
+        }
+
+        targetForward.Normalize();
+        groundedForward = targetForward;
+
+        Quaternion targetRotation = Quaternion.LookRotation(targetForward, upAxis);
+
+        // inside snap zone = no smoothing
+        if (alignStrength < 0f)
+        {
+            bodyRotation = targetRotation;
+            rb.MoveRotation(bodyRotation);
+            return;
+        }
+
+        float t = 1f - Mathf.Exp(-alignStrength * Time.fixedDeltaTime);
+        bodyRotation = Quaternion.Slerp(rb.rotation, targetRotation, t);
+
         rb.MoveRotation(bodyRotation);
     }
 
-    public void AddGroundYaw(float lookX)
+    public void SetGroundForward(Vector3 forward)
     {
-        if (Mathf.Abs(lookX) <= 0.0001f || rb == null) { return; }
+        if (rb == null) { return; }
 
-        Quaternion yawQ = Quaternion.AngleAxis(lookX, upAxis);
-        groundedForward = yawQ * groundedForward;
-        groundedForward = Vector3.ProjectOnPlane(groundedForward, upAxis);
+        groundedForward = Vector3.ProjectOnPlane(forward, upAxis);
 
         if (groundedForward.sqrMagnitude < 0.0001f)
         {
             groundedForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
         }
 
-        groundedForward.Normalize();
-    }
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        }
 
-    public void SetPendingLook(Vector2 look)
-    {
-        // camera writes space look here, physics uses it in fixed
-        pendingLook = look;
+        if (groundedForward.sqrMagnitude < 0.0001f)
+        {
+            groundedForward = Vector3.forward;
+        }
+
+        groundedForward.Normalize();
     }
 
     public void UpdateCapsuleCrouch(float crouchSharpness)
     {
-        bool canCrouch = locomotionType == LocomotionType.GroundMode && grounded && !jumpedThisTick;
+        bool canCrouch = HasUsableGravity() && grounded && !jumpedThisTick;
         if (!canCrouch) { crouching = false; }
 
         if (bodyCapsule == null) { return; }
@@ -746,6 +786,63 @@ public class CC_Movement : NetworkBehaviour
 
         bodyCapsule.height = Mathf.Lerp(bodyCapsule.height, targetHeight, t);
         bodyCapsule.center = Vector3.Lerp(bodyCapsule.center, targetCenter, t);
+    }
+
+    void UpdateReplicatedVisualBody()
+    {
+        if (!replicateVisualBody || !IsLocallyControlled() || replicatedVisualBodyRoot == null) { return; }
+
+        Transform source = replicatedVisualBodySource != null ? replicatedVisualBodySource : replicatedVisualBodyRoot;
+        Transform parent = replicatedVisualBodyRoot.parent;
+
+        Vector3 localPos;
+        Quaternion localRot;
+
+        // convert source world pose into the replicated roots parent space
+        if (parent != null)
+        {
+            localPos = parent.InverseTransformPoint(source.position);
+            localRot = Quaternion.Inverse(parent.rotation) * source.rotation;
+        }
+        else
+        {
+            localPos = source.position;
+            localRot = source.rotation;
+        }
+
+        replicatedVisualBodyLocalPosition.Value = localPos;
+        replicatedVisualBodyLocalRotation.Value = localRot;
+
+        // also apply locally so owner sees the same replicated transform
+        ApplyReplicatedVisualBody();
+    }
+
+    void OnReplicatedVisualBodyLocalPositionChanged(Vector3 oldValue, Vector3 newValue)
+    {
+        ApplyReplicatedVisualBody();
+    }
+
+    void OnReplicatedVisualBodyLocalRotationChanged(Quaternion oldValue, Quaternion newValue)
+    {
+        ApplyReplicatedVisualBody();
+    }
+
+    void ApplyReplicatedVisualBody()
+    {
+        if (replicatedVisualBodyRoot == null) { return; }
+
+        Transform parent = replicatedVisualBodyRoot.parent;
+
+        if (parent != null)
+        {
+            replicatedVisualBodyRoot.localPosition = replicatedVisualBodyLocalPosition.Value;
+            replicatedVisualBodyRoot.localRotation = replicatedVisualBodyLocalRotation.Value;
+        }
+        else
+        {
+            replicatedVisualBodyRoot.position = replicatedVisualBodyLocalPosition.Value;
+            replicatedVisualBodyRoot.rotation = replicatedVisualBodyLocalRotation.Value;
+        }
     }
 
     private IEnumerator DeathRespawnRoutine()
