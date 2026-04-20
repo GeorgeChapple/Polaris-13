@@ -30,7 +30,7 @@ MonoBehaviour:
   biomeProbabilities: []
   stackable: 0
   maxStack: 1
-  craftable: 0
+  craftable: 1
   canCraftAnywhere: 0
   craftingRequirements: []
   craftingRecipes:
@@ -44,25 +44,26 @@ MonoBehaviour:
       amount: 3
     amountGiven: 1
   icon: {fileID: 0}
-  mesh: {fileID: 0}
-  material: {fileID: 0}
-  equippedPrefab: {fileID: 0}
+  mesh: {fileID: 4928191713826952159, guid: 02ee989d690e91d438ed3136b22bd25a, type: 3}
+  material: {fileID: 2100000, guid: 8216746335c97ad46a80c51029501d92, type: 2}
+  equippedPrefab: {fileID: 8430427262996868070, guid: f94cdaa6f2f4018489049ae425c699a7, type: 3}
   applyEquippedPrefabVisuals: 0
-  forwardAxisRot: 2
-  inventoryMeshOffset: {x: 0, y: 0, z: 0}
-  inventoryMeshRotation: {x: 0, y: 0, z: 0}
-  inventoryMeshScale: 1
-  hotbarMestOffset: {x: 0, y: 0, z: 0}
+  forwardAxisRot: 1
+  inventoryMeshOffset: {x: -5, y: 0, z: -20}
+  inventoryMeshRotation: {x: 270, y: 0, z: 0}
+  inventoryMeshScale: 350
+  hotbarMestOffset: {x: 0, y: 0, z: -20}
   hotbarMeshRotation: {x: 0, y: 0, z: 0}
   hotbarMeshScale: 1
-  dropMeshScale: 1
+  dropMeshScale: 3
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
   equippedMeshScale: 1
-  craftingMeshOffset: {x: 0, y: 0, z: 0}
-  craftingMeshRotation: {x: 0, y: 0, z: 0}
-  craftingMeshScale: 1
+  craftingMeshOffset: {x: 15, y: 5, z: -20}
+  craftingMeshRotation: {x: 270, y: 0, z: 0}
+  craftingMeshScale: 175
   inventorySpaceShape:
   - ++
-  - +-
+  - ++
+  - ++
   inventorySpace: {x: 1, y: 1}
