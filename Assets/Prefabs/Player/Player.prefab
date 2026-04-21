@@ -7103,9 +7103,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &7581093040414068935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7335,10 +7335,10 @@ MonoBehaviour:
   rollMaxSpeed: 120
   rollAccel: 4
   rollDamping: 2
-  lookMultX: 0.1
-  lookMultY: 0.1
-  mouseBaseX: 2
-  mouseBaseY: 2
+  lookMultX: 1
+  lookMultY: 1
+  mouseBaseX: 0.1
+  mouseBaseY: 0.1
   stickBaseX: 180
   stickBaseY: 180
   invertY: 0
