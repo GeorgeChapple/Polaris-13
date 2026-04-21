@@ -1,5 +1,7 @@
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class IT_PushDevice : CC_INV_UsableItems
 {
@@ -13,6 +15,11 @@ public class IT_PushDevice : CC_INV_UsableItems
     [SerializeField] private float chargeTime = 2f;
     [SerializeField] private float cooldown = 0.5f;
     [SerializeField] private bool ignoreSelf = true;
+
+    [SerializeField] private Image uIChargeImage;
+    [SerializeField] private TextMeshProUGUI uIChargeText;
+    [SerializeField] private float minimumFill;
+
     private float pushForce = 0f;
     private float chargingTimer = 0f;
     private float cooldownTimer = 0f;
@@ -96,6 +103,9 @@ public class IT_PushDevice : CC_INV_UsableItems
     private void Update()
     {
         cooldownTimer -= Time.deltaTime;
+        float chargetimerPercentage = Mathf.Max(minimumFill, chargingTimer) / chargeTime;
+        uIChargeImage.fillAmount = chargetimerPercentage / (1 - minimumFill);
+        uIChargeText.SetText($"{Mathf.Round(chargingTimer * 100) / 100}/{chargeTime}");
     }
 
     private void OnDrawGizmos()
