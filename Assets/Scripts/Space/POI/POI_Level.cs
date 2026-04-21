@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -36,19 +37,40 @@ public class POI_Level : NetworkBehaviour
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
         GetComponent<BoxCollider>().size = bounds;
-        
+        if (IsServer)
+        {
+            StartCoroutine(DeleteChack());
+        }
     }
 
-    private void Update()
+    private IEnumerator DeleteChack()
     {
-        if (mainPortal == null && players == 0)
+        while (true)
         {
-            if (IsServer)
+            bool found = false;
+            if (mainPortal == null)
             {
-                GetComponent<NetworkObject>().Despawn(true);
+                CC_Movement[] players = FindObjectsByType<CC_Movement>(FindObjectsSortMode.None);
+                Collider[] foundObjects = Physics.OverlapBox(transform.position, bounds * 0.5f, transform.rotation);
+                foreach (CC_Movement player in players)
+                {
+                    if (foundObjects.Contains(player.GetComponent<Collider>()))
+                    {
+                        found = true;
+                    }
+                }
+                if (!found)
+                {
+                    break;
+                }
             }
-            Destroy(this.gameObject);
+            yield return new WaitForSeconds(5f);
         }
+        if (IsServer)
+        {
+            GetComponent<NetworkObject>().Despawn(true);
+        }
+        Destroy(this.gameObject);
     }
 
     private void OnTriggerEnter(Collider col)
@@ -66,7 +88,6 @@ public class POI_Level : NetworkBehaviour
 
     private IEnumerator WaitTriggerExit(Collider col)
     {
-        Debug.Log("GAY");
         float t = 0;
         while (t < 0.1f)
         {
