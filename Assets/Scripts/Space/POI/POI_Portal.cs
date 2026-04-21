@@ -62,7 +62,7 @@ public class POI_Portal : NetworkBehaviour
                 else if (player != null && destination == null)
                 {
                     teleportPosition = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
-                }
+                } 
                 if (player != null)
                 {
                     PlayerTeleportationRpc(netObj, teleportPosition, true, refillAir);

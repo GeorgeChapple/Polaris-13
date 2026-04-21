@@ -16,11 +16,15 @@ public class POI_Initialise : NetworkBehaviour
 
         if (!IsServer)
         {
-            Destroy(this);
+            NetworkObject.Despawn(false);
+        }
+        else
+        {
+            Init();
         }
     }
 
-    private void Start()
+    private void Init()
     {
         SP_SpaceManager m_Space = FindFirstObjectByType<SP_SpaceManager>();
         POI_Manager m_POI = FindFirstObjectByType<POI_Manager>();
