@@ -206,17 +206,39 @@ public class SP_SpaceManager : NetworkBehaviour
         {
             if (obj == null) continue;
 
+            CC_Movement player = obj.GetComponent<CC_Movement>();
             Rigidbody rb = obj.GetComponent<Rigidbody>();
             NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
             Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
-            if (rb != null)
+            if (player != null)
+            {
+                NetworkObject netObj = obj.GetComponent<NetworkObject>();
+                if (netObj != null)
+                {
+                    PlayerMoveRpc(netObj, objDirection);
+                }
+            }
+            else if (rb != null)
             { 
                 rb.MovePosition(rb.position + objDirection * Time.deltaTime);
             } 
             else
             {
                 obj.transform.position = Vector3.Lerp(obj.transform.position, obj.transform.position + objDirection, Time.deltaTime);
+            }
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayerMoveRpc(NetworkObjectReference targetRef, Vector3 objDirection)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        {
+            CC_Movement player = netObj.GetComponent<CC_Movement>();
+            if (player != null)
+            {
+                player.Body.MovePosition(player.Body.position + objDirection * Time.deltaTime);
             }
         }
     }
