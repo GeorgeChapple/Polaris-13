@@ -7,6 +7,14 @@ public class GravityToggler : NetworkBehaviour
     [SerializeField] private bool shipField;
     [SerializeField] private bool planet;
 
+    private void Start()
+    {
+        if (!IsSpawned)
+        {
+            GetComponent<NetworkObject>().Spawn();
+        }
+    }
+
     private void OnTriggerEnter(Collider col)
     {
         CustomGravityRigidbody gravityBody = col.GetComponent<CustomGravityRigidbody>();
