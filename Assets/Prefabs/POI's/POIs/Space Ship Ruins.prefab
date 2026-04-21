@@ -169,6 +169,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6fe5912149343e34f95c84af3df4482a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5818248853147296892}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6fe5912149343e34f95c84af3df4482a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7381110396163815130}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6fe5912149343e34f95c84af3df4482a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1196691369671744578}
     - targetCorrespondingSourceObject: {fileID: -3973107660126017756, guid: 6fe5912149343e34f95c84af3df4482a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7761846822424277291}
@@ -476,6 +482,50 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.1, y: 0.1, z: 0.1}
   m_Center: {x: 0, y: 0, z: 38.31}
+--- !u!54 &7381110396163815130
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4381919892748758126}
+  serializedVersion: 4
+  m_Mass: 10000
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 112
+  m_CollisionDetection: 0
+--- !u!114 &1196691369671744578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4381919892748758126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkRigidbodyBaseExpanded: 0
+  UseRigidBodyForMotion: 0
+  AutoUpdateKinematicState: 1
+  AutoSetKinematicOnDespawn: 1
 --- !u!1 &6231375869449229333 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -1840680963563420374, guid: 6fe5912149343e34f95c84af3df4482a, type: 3}
