@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 // Made By: Jason Lodge
-// Summary: Hot bar, should just select the item in the corresponding slot
-// for use using the CC_INV_EquippedItem script.
+// Summary: Hot bar, sets the ui for hotbar slots and requests selecting an item in the hotbar through INV_PlayerInventoryNet.
 
 public class INV_HotBar : MonoBehaviour
 {
@@ -22,11 +22,14 @@ public class INV_HotBar : MonoBehaviour
     [Tooltip("Network inventory bridge on player.")]
     [SerializeField] private INV_PlayerInventoryNet playerInventoryNet;
 
+    [SerializeField] private Color selectedColor;
+    [SerializeField] private Color defaultColor;
+
     [Tooltip("Logs hotbar actions.")]
     [SerializeField] private bool logHotbar;
 
     private INV_Inventory.ItemInstance[] slotItems;
-    private int selectedSlot = -1;
+    private int selectedSlot = 0;
 
     public int SelectedSlot => selectedSlot;
     public int SlotCount => hotbarSpaces;
@@ -80,6 +83,7 @@ public class INV_HotBar : MonoBehaviour
         }
 
         RefreshAllVisuals();
+        RefreshEquippedItem();
         return true;
     }
 
@@ -274,6 +278,13 @@ public class INV_HotBar : MonoBehaviour
         for (int i = 0; i < hotBarSlots.Count; i++)
         {
             RectTransform slot = hotBarSlots[i];
+
+            Image slotImg = slot.GetComponent<Image>();
+            if (slotImg == null) { continue; }
+
+            if (i == selectedSlot) { slotImg.color = selectedColor; }
+            else { slotImg.color = defaultColor; }
+
             if (slot == null) { continue; }
             if (slot.childCount <= 0) { continue; }
 
