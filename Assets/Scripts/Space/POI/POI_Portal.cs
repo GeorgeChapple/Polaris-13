@@ -145,6 +145,7 @@ public class POI_Portal : NetworkBehaviour
             else
             {
                 spaceManager.debris.Add(obj, spaceManager.rocket.worldDirection);
+                obj.GetComponent<CustomGravityRigidbody>().useGravity = false;
             }
         }
     }
