@@ -67,10 +67,6 @@ public class HookHead : NetworkBehaviour
     private Rigidbody draggedBody;
     private INV_ItemDrop draggedItemDrop;
 
-    private NetworkObject anchoredShooterNetObj;
-    private Rigidbody anchoredShooterRb;
-    private bool shooterIsAnchored;
-
     public ulong ShooterNetworkObjectId => shooterNetworkObjectId.Value;
 
     private void Awake()
@@ -220,87 +216,55 @@ public class HookHead : NetworkBehaviour
         if (!anchorShooterOnDeploy) { return; }
         if (draggedBody != null) { return; }
 
-        anchoredShooterNetObj = GetShooterNetworkObject();
-        if (anchoredShooterNetObj == null) { return; }
+        NetworkObject shooterNetObj = GetShooterNetworkObject();
+        if (shooterNetObj == null) { return; }
 
-        anchoredShooterRb = anchoredShooterNetObj.GetComponent<Rigidbody>();
-        shooterIsAnchored = true;
+        CC_Movement movement = shooterNetObj.GetComponent<CC_Movement>();
+        if (movement == null) { return; }
 
-        if (anchoredShooterRb != null)
-        {
-            // remove initial outward rope motion but keep any other movement
-            Vector3 toShooter = anchoredShooterRb.position - transform.position;
-            float distance = toShooter.magnitude;
-
-            if (distance > 0.001f)
-            {
-                Vector3 ropeDirection = toShooter / distance;
-                Vector3 velocity = anchoredShooterRb.linearVelocity;
-                float outwardSpeed = Vector3.Dot(velocity, ropeDirection);
-
-                if (outwardSpeed > 0f)
-                {
-                    anchoredShooterRb.linearVelocity -= ropeDirection * outwardSpeed;
-                }
-            }
-        }
+        movement.SetHookMoveForOwner
+        (
+            transform.position,
+            anchorMaxDistance,
+            anchorPullLerpStrength,
+            anchorMaxPullSpeed,
+            anchorOutwardVelocityDamping
+        );
     }
 
     private void TickShooterAnchor()
     {
         if (!IsServer) { return; }
-        if (!shooterIsAnchored) { return; }
+        if (!anchorShooterOnDeploy) { return; }
+        if (draggedBody != null) { return; }
 
-        if (anchoredShooterNetObj == null)
-        {
-            ClearShooterAnchor();
-            return;
-        }
+        NetworkObject shooterNetObj = GetShooterNetworkObject();
+        if (shooterNetObj == null) { return; }
 
-        Vector3 anchorPosition = transform.position;
-        Vector3 shooterPosition = anchoredShooterNetObj.transform.position;
-        Vector3 fromAnchorToShooter = shooterPosition - anchorPosition;
-        float distance = fromAnchorToShooter.magnitude;
+        CC_Movement movement = shooterNetObj.GetComponent<CC_Movement>();
+        if (movement == null) { return; }
 
-        if (distance <= 0.001f) { return; }
-
-        Vector3 ropeDirection = fromAnchorToShooter / distance;
-        float overshoot = distance - anchorMaxDistance;
-
-        // inside rope length, let physics do its thing
-        if (overshoot <= 0f) { return; }
-
-        if (anchoredShooterRb != null)
-        {
-            Vector3 velocity = anchoredShooterRb.linearVelocity;
-
-            // split current velocity into rope direction and sideways movement
-            float radialSpeed = Vector3.Dot(velocity, ropeDirection);
-            Vector3 radialVelocity = ropeDirection * radialSpeed;
-            Vector3 tangentialVelocity = velocity - radialVelocity;
-
-            // stop movement that continues further away from the hook
-            if (radialSpeed > 0f)
-            {
-                radialVelocity -= ropeDirection * (radialSpeed * anchorOutwardVelocityDamping);
-            }
-
-            // pull inward based on how far beyond rope length we are
-            float pullSpeed = Mathf.Min(overshoot * anchorPullLerpStrength, anchorMaxPullSpeed);
-            Vector3 inwardVelocity = -ropeDirection * pullSpeed;
-
-            // keep swing, remove outward motion, add inward pull
-            anchoredShooterRb.linearVelocity = tangentialVelocity + radialVelocity + inwardVelocity;
-        }
+        movement.SetHookMoveForOwner
+        (
+            transform.position,
+            anchorMaxDistance,
+            anchorPullLerpStrength,
+            anchorMaxPullSpeed,
+            anchorOutwardVelocityDamping
+        );
     }
 
     private void ClearShooterAnchor()
     {
         if (!IsServer) { return; }
 
-        anchoredShooterNetObj = null;
-        anchoredShooterRb = null;
-        shooterIsAnchored = false;
+        NetworkObject shooterNetObj = GetShooterNetworkObject();
+        if (shooterNetObj == null) { return; }
+
+        CC_Movement movement = shooterNetObj.GetComponent<CC_Movement>();
+        if (movement == null) { return; }
+
+        movement.ClearHookMoveForOwner();
     }
 
     private void DespawnHook()

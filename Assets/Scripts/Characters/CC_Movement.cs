@@ -133,6 +133,14 @@ public class CC_Movement : NetworkBehaviour
     bool initialised;
     bool deathRespawnRunning;
 
+    // hook movement
+    private bool hookMoveActive;
+    private Vector3 hookAnchorPoint;
+    private float hookMaxDistance;
+    private float hookPullLerpStrength;
+    private float hookMaxPullSpeed;
+    private float hookOutwardVelocityDamping;
+
     // replicated visual body
     private NetworkVariable<Vector3> replicatedVisualBodyLocalPosition = new NetworkVariable<Vector3>(
         Vector3.zero,
@@ -374,6 +382,7 @@ public class CC_Movement : NetworkBehaviour
             SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
         }
 
+        ApplyHookMovement();
         UpdateBodyRotation();
 
         // cache jump held for edge detection next tick
@@ -685,6 +694,115 @@ public class CC_Movement : NetworkBehaviour
         oxygenDrainMultiplierThisTick += values.spaceStabiliseOxygenDrainMult;
     }
 
+    private void ApplyHookMovement()
+    {
+        if (!IsLocallyControlled() || !hookMoveActive || rb == null)
+        {
+            return;
+        }
+
+        Vector3 fromAnchorToShooter = rb.position - hookAnchorPoint;
+        float distance = fromAnchorToShooter.magnitude;
+
+        if (distance <= 0.001f)
+        {
+            return;
+        }
+
+        Vector3 ropeDirection = fromAnchorToShooter / distance;
+        float overshoot = distance - hookMaxDistance;
+
+        // inside rope length, let normal movement happen
+        if (overshoot <= 0f)
+        {
+            return;
+        }
+
+        Vector3 velocity = rb.linearVelocity;
+
+        // split into rope direction and sideways movement
+        float radialSpeed = Vector3.Dot(velocity, ropeDirection);
+        Vector3 radialVelocity = ropeDirection * radialSpeed;
+        Vector3 tangentialVelocity = velocity - radialVelocity;
+
+        // remove outward movement
+        if (radialSpeed > 0f)
+        {
+            radialVelocity -= ropeDirection * (radialSpeed * hookOutwardVelocityDamping);
+        }
+
+        // pull inward based on overshoot
+        float pullSpeed = Mathf.Min(overshoot * hookPullLerpStrength, hookMaxPullSpeed);
+        Vector3 inwardVelocity = -ropeDirection * pullSpeed;
+
+        rb.linearVelocity = tangentialVelocity + radialVelocity + inwardVelocity;
+    }
+
+    private void SetHookMoveLocal(Vector3 anchorPoint, float maxDistance, float pullLerpStrength, float maxPullSpeed, float outwardVelocityDamping)
+    {
+        hookAnchorPoint = anchorPoint;
+        hookMaxDistance = maxDistance;
+        hookPullLerpStrength = pullLerpStrength;
+        hookMaxPullSpeed = maxPullSpeed;
+        hookOutwardVelocityDamping = outwardVelocityDamping;
+        hookMoveActive = true;
+    }
+
+    private void ClearHookMoveLocal()
+    {
+        hookMoveActive = false;
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void SetHookMoveLocalRpc(Vector3 anchorPoint, float maxDistance, float pullLerpStrength, float maxPullSpeed, float outwardVelocityDamping, RpcParams rpcParams = default)
+    {
+        SetHookMoveLocal(anchorPoint, maxDistance, pullLerpStrength, maxPullSpeed, outwardVelocityDamping);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void ClearHookMoveLocalRpc(RpcParams rpcParams = default)
+    {
+        ClearHookMoveLocal();
+    }
+
+    public void SetHookMoveForOwner(Vector3 anchorPoint, float maxDistance, float pullLerpStrength, float maxPullSpeed, float outwardVelocityDamping)
+    {
+        if (!IsSpawned)
+        {
+            return;
+        }
+
+        if (IsOwner)
+        {
+            SetHookMoveLocal(anchorPoint, maxDistance, pullLerpStrength, maxPullSpeed, outwardVelocityDamping);
+        }
+
+        SetHookMoveLocalRpc
+        (
+            anchorPoint,
+            maxDistance,
+            pullLerpStrength,
+            maxPullSpeed,
+            outwardVelocityDamping,
+            RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp)
+        );
+    }
+
+    public void ClearHookMoveForOwner()
+    {
+        if (!IsSpawned)
+        {
+            return;
+        }
+
+        if (IsOwner)
+        {
+            ClearHookMoveLocal();
+        }
+
+        ClearHookMoveLocalRpc(RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
+    }
+
     protected virtual void UpdateBodyRotation()
     {
         if (rb == null || CameraTarget == null) { return; }
@@ -871,6 +989,8 @@ public class CC_Movement : NetworkBehaviour
         groundThrustersRequiresRelease = false;
         jumpHeldLastTick = false;
 
+        ClearHookMoveLocal();
+
         deathRespawnRunning = false;
     }
 
@@ -893,6 +1013,7 @@ public class CC_Movement : NetworkBehaviour
 
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
+        ClearHookMoveLocal();
 
         rb.position = spawnPoint.position;
         rb.rotation = spawnPoint.rotation;

@@ -17,6 +17,9 @@ public class CC_Interaction : NetworkBehaviour
     [Tooltip("Layers that contain interactables.")]
     public LayerMask interactLayers;
 
+    [Tooltip("Layers that block interaction traces. Usually this should include world geometry and interactables.")]
+    public LayerMask interactBlockLayers;
+
     [Tooltip("Origin used for interaction ray. If null, will use transform.")]
     public Transform interactOrigin;
 
@@ -51,9 +54,17 @@ public class CC_Interaction : NetworkBehaviour
         Debug.DrawRay(origin.position, origin.forward * interactRange, Color.cyan);
 
         RaycastHit hit;
-        if (Physics.Raycast(ray, out hit, interactRange, interactLayers))
+        if (Physics.Raycast(ray, out hit, interactRange, interactBlockLayers, QueryTriggerInteraction.Ignore))
         {
-            return hit.collider.GetComponent<InteractableObject>();
+            // first thing hit blocks the trace.
+            // only return it if that hit object is on the interact layer.
+            // also means interact block layers needs to include the interact layer otherwise the raycast doesnt hit it.
+            if (((1 << hit.collider.gameObject.layer) & interactLayers.value) != 0)
+            {
+                return hit.collider.GetComponentInParent<InteractableObject>();
+            }
+
+            return null;
         }
 
         return null;
