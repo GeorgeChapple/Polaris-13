@@ -121,6 +121,9 @@ public class INV_ItemDrop : NetworkBehaviour
             mr.sharedMaterial = item.Material;
         }
 
+        Vector3 vec = new Vector3(item.DropMeshScale, item.DropMeshScale, item.DropMeshScale);
+        gameObject.transform.localScale = vec;
+
         SetupColliderFromMesh(mf.sharedMesh);
     }
 
