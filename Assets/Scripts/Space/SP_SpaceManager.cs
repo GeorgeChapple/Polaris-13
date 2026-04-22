@@ -19,7 +19,7 @@ public class SP_SpaceManager : NetworkBehaviour
     //[HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Dictionary<SP_Spawner, int> spawners = new Dictionary<SP_Spawner, int>();
-    [HideInInspector] public List<Collider> cannotTeleport = new List<Collider>();
+     public List<Collider> cannotTeleport = new List<Collider>();
     public Vector3 spaceBounds = new Vector3(20, 20, 20);
     [HideInInspector] public bool maxDebrisReached;
     [SerializeField] private List<GameObject> debrisDebugList = new List<GameObject>();
@@ -89,27 +89,43 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void OnTriggerExit(Collider col)
     {
-        StartCoroutine(WaitTriggerExit(col));
-    }
-
-    private IEnumerator WaitTriggerExit(Collider col)
-    {
-        float t = 0;
-        while (t < 0.1f)
-        {
-            t += Time.deltaTime;
-            yield return null;
-        }
         NetworkObject netObj = col.GetComponent<NetworkObject>();
         if (netObj != null)
         {
-            if (netObj.GetComponent<CC_Movement>() && !cannotTeleport.Contains(col))
+            StartWaitTriggerExitRpc(netObj);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void StartWaitTriggerExitRpc(NetworkObjectReference targetRef)
+    {
+        StartCoroutine(WaitTriggerExit(targetRef));
+    }
+
+    private IEnumerator WaitTriggerExit(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        {
+            float t = 0;
+            while (t < 0.1f)
             {
-                PlayerExitSpaceRpc(netObj);
+                t += Time.deltaTime;
+                yield return null;
             }
-            else
+            if (netObj != null)
             {
-                ObjectExitSpaceRpc(netObj);
+                Collider col = netObj.GetComponent<Collider>();
+                if (col != null)
+                { 
+                    if (netObj.GetComponent<CC_Movement>() && !cannotTeleport.Contains(col))
+                    {
+                        PlayerExitSpaceRpc(netObj);
+                    }
+                    else
+                    {
+                        ObjectExitSpaceRpc(netObj);
+                    }
+                }
             }
         }
     }

@@ -47,32 +47,45 @@ public class POI_Portal : NetworkBehaviour
 
     private void OnTriggerEnter(Collider col)
     {
-        if (!spaceManager.cannotTeleport.Contains(col))
+        NetworkObject netObj = col.GetComponent<NetworkObject>();
+        if (netObj != null)
+        { 
+            BeginTeleportRpc(netObj);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void BeginTeleportRpc(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
         {
-            spaceManager.cannotTeleport.Add(col);
-            NetworkObject netObj = col.GetComponent<NetworkObject>();
-            if (netObj != null)
+            Collider col = netObj.GetComponent<Collider>();
+            if (!spaceManager.cannotTeleport.Contains(col))
             {
-                CC_Movement player = netObj.GetComponent<CC_Movement>();
-                Vector3 teleportPosition = Vector3.zero;
-                if (destination != null)
+                spaceManager.cannotTeleport.Add(col);
+                if (netObj != null)
                 {
-                    teleportPosition = destination.position;
+                    CC_Movement player = netObj.GetComponent<CC_Movement>();
+                    Vector3 teleportPosition = Vector3.zero;
+                    if (destination != null)
+                    {
+                        teleportPosition = destination.position;
+                    }
+                    else if (player != null && destination == null)
+                    {
+                        teleportPosition = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
+                    }
+                    if (player != null)
+                    {
+                        PlayerTeleportationRpc(netObj, teleportPosition, true, refillAir);
+                    }
+                    else
+                    {
+                        ObjectTeleportationRpc(netObj, teleportPosition, false);
+                    }
+                    ToggleSpaceMovement(toggleSpaceMovement, netObj.gameObject);
+                    StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, col));
                 }
-                else if (player != null && destination == null)
-                {
-                    teleportPosition = GameObject.FindGameObjectsWithTag("SpawnPoint")[player.OwnerClientId].transform.position;
-                } 
-                if (player != null)
-                {
-                    PlayerTeleportationRpc(netObj, teleportPosition, true, refillAir);
-                }
-                else
-                {
-                    ObjectTeleportationRpc(netObj, teleportPosition, false);
-                }
-                ToggleSpaceMovement(toggleSpaceMovement, netObj.gameObject);
-                StartCoroutine(ObjectTeleportCooldown(teleportCooldownTime, col));
             }
         }
     }
