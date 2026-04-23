@@ -19,7 +19,7 @@ public class SP_SpaceManager : NetworkBehaviour
     //[HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
     public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Dictionary<SP_Spawner, int> spawners = new Dictionary<SP_Spawner, int>();
-     public List<Collider> cannotTeleport = new List<Collider>();
+    [HideInInspector] public List<Collider> cannotTeleport = new List<Collider>();
     public Vector3 spaceBounds = new Vector3(20, 20, 20);
     [HideInInspector] public bool maxDebrisReached;
     [SerializeField] private List<GameObject> debrisDebugList = new List<GameObject>();
@@ -226,7 +226,7 @@ public class SP_SpaceManager : NetworkBehaviour
             Rigidbody rb = obj.GetComponent<Rigidbody>();
             NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
+            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed.Value;
             if (player != null)
             {
                 NetworkObject netObj = obj.GetComponent<NetworkObject>();

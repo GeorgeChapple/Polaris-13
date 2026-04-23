@@ -43,7 +43,7 @@ public class SP_Spawner : NetworkBehaviour
 
     private void Update()
     {
-        if (spaceManager.rocket.speed > 0.1f)
+        if (spaceManager.rocket.speed.Value > 0.1f)
         {
             if (timer < timeLimit)
             {
@@ -77,58 +77,75 @@ public class SP_Spawner : NetworkBehaviour
                     Vector2 spawnPosition = GetRandomSpawnPosition(settings.spawnbounds);
                     int prefabIndex = GetRandomPrefabIndex(settings);
 
-                    GameObject newDebris = Instantiate(
-                                settings.spaceObjects[prefabIndex].prefab,
-                                new Vector3(
-                                    spawnPosition.x,
-                                    spawnPosition.y,
-                                    spaceManager.spaceBounds.z / 2
-                                ),
-                                transform.rotation
-                            );
+                    List<GameObject> toSpawn = new List<GameObject>();
 
-                    SP_SpaceJunk junkComponent = newDebris.GetComponent<SP_SpaceJunk>();
-                    if (junkComponent != null)
+                    if (settings.spaceObjects[prefabIndex].prefab.CompareTag("RBPOI"))
                     {
-                        junkComponent.spawner = this;
-                    }
-
-                    newDebris.transform.eulerAngles = Vector3.back;
-
-                    NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
-                    if (netObj != null && !netObj.IsSpawned)
-                    {
-                        netObj.Spawn();
-                    }
-
-                    // items should be initialised after network spawn to ensure is server gates dont prevent
-                    INV_ItemDrop itemDrop = newDebris.GetComponent<INV_ItemDrop>();
-                    if (itemDrop != null)
-                    {
-                        itemDrop.Init(GetRandomDebrisItem());
-                    }
-
-                    INV_Chest chestObject = newDebris.GetComponent<INV_Chest>();
-                    if (chestObject != null)
-                    {
-                        PopulateChest(chestObject);
+                        for (int i = 0; i < settings.spaceObjects[prefabIndex].prefab.transform.childCount; i++)
+                        {
+                            toSpawn.Add(settings.spaceObjects[prefabIndex].prefab.transform.GetChild(i).gameObject);
+                        }
                     }
                     else
                     {
-                        // for POIs with chests inside
-                        INV_Chest[] chestsInChildren = newDebris.GetComponentsInChildren<INV_Chest>();
-                        if (chestsInChildren != null || chestsInChildren.Count() > 0)
-                        {
-                            foreach (INV_Chest chest in chestsInChildren)
-                            {
-                                PopulateChest(chest); // note to self, add item rarities into this system
-                            }
-                        }
+                        toSpawn.Add(settings.spaceObjects[prefabIndex].prefab);
                     }
 
+                    foreach (GameObject prefab in toSpawn)
+                    {
+                        GameObject newDebris = Instantiate(
+                                    prefab,
+                                    new Vector3(
+                                        spawnPosition.x + prefab.transform.position.x,
+                                        spawnPosition.y + prefab.transform.position.y,
+                                        spaceManager.spaceBounds.z / 2 + prefab.transform.position.z
+                                    ),
+                                    transform.rotation
+                                );
+
+                        SP_SpaceJunk junkComponent = newDebris.GetComponent<SP_SpaceJunk>();
+                        if (junkComponent != null)
+                        {
+                            junkComponent.spawner = this;
+                        }
+
+                        newDebris.transform.rotation = prefab.transform.rotation;
+
+                        NetworkObject netObj = newDebris.GetComponent<NetworkObject>();
+                        if (netObj != null && !netObj.IsSpawned)
+                        {
+                            netObj.Spawn();
+                        }
+
+                        // items should be initialised after network spawn to ensure is server gates dont prevent
+                        INV_ItemDrop itemDrop = newDebris.GetComponent<INV_ItemDrop>();
+                        if (itemDrop != null)
+                        {
+                            itemDrop.Init(GetRandomDebrisItem());
+                        }
+
+                        INV_Chest chestObject = newDebris.GetComponent<INV_Chest>();
+                        if (chestObject != null)
+                        {
+                            PopulateChest(chestObject);
+                        }
+                        else
+                        {
+                            // for POIs with chests inside
+                            INV_Chest[] chestsInChildren = newDebris.GetComponentsInChildren<INV_Chest>();
+                            if (chestsInChildren != null || chestsInChildren.Count() > 0)
+                            {
+                                foreach (INV_Chest chest in chestsInChildren)
+                                {
+                                    PopulateChest(chest); // note to self, add item rarities into this system
+                                }
+                            }
+                        }
 
 
-                    spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirection);
+
+                        spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirection);
+                    }
 
                     timer = 0;
                     timeLimit = GetRandomTimeLimit(settings);

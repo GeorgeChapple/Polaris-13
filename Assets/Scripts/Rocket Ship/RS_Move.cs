@@ -13,7 +13,7 @@ public class RS_Move : NetworkBehaviour
     public Vector3 worldPosition;
     public Vector3 worldDirection;
     public Vector3 targetPosition;
-    [HideInInspector] public float speed;
+     public NetworkVariable<float> speed = new NetworkVariable<float>();
     public float targetSpeed;
 
     public enum moveMode { Manual, Automatic, Deactivated }
@@ -54,13 +54,13 @@ public class RS_Move : NetworkBehaviour
     {
         if ((targetPosition - worldPosition).magnitude > targetSpeed)
         {
-            speed = Mathf.Lerp(speed, targetSpeed, Time.deltaTime);
+            speed.Value = Mathf.Lerp(speed.Value, targetSpeed, Time.deltaTime);
         }
         else
         {
-            speed = Mathf.Lerp(speed, 0, Time.deltaTime);
+            speed.Value = Mathf.Lerp(speed.Value, 0, Time.deltaTime);
         }
-            worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed), Time.deltaTime);
+            worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed.Value), Time.deltaTime);
         // lerp to target speed and clamp to target speed when close enough
 
 
