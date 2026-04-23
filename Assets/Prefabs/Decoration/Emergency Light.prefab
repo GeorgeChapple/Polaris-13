@@ -16,7 +16,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &8884554236894336345
 Transform:
@@ -83,7 +83,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 1
-  m_Lightmapping: 4
+  m_Lightmapping: 1
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
@@ -129,45 +129,53 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -8700617353114198275, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 7.573
+      value: 33.761
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.8
+      value: 3.213
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 32.977
+      value: -32.993
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.6926871
+      value: -0.30181172
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.692687
+      value: 0.6394605
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.14207289
+      value: -0.63946044
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.14207292
+      value: 0.30181167
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 90
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -230.533
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 23.182
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: -3133498875991405556, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: -2859109400176981367, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -177,6 +185,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Emergency Light
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 5100068591777345685, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -185,6 +197,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: ed0c6f1ef235ab74fa492266df752ecb, type: 2}
+    - target: {fileID: 7849714200538148067, guid: b03ac0024f13e8d48af5b84478c52984, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
