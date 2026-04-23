@@ -89,7 +89,7 @@ public class CC_Movement : NetworkBehaviour
     [Header("Animator")]
     [SerializeField] private Animator bodyAnimator;
     [SerializeField] private NetworkAnimator networkAnimator;
-    [SerializeField] private float groundAnimatorMaxSpeed = 6;    
+    [SerializeField] private float groundAnimatorMaxSpeed = 6;
 
     [Header("Network Ownership")]
     [Tooltip("If True, will work without network manager/ownership interference.")]
@@ -155,7 +155,8 @@ public class CC_Movement : NetworkBehaviour
     );
 
     //animator
-    private Vector3 currentSpeed;
+    private Vector2 currentSpeed;
+    private Vector2 moveInputA;
 
     // public read for other components like camera/interaction
     public Rigidbody Body => rb;
@@ -218,7 +219,7 @@ public class CC_Movement : NetworkBehaviour
         {
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
-        }        
+        }
     }
 
     public bool IsLocallyControlled()
@@ -291,13 +292,21 @@ public class CC_Movement : NetworkBehaviour
 
     private void Update()
     {
-        currentSpeed = Vector3.Project(rb.linearVelocity / groundAnimatorMaxSpeed, Vector3.ProjectOnPlane(CameraTarget.forward, upAxis));
+        currentSpeed = moveInputA;
     }
 
     // Call in FixedUpdate.
     public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
     {
         if (!IsLocallyControlled() || rb == null) { return; }
+
+        if (IsOwner)
+        {
+            foreach (Renderer typeshit in bodyAnimator.GetComponentsInChildren<Renderer>())
+            {
+                typeshit.enabled = false;
+            }
+        }
 
         // keep our up axis updated from gravity
         UpdateGravity();
@@ -482,6 +491,8 @@ public class CC_Movement : NetworkBehaviour
     {
         if (CameraTarget == null || rb == null) { return; }
 
+        moveInputA = moveInput;
+
         // current velocity split
         Vector3 vel = rb.linearVelocity;
         Vector3 verticalVel = Vector3.Project(vel, -upAxis);
@@ -525,8 +536,8 @@ public class CC_Movement : NetworkBehaviour
         camForwardGrounded.Normalize();
         camRightGrounded.Normalize();
 
-        Vector3 moveDirGrounded = camRightGrounded * moveInput.x + camForwardGrounded * moveInput.y;
-        if (moveDirGrounded.sqrMagnitude > 1f) { moveDirGrounded.Normalize(); }
+        Vector3 groundedMoveDir = camRightGrounded * moveInput.x + camForwardGrounded * moveInput.y;
+        if (groundedMoveDir.sqrMagnitude > 1f) { groundedMoveDir.Normalize(); }
 
         planarVel = Vector3.ProjectOnPlane(planarVel, upAxis);
 
@@ -543,7 +554,7 @@ public class CC_Movement : NetworkBehaviour
         if (sprinting) { speedMult *= sprintSpeedMult; }
         if (crouching) { speedMult *= crouchSpeedMult; }
 
-        Vector3 targetPlanarVel = moveDirGrounded * (moveSpeed * speedMult);
+        Vector3 targetPlanarVel = groundedMoveDir * (moveSpeed * speedMult);
         float accelT = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
         Vector3 newPlanarVel = Vector3.Lerp(planarVel, targetPlanarVel, accelT);
 
@@ -956,7 +967,7 @@ public class CC_Movement : NetworkBehaviour
     void UpdateAnimator()
     {
         bodyAnimator.SetFloat("X", currentSpeed.x);
-        bodyAnimator.SetFloat("Y", currentSpeed.z);
+        bodyAnimator.SetFloat("Y", currentSpeed.y);
         bodyAnimator.SetBool("Grounded", grounded);
     }
 
