@@ -165,6 +165,8 @@ public class CC_CameraController : NetworkBehaviour
 
     public Transform ReplicatedCameraDirectionRoot => replicatedCameraDirectionRoot;
 
+    public Quaternion CameraWorldRotation => cameraWorldRotation;
+
     protected virtual void Awake()
     {
         InitialiseComponents();
