@@ -155,8 +155,7 @@ public class CC_Movement : NetworkBehaviour
     );
 
     //animator
-    private Vector2 currentSpeed;
-    private Vector2 moveInputA;
+    private Vector3 currentSpeed;
 
     // public read for other components like camera/interaction
     public Rigidbody Body => rb;
@@ -292,7 +291,36 @@ public class CC_Movement : NetworkBehaviour
 
     private void Update()
     {
-        currentSpeed = moveInputA;
+        if (rb == null || CameraTarget == null)
+        {
+            currentSpeed = Vector3.zero;
+            return;
+        }
+
+        // remove vertical velocity relative to current gravity up
+        Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, upAxis);
+
+        // camera-relative axes on the same movement plane
+        Vector3 camForward = Vector3.ProjectOnPlane(CameraTarget.forward, upAxis);
+        Vector3 camRight = Vector3.ProjectOnPlane(CameraTarget.right, upAxis);
+
+        // fallbacks in case camera is looking too close to straight up/down
+        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(transform.forward, upAxis); }
+        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(transform.right, upAxis); }
+
+        camForward.Normalize();
+        camRight.Normalize();
+
+        // convert world planar velocity into camera local velocity
+        float relativeX = Vector3.Dot(planarVelocity, camRight);
+        float relativeY = Vector3.Dot(planarVelocity, camForward);
+
+        // normalize to animator range
+        currentSpeed = new Vector3(
+            Mathf.Clamp(relativeX / groundAnimatorMaxSpeed, -1f, 1f),
+            0f,
+            Mathf.Clamp(relativeY / groundAnimatorMaxSpeed, -1f, 1f)
+        );
     }
 
     // Call in FixedUpdate.
@@ -302,9 +330,9 @@ public class CC_Movement : NetworkBehaviour
 
         if (IsOwner)
         {
-            foreach (Renderer typeshit in bodyAnimator.GetComponentsInChildren<Renderer>())
+            foreach (Renderer bodyRenderers in bodyAnimator.GetComponentsInChildren<Renderer>())
             {
-                typeshit.enabled = false;
+                bodyRenderers.enabled = false;
             }
         }
 
@@ -490,8 +518,6 @@ public class CC_Movement : NetworkBehaviour
     protected virtual void GroundMove(Vector2 moveInput)
     {
         if (CameraTarget == null || rb == null) { return; }
-
-        moveInputA = moveInput;
 
         // current velocity split
         Vector3 vel = rb.linearVelocity;
@@ -967,7 +993,7 @@ public class CC_Movement : NetworkBehaviour
     void UpdateAnimator()
     {
         bodyAnimator.SetFloat("X", currentSpeed.x);
-        bodyAnimator.SetFloat("Y", currentSpeed.y);
+        bodyAnimator.SetFloat("Y", currentSpeed.z);
         bodyAnimator.SetBool("Grounded", grounded);
     }
 
