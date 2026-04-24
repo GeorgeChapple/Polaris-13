@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 
 // Made by: Jason Lodge
@@ -79,17 +80,16 @@ public class CC_Movement : NetworkBehaviour
     public float fallTimeout = 0.15f;
 
     [Header("Replicated Visual Body")]
-    [Tooltip("Local-only visual body root. Enabled for owner, disabled for non owners.")]
-    [SerializeField] private Transform localVisualBodyRoot;
-
-    [Tooltip("Always-active transform used as the replicated version of the local visual body. Disabled for owner, enabled for non owners.")]
-    [SerializeField] private Transform replicatedVisualBodyRoot;
-
-    [Tooltip("Source transform to copy for replicated visual body. If null, uses replicatedVisualBodyRoot.")]
-    [SerializeField] private Transform replicatedVisualBodySource;
+    [Tooltip("Transform used as the visual body.")]
+    [SerializeField] private Transform visualBodyRoot;
 
     [Tooltip("If true, owner updates the replicated visual body root from the local visual body source.")]
     [SerializeField] private bool replicateVisualBody = true;
+
+    [Header("Animator")]
+    [SerializeField] private Animator bodyAnimator;
+    [SerializeField] private NetworkAnimator networkAnimator;
+    [SerializeField] private float groundAnimatorMaxSpeed = 6;
 
     [Header("Network Ownership")]
     [Tooltip("If True, will work without network manager/ownership interference.")]
@@ -154,6 +154,9 @@ public class CC_Movement : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
+    //animator
+    private Vector3 currentSpeed;
+
     // public read for other components like camera/interaction
     public Rigidbody Body => rb;
     public Vector3 UpAxis => upAxis;
@@ -166,12 +169,13 @@ public class CC_Movement : NetworkBehaviour
     public bool JumpedThisTick => jumpedThisTick;
     public bool SinglePlayer => singlePlayer;
     public Transform CameraTarget => cameraController != null ? cameraController.cinemachineCameraTarget : null;
-    public Transform ReplicatedVisualBodyRoot => replicatedVisualBodyRoot;
+    public Transform ReplicatedVisualBodyRoot => visualBodyRoot;
+
+    public Vector3 CurrentSpeed => currentSpeed;
 
     protected virtual void Awake()
     {
         InitialiseComponents();
-        ApplyVisualOwnershipState();
 
         // only do player text immediately in single player mode.
         if (singlePlayer && playerText != null)
@@ -215,11 +219,6 @@ public class CC_Movement : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
-
-        if (replicatedVisualBodySource == null && replicatedVisualBodyRoot != null)
-        {
-            replicatedVisualBodySource = replicatedVisualBodyRoot;
-        }
     }
 
     public bool IsLocallyControlled()
@@ -227,27 +226,11 @@ public class CC_Movement : NetworkBehaviour
         return singlePlayer || (IsSpawned && IsOwner);
     }
 
-    void ApplyVisualOwnershipState()
-    {
-        bool local = IsLocallyControlled();
-
-        if (localVisualBodyRoot != null)
-        {
-            localVisualBodyRoot.gameObject.SetActive(local);
-        }
-
-        if (replicatedVisualBodyRoot != null)
-        {
-            replicatedVisualBodyRoot.gameObject.SetActive(!local);
-        }
-    }
-
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
         InitialiseComponents();
-        ApplyVisualOwnershipState();
 
         if (playerText != null && !singlePlayer)
         {
@@ -273,13 +256,11 @@ public class CC_Movement : NetworkBehaviour
     public override void OnGainedOwnership()
     {
         base.OnGainedOwnership();
-        ApplyVisualOwnershipState();
     }
 
     public override void OnLostOwnership()
     {
         base.OnLostOwnership();
-        ApplyVisualOwnershipState();
     }
 
     private IEnumerator WaitSpawn(bool networked)
@@ -308,10 +289,52 @@ public class CC_Movement : NetworkBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (rb == null || CameraTarget == null)
+        {
+            currentSpeed = Vector3.zero;
+            return;
+        }
+
+        // remove vertical velocity relative to current gravity up
+        Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, upAxis);
+
+        // camera-relative axes on the same movement plane
+        Vector3 camForward = Vector3.ProjectOnPlane(CameraTarget.forward, upAxis);
+        Vector3 camRight = Vector3.ProjectOnPlane(CameraTarget.right, upAxis);
+
+        // fallbacks in case camera is looking too close to straight up/down
+        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(transform.forward, upAxis); }
+        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(transform.right, upAxis); }
+
+        camForward.Normalize();
+        camRight.Normalize();
+
+        // convert world planar velocity into camera local velocity
+        float relativeX = Vector3.Dot(planarVelocity, camRight);
+        float relativeY = Vector3.Dot(planarVelocity, camForward);
+
+        // normalize to animator range
+        currentSpeed = new Vector3(
+            Mathf.Clamp(relativeX / groundAnimatorMaxSpeed, -1f, 1f),
+            0f,
+            Mathf.Clamp(relativeY / groundAnimatorMaxSpeed, -1f, 1f)
+        );
+    }
+
     // Call in FixedUpdate.
     public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
     {
         if (!IsLocallyControlled() || rb == null) { return; }
+
+        if (IsOwner)
+        {
+            foreach (Renderer bodyRenderers in bodyAnimator.GetComponentsInChildren<Renderer>())
+            {
+                bodyRenderers.enabled = false;
+            }
+        }
 
         // keep our up axis updated from gravity
         UpdateGravity();
@@ -346,6 +369,7 @@ public class CC_Movement : NetworkBehaviour
 
         // clear each tick
         jumpedThisTick = false;
+        networkAnimator.ResetTrigger("Jumped");
         usingGroundThrusters = false;
         usingSpaceMoveThrusters = false;
         usingSpaceStabiliseThrusters = false;
@@ -401,6 +425,7 @@ public class CC_Movement : NetworkBehaviour
         if (values.isDead)
         {
             UpdateReplicatedVisualBody();
+            UpdateAnimator();
             return;
         }
 
@@ -422,6 +447,7 @@ public class CC_Movement : NetworkBehaviour
         }
 
         UpdateReplicatedVisualBody();
+        UpdateAnimator();
     }
 
     void UpdateGravity()
@@ -536,8 +562,8 @@ public class CC_Movement : NetworkBehaviour
         camForwardGrounded.Normalize();
         camRightGrounded.Normalize();
 
-        Vector3 moveDirGrounded = camRightGrounded * moveInput.x + camForwardGrounded * moveInput.y;
-        if (moveDirGrounded.sqrMagnitude > 1f) { moveDirGrounded.Normalize(); }
+        Vector3 groundedMoveDir = camRightGrounded * moveInput.x + camForwardGrounded * moveInput.y;
+        if (groundedMoveDir.sqrMagnitude > 1f) { groundedMoveDir.Normalize(); }
 
         planarVel = Vector3.ProjectOnPlane(planarVel, upAxis);
 
@@ -554,7 +580,7 @@ public class CC_Movement : NetworkBehaviour
         if (sprinting) { speedMult *= sprintSpeedMult; }
         if (crouching) { speedMult *= crouchSpeedMult; }
 
-        Vector3 targetPlanarVel = moveDirGrounded * (moveSpeed * speedMult);
+        Vector3 targetPlanarVel = groundedMoveDir * (moveSpeed * speedMult);
         float accelT = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
         Vector3 newPlanarVel = Vector3.Lerp(planarVel, targetPlanarVel, accelT);
 
@@ -586,6 +612,7 @@ public class CC_Movement : NetworkBehaviour
                 // when jumping stop crouching
                 crouching = false;
                 jumpedThisTick = true;
+                networkAnimator.SetTrigger("Jumped");
             }
         }
 
@@ -908,10 +935,10 @@ public class CC_Movement : NetworkBehaviour
 
     void UpdateReplicatedVisualBody()
     {
-        if (!replicateVisualBody || !IsLocallyControlled() || replicatedVisualBodyRoot == null) { return; }
+        if (!replicateVisualBody || !IsLocallyControlled() || visualBodyRoot == null) { return; }
 
-        Transform source = replicatedVisualBodySource != null ? replicatedVisualBodySource : replicatedVisualBodyRoot;
-        Transform parent = replicatedVisualBodyRoot.parent;
+        Transform source = visualBodyRoot;
+        Transform parent = visualBodyRoot.parent;
 
         Vector3 localPos;
         Quaternion localRot;
@@ -947,20 +974,27 @@ public class CC_Movement : NetworkBehaviour
 
     void ApplyReplicatedVisualBody()
     {
-        if (replicatedVisualBodyRoot == null) { return; }
+        if (visualBodyRoot == null) { return; }
 
-        Transform parent = replicatedVisualBodyRoot.parent;
+        Transform parent = visualBodyRoot.parent;
 
         if (parent != null)
         {
-            replicatedVisualBodyRoot.localPosition = replicatedVisualBodyLocalPosition.Value;
-            replicatedVisualBodyRoot.localRotation = replicatedVisualBodyLocalRotation.Value;
+            visualBodyRoot.localPosition = replicatedVisualBodyLocalPosition.Value;
+            visualBodyRoot.localRotation = replicatedVisualBodyLocalRotation.Value;
         }
         else
         {
-            replicatedVisualBodyRoot.position = replicatedVisualBodyLocalPosition.Value;
-            replicatedVisualBodyRoot.rotation = replicatedVisualBodyLocalRotation.Value;
+            visualBodyRoot.position = replicatedVisualBodyLocalPosition.Value;
+            visualBodyRoot.rotation = replicatedVisualBodyLocalRotation.Value;
         }
+    }
+
+    void UpdateAnimator()
+    {
+        bodyAnimator.SetFloat("X", currentSpeed.x);
+        bodyAnimator.SetFloat("Y", currentSpeed.z);
+        bodyAnimator.SetBool("Grounded", grounded);
     }
 
     private IEnumerator DeathRespawnRoutine()

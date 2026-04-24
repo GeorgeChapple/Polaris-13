@@ -1,9 +1,10 @@
 using UnityEngine;
 
 // Made by: Jason Lodge
-// Summary: Stabilises a visual body child to the gravity up axis and rotates it around a body pivot like a joint.
+// Summary: Stabilises a visual body child to the gravity up axis
+// and rotates it around a body pivot like a joint. Also sets up the visual.
 
-public class CC_BodyVisualStabiliser : MonoBehaviour
+public class CC_BodyVisual : MonoBehaviour
 {
     [Header("References")]
     public CC_Movement movement;
@@ -33,6 +34,12 @@ public class CC_BodyVisualStabiliser : MonoBehaviour
         Initialise();
     }
 
+    void OnEnable()
+    {
+        Initialise();
+        SetupVisualBody();
+    }
+
     void Initialise()
     {
         if (initialised) { return; }
@@ -54,16 +61,28 @@ public class CC_BodyVisualStabiliser : MonoBehaviour
         }
     }
 
+    void SetupVisualBody()
+    {
+        if (visualRoot == null || bodyPivot == null) { return; }
+
+        // cache the offset from the body pivot so the visual can rotate around it like a joint
+        initialPivotLocalOffset = Quaternion.Inverse(bodyPivot.rotation) * (visualRoot.position - bodyPivot.position);
+
+        // start from the current body orientation so owner and non-owner instances both initialise cleanly
+        visualRotation = visualRoot.rotation;
+
+        ApplyVisualAroundPivot();
+    }
+
     void LateUpdate()
     {
-        if (movement == null || visualRoot == null || bodyPivot == null) { return; }
-
-        // only the local owner should drive the live visual body.
-        // remote instances should use the replicated pose instead.
-        if (!movement.IsLocallyControlled())
+        if (!initialised)
         {
-            return;
+            Initialise();
+            SetupVisualBody();
         }
+
+        if (movement == null || visualRoot == null || bodyPivot == null) { return; }
 
         UpdateVisualRotation();
     }
@@ -76,15 +95,18 @@ public class CC_BodyVisualStabiliser : MonoBehaviour
 
         Vector3 targetForward;
 
-        if (!hasUsableGravity && followCameraForwardInSpace && movement.CameraTarget != null)
+        // local owner can use the live camera facing
+        if (movement.IsLocallyControlled() && !hasUsableGravity && followCameraForwardInSpace && movement.CameraTarget != null)
         {
             targetForward = movement.CameraTarget.forward;
         }
         else
         {
+            // non-owners and grounded movement should follow the body pivot / replicated body facing
             targetForward = Vector3.ProjectOnPlane(bodyPivot.forward, upAxis);
 
-            if (movement.CameraTarget != null)
+            // while locally controlled in gravity, prefer camera planar forward
+            if (movement.IsLocallyControlled() && movement.CameraTarget != null)
             {
                 Vector3 cameraPlanarForward = Vector3.ProjectOnPlane(movement.CameraTarget.forward, upAxis);
                 if (cameraPlanarForward.sqrMagnitude > 0.0001f)
@@ -97,6 +119,11 @@ public class CC_BodyVisualStabiliser : MonoBehaviour
         if (targetForward.sqrMagnitude < 0.0001f)
         {
             targetForward = Vector3.ProjectOnPlane(visualRoot.forward, upAxis);
+        }
+
+        if (targetForward.sqrMagnitude < 0.0001f)
+        {
+            targetForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
         }
 
         if (targetForward.sqrMagnitude < 0.0001f)
@@ -114,7 +141,23 @@ public class CC_BodyVisualStabiliser : MonoBehaviour
         }
         else
         {
-            Vector3 targetUp = movement.CameraTarget != null ? movement.CameraTarget.up : visualRoot.up;
+            Vector3 targetUp;
+
+            // local owner in space can fully follow the camera orientation
+            if (movement.IsLocallyControlled() && movement.CameraTarget != null)
+            {
+                targetUp = movement.CameraTarget.up;
+            }
+            else
+            {
+                targetUp = bodyPivot.up;
+            }
+
+            if (targetUp.sqrMagnitude < 0.0001f)
+            {
+                targetUp = visualRoot.up;
+            }
+
             targetRotation = Quaternion.LookRotation(targetForward, targetUp);
         }
 
