@@ -507,7 +507,10 @@ public class CC_CharacterValues : MonoBehaviour
     public void SetHealth(float value, bool clamp = true)
     {
         health = clamp ? Mathf.Clamp(value, 0f, maxHealth) : value;
-        isDead = (health <= 0f);
+        if (health <= 0f)
+        {
+            Kill();
+        }
         RefreshUI();
         UpdateDeathScreenState();
     }
@@ -529,7 +532,10 @@ public class CC_CharacterValues : MonoBehaviour
         if (refill) { health = maxHealth; }
         else { health = Mathf.Clamp(health, 0f, maxHealth); }
 
-        isDead = (health <= 0f);
+        if (health <= 0f)
+        {
+            Kill();
+        }
         RefreshUI();
         UpdateDeathScreenState();
     }
@@ -712,10 +718,13 @@ public class CC_CharacterValues : MonoBehaviour
 
     public void Kill()
     {
-        health = 0f;
-        isDead = true;
-        RefreshUI();
-        UpdateDeathScreenState();
+        if (!invincible)
+        {
+            health = 0f;
+            isDead = true;
+            RefreshUI();
+            UpdateDeathScreenState();
+        }
     }
 
     public void Revive(float healthPercent = 1f)
