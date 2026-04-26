@@ -89,7 +89,7 @@ public class CC_Movement : NetworkBehaviour
     [Header("Animator")]
     [SerializeField] private Animator bodyAnimator;
     [SerializeField] private NetworkAnimator networkAnimator;
-    [SerializeField] private float groundAnimatorMaxSpeed = 6;    
+    [SerializeField] private float groundAnimatorMaxSpeed = 6;
 
     [Header("Network Ownership")]
     [Tooltip("If True, will work without network manager/ownership interference.")]
@@ -218,7 +218,7 @@ public class CC_Movement : NetworkBehaviour
         {
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
-        }        
+        }
     }
 
     public bool IsLocallyControlled()
@@ -291,13 +291,50 @@ public class CC_Movement : NetworkBehaviour
 
     private void Update()
     {
-        currentSpeed = Vector3.Project(rb.linearVelocity / groundAnimatorMaxSpeed, Vector3.ProjectOnPlane(CameraTarget.forward, upAxis));
+        if (rb == null || CameraTarget == null)
+        {
+            currentSpeed = Vector3.zero;
+            return;
+        }
+
+        // remove vertical velocity relative to current gravity up
+        Vector3 planarVelocity = Vector3.ProjectOnPlane(rb.linearVelocity, upAxis);
+
+        // camera-relative axes on the same movement plane
+        Vector3 camForward = Vector3.ProjectOnPlane(CameraTarget.forward, upAxis);
+        Vector3 camRight = Vector3.ProjectOnPlane(CameraTarget.right, upAxis);
+
+        // fallbacks in case camera is looking too close to straight up/down
+        if (camForward.sqrMagnitude < 0.0001f) { camForward = Vector3.ProjectOnPlane(transform.forward, upAxis); }
+        if (camRight.sqrMagnitude < 0.0001f) { camRight = Vector3.ProjectOnPlane(transform.right, upAxis); }
+
+        camForward.Normalize();
+        camRight.Normalize();
+
+        // convert world planar velocity into camera local velocity
+        float relativeX = Vector3.Dot(planarVelocity, camRight);
+        float relativeY = Vector3.Dot(planarVelocity, camForward);
+
+        // normalize to animator range
+        currentSpeed = new Vector3(
+            Mathf.Clamp(relativeX / groundAnimatorMaxSpeed, -1f, 1f),
+            0f,
+            Mathf.Clamp(relativeY / groundAnimatorMaxSpeed, -1f, 1f)
+        );
     }
 
     // Call in FixedUpdate.
     public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
     {
         if (!IsLocallyControlled() || rb == null) { return; }
+
+        if (IsOwner)
+        {
+            foreach (Renderer bodyRenderers in bodyAnimator.GetComponentsInChildren<Renderer>())
+            {
+                bodyRenderers.enabled = false;
+            }
+        }
 
         // keep our up axis updated from gravity
         UpdateGravity();
@@ -525,8 +562,8 @@ public class CC_Movement : NetworkBehaviour
         camForwardGrounded.Normalize();
         camRightGrounded.Normalize();
 
-        Vector3 moveDirGrounded = camRightGrounded * moveInput.x + camForwardGrounded * moveInput.y;
-        if (moveDirGrounded.sqrMagnitude > 1f) { moveDirGrounded.Normalize(); }
+        Vector3 groundedMoveDir = camRightGrounded * moveInput.x + camForwardGrounded * moveInput.y;
+        if (groundedMoveDir.sqrMagnitude > 1f) { groundedMoveDir.Normalize(); }
 
         planarVel = Vector3.ProjectOnPlane(planarVel, upAxis);
 
@@ -543,7 +580,7 @@ public class CC_Movement : NetworkBehaviour
         if (sprinting) { speedMult *= sprintSpeedMult; }
         if (crouching) { speedMult *= crouchSpeedMult; }
 
-        Vector3 targetPlanarVel = moveDirGrounded * (moveSpeed * speedMult);
+        Vector3 targetPlanarVel = groundedMoveDir * (moveSpeed * speedMult);
         float accelT = 1f - Mathf.Exp(-accelerationRate * Time.fixedDeltaTime);
         Vector3 newPlanarVel = Vector3.Lerp(planarVel, targetPlanarVel, accelT);
 
