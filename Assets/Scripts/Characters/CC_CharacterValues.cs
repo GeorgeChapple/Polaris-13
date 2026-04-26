@@ -127,6 +127,7 @@ public class CC_CharacterValues : MonoBehaviour
     }
 
     [Header("Health")]
+    [SerializeField] private bool invincible = false;
     public float maxHealth = 100f;
     [SerializeField] float health = 100f;
 
@@ -333,7 +334,7 @@ public class CC_CharacterValues : MonoBehaviour
             TickEmptyValueDamage();
 
             // rudimentary death checks
-            if (!isDead && health <= 0f)
+            if (!isDead && health <= 0f && !invincible)
             {
                 Kill();
             }
