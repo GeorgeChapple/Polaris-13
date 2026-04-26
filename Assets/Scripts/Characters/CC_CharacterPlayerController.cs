@@ -262,7 +262,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         // cursor
         UpdateCursorUI();
 
-        if (Input.GetKeyDown(hideHudButton)) 
+        if (Input.GetKeyDown(hideHudButton))
         {
             //hide hud
             hideHudHeld = canvasObject.activeInHierarchy ? false : true;
@@ -504,7 +504,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             {
                 hotBar.CycleSelection(scrollDirection);
             }
-        }        
+        }
 
         lastHotbarScrollDirection = scrollDirection;
 

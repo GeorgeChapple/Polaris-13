@@ -24,6 +24,10 @@ public class IT_PushDevice : CC_INV_UsableItems
     private float chargingTimer = 0f;
     private float cooldownTimer = 0f;
 
+    private float pushForceLocal = 0f;
+    private float chargingTimerLocal = 0f;
+    private float cooldownTimerLocal = 0f;
+
     private NetworkObject playerWhoSent;
 
     
@@ -37,8 +41,22 @@ public class IT_PushDevice : CC_INV_UsableItems
         playerWhoSent = netObj;
     }
 
-    public override void OnUse(NetworkObjectReference netObjRef) { }
+    public override void OnUseHeldLocally(NetworkObjectReference netObjRef) 
+    {
+        if (muzzlePoint == null)
+        {
+            return;
+        }
 
+        if (cooldownTimer <= 0f)
+        {
+            chargingTimerLocal += Time.deltaTime;
+            chargingTimerLocal = Mathf.Clamp(chargingTimerLocal, 0f, Mathf.Max(0.001f, chargeTime));
+
+            float safeChargeTime = Mathf.Max(0.001f, chargeTime);
+            pushForceLocal = Mathf.Lerp(0f, maxPushForce, Mathf.Clamp(chargingTimerLocal, 0f, safeChargeTime) / safeChargeTime);
+        }
+    }
     public override void OnUseHeld(NetworkObjectReference netObjRef)
     {
         if (muzzlePoint == null)
@@ -73,9 +91,13 @@ public class IT_PushDevice : CC_INV_UsableItems
         pushForce = 0;
         chargingTimer = 0;
     }
-    public override void OnAltUse(NetworkObjectReference netObjRef) { }
-    public override void OnAltUseHeld(NetworkObjectReference netObjRef) { }
-    public override void OnAltUseReleased(NetworkObjectReference netObjRef) { }
+
+    public override void OnUseReleasedLocally(NetworkObjectReference netObjRef)
+    {
+        cooldownTimerLocal = cooldown;
+        pushForceLocal = 0;
+        chargingTimerLocal = 0;
+    }
 
     private void PushObject(Collider col)
     {
@@ -106,6 +128,14 @@ public class IT_PushDevice : CC_INV_UsableItems
         float chargetimerPercentage = Mathf.Max(minimumFill, chargingTimer) / chargeTime;
         uIChargeImage.fillAmount = chargetimerPercentage / (1 - minimumFill);
         uIChargeText.SetText($"{Mathf.Round(chargingTimer * 100) / 100}/{chargeTime}");
+
+        if (!NetworkManager.Singleton.IsHost)
+        {
+            cooldownTimerLocal -= Time.deltaTime;
+            chargetimerPercentage = Mathf.Max(minimumFill, chargingTimerLocal) / chargeTime;
+            uIChargeImage.fillAmount = chargetimerPercentage / (1 - minimumFill);
+            uIChargeText.SetText($"{Mathf.Round(chargingTimerLocal * 100) / 100}/{chargeTime}");
+        }
     }
 
     private void OnDrawGizmos()
