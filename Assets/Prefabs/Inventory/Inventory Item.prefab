@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 4043289975837125573}
   - component: {fileID: -5068223315693377172}
   - component: {fileID: 8125151144193780619}
+  - component: {fileID: 4269299038884120446}
   m_Layer: 8
   m_Name: Inventory Item
   m_TagString: Untagged
@@ -312,3 +313,16 @@ MonoBehaviour:
   UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &4269299038884120446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2353747757295221720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e1535f31a4056449a26d288c0bed6e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1

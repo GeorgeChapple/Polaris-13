@@ -89,27 +89,43 @@ public class SP_SpaceManager : NetworkBehaviour
 
     private void OnTriggerExit(Collider col)
     {
-        StartCoroutine(WaitTriggerExit(col));
-    }
-
-    private IEnumerator WaitTriggerExit(Collider col)
-    {
-        float t = 0;
-        while (t < 0.1f)
-        {
-            t += Time.deltaTime;
-            yield return null;
-        }
         NetworkObject netObj = col.GetComponent<NetworkObject>();
         if (netObj != null)
         {
-            if (netObj.GetComponent<CC_Movement>() && !cannotTeleport.Contains(col))
+            StartWaitTriggerExitRpc(netObj);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void StartWaitTriggerExitRpc(NetworkObjectReference targetRef)
+    {
+        StartCoroutine(WaitTriggerExit(targetRef));
+    }
+
+    private IEnumerator WaitTriggerExit(NetworkObjectReference targetRef)
+    {
+        if (targetRef.TryGet(out NetworkObject netObj))
+        {
+            float t = 0;
+            while (t < 0.1f)
             {
-                PlayerExitSpaceRpc(netObj);
+                t += Time.deltaTime;
+                yield return null;
             }
-            else
+            if (netObj != null)
             {
-                ObjectExitSpaceRpc(netObj);
+                Collider col = netObj.GetComponent<Collider>();
+                if (col != null)
+                { 
+                    if (netObj.GetComponent<CC_Movement>() && !cannotTeleport.Contains(col))
+                    {
+                        PlayerExitSpaceRpc(netObj);
+                    }
+                    else
+                    {
+                        ObjectExitSpaceRpc(netObj);
+                    }
+                }
             }
         }
     }
@@ -210,7 +226,7 @@ public class SP_SpaceManager : NetworkBehaviour
             Rigidbody rb = obj.GetComponent<Rigidbody>();
             NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed;
+            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection).normalized * rocket.speed.Value;
             if (player != null)
             {
                 NetworkObject netObj = obj.GetComponent<NetworkObject>();

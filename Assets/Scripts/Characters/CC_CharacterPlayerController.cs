@@ -37,6 +37,8 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Tooltip("True when any menu is open, will stop movement / camera / interaction and free cursor.")]
     [SerializeField] private bool inMenu;
 
+    [SerializeField] private GameObject canvasObject;
+
     [Tooltip("Pause menu root.")]
     [SerializeField] private GameObject pauseMenuRoot;
 
@@ -64,6 +66,8 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     [Header("Overlay UI")]
     [SerializeField] private UI_ScannerOverlay scannerOverlay;
 
+    [SerializeField] private KeyCode hideHudButton;
+
     public UI_ScannerOverlay ScannerOverlay => scannerOverlay;
 
     private bool cursorLocked;
@@ -82,6 +86,8 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private bool hotbarSlot3Held;
     private bool hotbarSlot4Held;
     private int lastHotbarScrollDirection;
+
+    private bool hideHudHeld = false;
 
     public bool InMenu => inMenu;
 
@@ -255,6 +261,13 @@ public class CC_CharacterPlayerController : NetworkBehaviour
 
         // cursor
         UpdateCursorUI();
+
+        if (Input.GetKeyDown(hideHudButton))
+        {
+            //hide hud
+            hideHudHeld = canvasObject.activeInHierarchy ? false : true;
+            canvasObject.SetActive(hideHudHeld);
+        }
     }
 
     private void FixedUpdate()
@@ -491,7 +504,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             {
                 hotBar.CycleSelection(scrollDirection);
             }
-        }        
+        }
 
         lastHotbarScrollDirection = scrollDirection;
 

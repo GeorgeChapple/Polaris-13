@@ -12,7 +12,9 @@ public class SP_SpaceJunk : NetworkBehaviour
     [HideInInspector] public Vector3 junkRotationRate;
     [HideInInspector] public SP_Spawner spawner;
     [HideInInspector] public bool canTeleport = true;
+    [SerializeField] private Vector2 randomTorque = new Vector2(-10, 10);
     [SerializeField] private float scaleSpeed = 1;
+    [SerializeField] private bool destroyOnRocket = true;
     [SerializeField] private GameObject destroyVFX;
     private SP_SpaceManager spaceManager;
     private bool scaling = false;
@@ -32,7 +34,7 @@ public class SP_SpaceJunk : NetworkBehaviour
             return;
         }
 
-        if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket"))
+        if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket") && destroyOnRocket)
         {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
@@ -55,7 +57,7 @@ public class SP_SpaceJunk : NetworkBehaviour
         StartLerpScale(Vector3.zero, transform.localScale, false);
         if (rb != null)
         {
-            rb.AddTorque(Vector3.one * Random.Range(-10, 10));
+            rb.AddTorque(Vector3.one * Random.Range(randomTorque.x, randomTorque.y));
         } 
         if (IsServer && spawner != null)
         { 
