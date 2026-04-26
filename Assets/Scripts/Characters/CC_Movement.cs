@@ -912,26 +912,45 @@ public class CC_Movement : NetworkBehaviour
     }
 
     public void UpdateCapsuleCrouch(float crouchSharpness)
+{
+    bool canCrouch = HasUsableGravity() && grounded && !jumpedThisTick;
+    if (!canCrouch) { crouching = false; }
+
+    if (bodyCapsule == null) { return; }
+
+    float targetHeight = capsuleBaseHeight * (crouching ? crouchCapsuleHeightMult : 1f);
+
+    // move the capsule center along the current gravity up axis.
+    Vector3 localUpAxis = GetCapsuleLocalUpAxis();
+
+    Vector3 targetCenter = capsuleBaseCenter;
+    if (crouching)
     {
-        bool canCrouch = HasUsableGravity() && grounded && !jumpedThisTick;
-        if (!canCrouch) { crouching = false; }
-
-        if (bodyCapsule == null) { return; }
-
-        float targetHeight = capsuleBaseHeight * (crouching ? crouchCapsuleHeightMult : 1f);
-
-        // target center is always based from the original capsule values
-        Vector3 targetCenter = capsuleBaseCenter;
-        if (crouching)
-        {
-            targetCenter.y -= (capsuleBaseHeight - targetHeight) * 0.5f;
-        }
-
-        float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
-
-        bodyCapsule.height = Mathf.Lerp(bodyCapsule.height, targetHeight, t);
-        bodyCapsule.center = Vector3.Lerp(bodyCapsule.center, targetCenter, t);
+        targetCenter -= localUpAxis * ((capsuleBaseHeight - targetHeight) * 0.5f);
     }
+
+    float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
+
+    bodyCapsule.height = Mathf.Lerp(bodyCapsule.height, targetHeight, t);
+    bodyCapsule.center = Vector3.Lerp(bodyCapsule.center, targetCenter, t);
+}
+
+private Vector3 GetCapsuleLocalUpAxis()
+{
+    if (bodyCapsule == null)
+    {
+        return Vector3.up;
+    }
+
+    Vector3 localUpAxis = bodyCapsule.transform.InverseTransformDirection(upAxis);
+
+    if (localUpAxis.sqrMagnitude < 0.0001f)
+    {
+        return Vector3.up;
+    }
+
+    return localUpAxis.normalized;
+}
 
     void UpdateReplicatedVisualBody()
     {
