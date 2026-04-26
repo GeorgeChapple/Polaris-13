@@ -142,6 +142,7 @@ public class CC_CameraController : NetworkBehaviour
 
     // crouch state
     Vector3 camTargetBaseLocalPos;
+    Vector3 currentCrouchCameraLocalPos;
 
     // camera bobbing state
     float bobTime;
@@ -192,6 +193,7 @@ public class CC_CameraController : NetworkBehaviour
         if (cinemachineCameraTarget != null)
         {
             camTargetBaseLocalPos = cinemachineCameraTarget.localPosition;
+            currentCrouchCameraLocalPos = camTargetBaseLocalPos;
         }
 
         // prefer the actual look source first so replicated aim includes pitch / space look properly
@@ -527,15 +529,19 @@ public class CC_CameraController : NetworkBehaviour
 
         bool canCrouch = movement.HasUsableGravity() && movement.IsGrounded && !movement.JumpedThisTick;
 
-        // change cam height
+        // crouch camera offset follows gravity up axis
+        Vector3 localUpAxis = GetCameraTargetLocalUpAxis();
+
         Vector3 target = camTargetBaseLocalPos;
         if (canCrouch && movement.IsCrouching)
         {
-            target.y += crouchCameraYOffset;
+            target += localUpAxis * crouchCameraYOffset;
         }
 
         float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
-        cinemachineCameraTarget.localPosition = Vector3.Lerp(cinemachineCameraTarget.localPosition, target, t);
+        currentCrouchCameraLocalPos = Vector3.Lerp(currentCrouchCameraLocalPos, target, t);
+
+        cinemachineCameraTarget.localPosition = currentCrouchCameraLocalPos;
     }
 
     protected virtual void UpdateSprintFov()
@@ -575,10 +581,13 @@ public class CC_CameraController : NetworkBehaviour
 
             bobTime += Time.deltaTime * bobFrequency * (0.5f + mult);
 
-            float y = Mathf.Sin(bobTime * Mathf.PI * 2f) * bobAmplitude * mult;
-            float x = Mathf.Cos(bobTime * Mathf.PI * 2f * 0.5f) * bobSideAmplitude * mult;
+            float upBob = Mathf.Sin(bobTime * Mathf.PI * 2f) * bobAmplitude * mult;
+            float sideBob = Mathf.Cos(bobTime * Mathf.PI * 2f * 0.5f) * bobSideAmplitude * mult;
 
-            targetBob = new Vector3(x, y, 0f);
+            Vector3 localUpAxis = GetCameraTargetLocalUpAxis();
+            Vector3 localRightAxis = GetCameraTargetLocalRightAxis();
+
+            targetBob = (localRightAxis * sideBob) + (localUpAxis * upBob);
         }
         else
         {
@@ -590,10 +599,51 @@ public class CC_CameraController : NetworkBehaviour
         float smoothTime = bobSharpness <= 0f ? 0.01f : (1f / bobSharpness);
         bobOffset = Vector3.SmoothDamp(bobOffset, targetBob, ref bobOffsetVel, smoothTime);
 
-        // apply bob on top of base local pos + crouch offset
-        cinemachineCameraTarget.localPosition += bobOffset;
+        // apply bob on top of the current crouch camera position
+        cinemachineCameraTarget.localPosition = currentCrouchCameraLocalPos + bobOffset;
     }
 
+    private Vector3 GetCameraTargetLocalUpAxis()
+    {
+        if (movement == null || cinemachineCameraTarget == null)
+        {
+            return Vector3.up;
+        }
+
+        Transform parent = cinemachineCameraTarget.parent;
+
+        Vector3 localUpAxis = parent != null
+            ? parent.InverseTransformDirection(movement.UpAxis)
+            : movement.UpAxis;
+
+        if (localUpAxis.sqrMagnitude < 0.0001f)
+        {
+            return Vector3.up;
+        }
+
+        return localUpAxis.normalized;
+    }
+
+    private Vector3 GetCameraTargetLocalRightAxis()
+    {
+        if (cinemachineCameraTarget == null)
+        {
+            return Vector3.right;
+        }
+
+        Transform parent = cinemachineCameraTarget.parent;
+
+        Vector3 localRightAxis = parent != null
+            ? parent.InverseTransformDirection(cinemachineCameraTarget.right)
+            : cinemachineCameraTarget.right;
+
+        if (localRightAxis.sqrMagnitude < 0.0001f)
+        {
+            return Vector3.right;
+        }
+
+        return localRightAxis.normalized;
+    }
     void UpdateReplicatedCameraDirection()
     {
         if (!replicateCameraDirection || !IsLocallyControlled() || replicatedCameraDirectionRoot == null) { return; }
