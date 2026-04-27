@@ -70,8 +70,6 @@ public class SP_SpaceManager : NetworkBehaviour
             maxDebrisReached = false;
         }
 
-        MoveDebris();
-
         //Collider[] colliders = Physics.OverlapBox(transform.position, spaceBounds / 2, transform.rotation);
         //foundObjects.Clear();
 
@@ -85,6 +83,11 @@ public class SP_SpaceManager : NetworkBehaviour
         {
             debrisDebugList.Add(obj);
         }
+    }
+
+    private void FixedUpdate()
+    {
+        MoveDebris();
     }
 
     private void OnTriggerExit(Collider col)
