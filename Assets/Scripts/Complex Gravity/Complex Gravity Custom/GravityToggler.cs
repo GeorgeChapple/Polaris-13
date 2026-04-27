@@ -72,13 +72,13 @@ public class GravityToggler : NetworkBehaviour
                 if (player != null)
                 {
                     player.drift.Value = true;
-                    player.referenceDirection.Value = rocket.worldDirection.Value;
+                    player.referenceDirection.Value = rocket.worldDirectionNetworked.Value;
                 }
                 else
                 {
                     if (!spaceManager.debris.ContainsKey(gravityBody.gameObject))
                     {
-                        spaceManager.debris.Add(gravityBody.gameObject, rocket.worldDirection.Value);
+                        spaceManager.debris.Add(gravityBody.gameObject, rocket.worldDirectionNetworked.Value);
                     } 
                 }
             }

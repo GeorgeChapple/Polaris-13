@@ -143,7 +143,7 @@ public class POI_Level : NetworkBehaviour
                 {
                     player.Body.position = exitPortal.destination.position;
                     player.drift.Value = true;
-                    player.referenceDirection.Value = spaceManager.rocket.worldDirection.Value;
+                    player.referenceDirection.Value = spaceManager.rocket.worldDirectionNetworked.Value;
                 }
                 else
                 { 

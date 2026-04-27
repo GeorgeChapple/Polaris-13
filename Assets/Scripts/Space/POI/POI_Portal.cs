@@ -157,7 +157,7 @@ public class POI_Portal : NetworkBehaviour
                 player.drift.Value = !player.drift.Value;
                 if (player.drift.Value)
                 {
-                    player.referenceDirection.Value = spaceManager.rocket.worldDirection.Value;
+                    player.referenceDirection.Value = spaceManager.rocket.worldDirectionNetworked.Value;
                 }
             }
             else
@@ -168,7 +168,7 @@ public class POI_Portal : NetworkBehaviour
                 }
                 else
                 {
-                    spaceManager.debris.Add(obj, spaceManager.rocket.worldDirection.Value);
+                    spaceManager.debris.Add(obj, spaceManager.rocket.worldDirectionNetworked.Value);
                     obj.GetComponent<CustomGravityRigidbody>().useGravity = false;
                 }
             }

@@ -412,9 +412,9 @@ public class CC_Movement : NetworkBehaviour
         else
         {
             SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
+            ApplySpaceDrift();
         }
 
-        ApplySpaceDrift();
         ApplyHookMovement();
         UpdateBodyRotation();
 
@@ -1099,7 +1099,7 @@ private Vector3 GetCapsuleLocalUpAxis()
     {
         if (drift.Value)
         {
-            Vector3 objDirection = (Vector3.back + referenceDirection.Value - rocket.worldDirection.Value).normalized * rocket.speed.Value;
+            Vector3 objDirection = (Vector3.back + referenceDirection.Value - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
             rb.MovePosition(rb.position + objDirection * Time.deltaTime);
         }
     }

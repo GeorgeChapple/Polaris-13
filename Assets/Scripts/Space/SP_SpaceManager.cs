@@ -229,7 +229,7 @@ public class SP_SpaceManager : NetworkBehaviour
             Rigidbody rb = obj.GetComponent<Rigidbody>();
             NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirection.Value).normalized * rocket.speed.Value;
+            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
             if (player != null)
             {
                 NetworkObject netObj = obj.GetComponent<NetworkObject>();
