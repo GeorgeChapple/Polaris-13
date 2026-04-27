@@ -422,6 +422,7 @@ public class CC_Movement : NetworkBehaviour
             SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
         }
 
+        ApplySpaceDrift();
         ApplyHookMovement();
         UpdateBodyRotation();
 
