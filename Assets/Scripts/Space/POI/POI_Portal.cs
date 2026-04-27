@@ -151,14 +151,26 @@ public class POI_Portal : NetworkBehaviour
         }
         else if (toggle == AddToSpaceJunk.toggle)
         {
-            if (spaceManager.debris.ContainsKey(obj))
+            CC_Movement player = obj.GetComponent<CC_Movement>();
+            if (player != null)
             {
-                spaceManager.debris.Remove(obj);
+                player.drift.Value = !player.drift.Value;
+                if (player.drift.Value)
+                {
+                    player.referenceDirection.Value = spaceManager.rocket.worldDirection.Value;
+                }
             }
             else
             {
-                spaceManager.debris.Add(obj, spaceManager.rocket.worldDirection);
-                obj.GetComponent<CustomGravityRigidbody>().useGravity = false;
+                if (spaceManager.debris.ContainsKey(obj))
+                {
+                    spaceManager.debris.Remove(obj);
+                }
+                else
+                {
+                    spaceManager.debris.Add(obj, spaceManager.rocket.worldDirection.Value);
+                    obj.GetComponent<CustomGravityRigidbody>().useGravity = false;
+                }
             }
         }
     }

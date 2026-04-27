@@ -1,11 +1,13 @@
 using System.Collections;
+using System.Net.Sockets;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 
-// Made by: Jason Lodge
-// Summary: Handles locomotion, gravity, jumping, body rotation and stamina / oxygen usage.
+// Made by   : Jason Lodge
+// Edited by : George Chapple
+// Summary   : Handles locomotion, gravity, jumping, body rotation and stamina / oxygen usage.
 
 [RequireComponent(typeof(Rigidbody))]
 public class CC_Movement : NetworkBehaviour
@@ -13,6 +15,7 @@ public class CC_Movement : NetworkBehaviour
     [Header("References")]
     public CC_CharacterValues values;
     public CC_CameraController cameraController;
+    private RS_Move rocket;
 
     [Header("Gravity")]
     [Tooltip("Custom gravity component on the same object as this.")]
@@ -22,6 +25,9 @@ public class CC_Movement : NetworkBehaviour
     public float moveSpeed = 5f;
     public float accelerationRate = 12f;
     public bool canTeleport = true;
+
+    public NetworkVariable<bool> drift = new NetworkVariable<bool>();
+    public NetworkVariable<Vector3> referenceDirection = new NetworkVariable<Vector3>();
 
     [Header("Sprint")]
     public float sprintSpeedMult = 1.5f;
@@ -219,6 +225,8 @@ public class CC_Movement : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+
+        rocket = FindFirstObjectByType<RS_Move>();
     }
 
     public bool IsLocallyControlled()
@@ -1084,6 +1092,15 @@ private Vector3 GetCapsuleLocalUpAxis()
         }
 
         groundedForward.Normalize();
+    }
+
+    protected void ApplySpaceDrift()
+    {
+        if (drift.Value)
+        {
+            Vector3 objDirection = (Vector3.back + referenceDirection.Value - rocket.worldDirection.Value).normalized * rocket.speed.Value;
+            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+        }
     }
 
     protected void AddPushForce(Vector3 force)

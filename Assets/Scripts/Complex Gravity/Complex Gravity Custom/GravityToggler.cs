@@ -52,18 +52,34 @@ public class GravityToggler : NetworkBehaviour
         {
             SP_SpaceManager spaceManager = FindFirstObjectByType<SP_SpaceManager>();
             RS_Move rocket = FindFirstObjectByType<RS_Move>();
+            CC_Movement player = gravityBody.GetComponent<CC_Movement>();
             if (gravityBody.useGravity)
             {
-                if (spaceManager.debris.ContainsKey(gravityBody.gameObject))
+                if (player != null)
                 {
-                    spaceManager.debris.Remove(gravityBody.gameObject);
+                    player.drift.Value = false;
+                }
+                else
+                {
+                    if (spaceManager.debris.ContainsKey(gravityBody.gameObject))
+                    {
+                        spaceManager.debris.Remove(gravityBody.gameObject);
+                    }
                 }
             } 
             else
             {
-                if (!spaceManager.debris.ContainsKey(gravityBody.gameObject))
+                if (player != null)
                 {
-                    spaceManager.debris.Add(gravityBody.gameObject, rocket.worldDirection);
+                    player.drift.Value = true;
+                    player.referenceDirection.Value = spaceManager.rocket.worldDirection.Value;
+                }
+                else
+                {
+                    if (!spaceManager.debris.ContainsKey(gravityBody.gameObject))
+                    {
+                        spaceManager.debris.Add(gravityBody.gameObject, rocket.worldDirection.Value);
+                    } 
                 }
             }
         }

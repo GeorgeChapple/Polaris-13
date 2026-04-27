@@ -142,10 +142,8 @@ public class POI_Level : NetworkBehaviour
                 if (exitPortal.destination != null)
                 {
                     player.Body.position = exitPortal.destination.position;
-                    if (!spaceManager.debris.ContainsKey(netObj.gameObject))
-                    {
-                        spaceManager.debris.Add(netObj.gameObject, spaceManager.rocket.worldDirection);
-                    }
+                    player.drift.Value = true;
+                    player.referenceDirection.Value = spaceManager.rocket.worldDirection.Value;
                 }
                 else
                 { 

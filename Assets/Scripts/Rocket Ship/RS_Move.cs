@@ -11,9 +11,9 @@ public class RS_Move : NetworkBehaviour
 
     [Header("Global Values")]
     public Vector3 worldPosition;
-    public Vector3 worldDirection;
+    public NetworkVariable<Vector3> worldDirection = new NetworkVariable<Vector3>();
     public Vector3 targetPosition;
-     public NetworkVariable<float> speed = new NetworkVariable<float>();
+    public NetworkVariable<float> speed = new NetworkVariable<float>();
     public float targetSpeed;
 
     public enum moveMode { Manual, Automatic, Deactivated }
@@ -60,7 +60,7 @@ public class RS_Move : NetworkBehaviour
         {
             speed.Value = Mathf.Lerp(speed.Value, 0, Time.deltaTime);
         }
-            worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed.Value), Time.deltaTime);
+            worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection.Value * speed.Value), Time.deltaTime);
         // lerp to target speed and clamp to target speed when close enough
 
 
@@ -81,7 +81,7 @@ public class RS_Move : NetworkBehaviour
         else if (mode == moveMode.Automatic)
         {
             Vector3 targetDirection = (targetPosition - worldPosition).normalized;
-            worldDirection = Vector3.Slerp(worldDirection, targetDirection, Time.deltaTime);
+            worldDirection.Value = Vector3.Slerp(worldDirection.Value, targetDirection, Time.deltaTime);
         }
     }
 

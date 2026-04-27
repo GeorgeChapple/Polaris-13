@@ -144,7 +144,7 @@ public class SP_Spawner : NetworkBehaviour
 
 
 
-                        spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirection);
+                        spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirection.Value);
                     }
 
                     timer = 0;
