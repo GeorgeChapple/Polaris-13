@@ -26,16 +26,8 @@ public class CC_Movement : NetworkBehaviour
     public float accelerationRate = 12f;
     public bool canTeleport = true;
 
-    public NetworkVariable<bool> drift = new NetworkVariable<bool>(
-        false,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner
-    );
-    public NetworkVariable<Vector3> referenceDirection = new NetworkVariable<Vector3>(
-        Vector3.zero,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner
-    );
+    public NetworkVariable<bool> drift = new NetworkVariable<bool>();
+    public NetworkVariable<Vector3> referenceDirection = new NetworkVariable<Vector3>();
 
     [Header("Sprint")]
     public float sprintSpeedMult = 1.5f;
