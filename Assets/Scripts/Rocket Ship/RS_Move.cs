@@ -85,6 +85,7 @@ public class RS_Move : NetworkBehaviour
             worldDirection = Vector3.Slerp(worldDirection, targetDirection, Time.deltaTime);
             worldDirectionNetworked.Value = worldDirection;
         }
+
     }
 
     void ChangeSpeed(bool upOrDown, float amount, bool emergencyStop)

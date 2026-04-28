@@ -15,7 +15,7 @@ public class CC_Movement : NetworkBehaviour
     [Header("References")]
     public CC_CharacterValues values;
     public CC_CameraController cameraController;
-    private RS_Move rocket;
+    public RS_Move rocket;
 
     [Header("Gravity")]
     [Tooltip("Custom gravity component on the same object as this.")]
@@ -225,8 +225,6 @@ public class CC_Movement : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
-
-        rocket = FindFirstObjectByType<RS_Move>();
     }
 
     public bool IsLocallyControlled()
@@ -295,6 +293,7 @@ public class CC_Movement : NetworkBehaviour
             }
             yield return null;
         }
+        rocket = FindFirstObjectByType<RS_Move>();
     }
 
     private void Update()
@@ -1099,7 +1098,10 @@ private Vector3 GetCapsuleLocalUpAxis()
     {
         if (drift.Value)
         {
-            Vector3 objDirection = (Vector3.back + referenceDirection.Value - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
+            Vector3 refDir = referenceDirection.Value;
+            Vector3 wldDir = rocket.worldDirectionNetworked.Value;
+            float speed = rocket.speed.Value;
+            Vector3 objDirection = (Vector3.back + refDir - wldDir).normalized * speed;
             rb.MovePosition(rb.position + objDirection * Time.deltaTime);
         }
     }
