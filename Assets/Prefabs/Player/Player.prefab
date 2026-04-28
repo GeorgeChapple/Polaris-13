@@ -7293,6 +7293,7 @@ GameObject:
   - component: {fileID: 8659341846294892265}
   - component: {fileID: 6044450304141551363}
   - component: {fileID: 2077418366971900475}
+  - component: {fileID: 390546089074243553}
   - component: {fileID: 6897484885061798330}
   - component: {fileID: 8634075486662655660}
   - component: {fileID: 3453544993029424373}
@@ -7508,6 +7509,10 @@ MonoBehaviour:
   moveSpeed: 1.8
   accelerationRate: 6
   canTeleport: 1
+  drift:
+    m_InternalValue: 0
+  referenceDirection:
+    m_InternalValue: {x: 0, y: 0, z: 0}
   sprintSpeedMult: 3
   crouchSpeedMult: 0.5
   bodyCapsule: {fileID: 3556929566316830404}
@@ -7644,6 +7649,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 791a1e5842676a443bfcaffab71cd018, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  invincible: 0
   maxHealth: 100
   health: 100
   maxStamina: 100
@@ -7863,6 +7869,18 @@ MonoBehaviour:
   testThrowPower: 10
   testThrowTorque: 6
   logEquippedItem: 0
+--- !u!114 &390546089074243553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6189470309648960028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 920bb67a5dba8e740a0dd7a7ef1ecb66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &6897484885061798330
 MonoBehaviour:
   m_ObjectHideFlags: 0

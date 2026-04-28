@@ -1,15 +1,23 @@
 using UnityEngine;
 
+// Made by: Jason Lodge
+// Summary: Warning System Handler.
 public class UI_WarningSystem : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [Header("Refs")]
+    [SerializeField] private RectTransform warningParent;
+    [SerializeField] private RectTransform warningTransform;
+
+    [Header("Settings")]
+    [SerializeField] private WarningData[] warnings;
+
+    [System.Serializable]
+    public class WarningData
     {
-        
+        public Sprite warningImage;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         
     }
