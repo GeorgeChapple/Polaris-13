@@ -7752,6 +7752,8 @@ MonoBehaviour:
   oxygenEmptyDamageDelay: 1
   oxygenEmptyDamagePerTick: 8
   oxygenEmptyDamageTickRate: 1
+  oxygenLowPercentageThreshold: 0.3
+  lowOxygenWarningName: LowOxygen
   oxygenThrusterDrainPerSecond: 2
   oxygenRegenPerSecond: 40
   oxygenRegenDelay: 1
@@ -7793,6 +7795,7 @@ MonoBehaviour:
     alphaLerpInSpeed: 10
     alphaLerpOutSpeed: 6
   speedText: {fileID: 6129475804090202580}
+  warningSystem: {fileID: 390546089074243553}
 --- !u!114 &2963449317703620547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7953,10 +7956,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 920bb67a5dba8e740a0dd7a7ef1ecb66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   warningParent: {fileID: 895474010585065990}
-  warningPrefab: {fileID: 0}
-  warnings: []
-  warningEvents: []
+  warningPrefab: {fileID: 6509139356026263073, guid: edf579ee74b3e2f4293a8cf5b89c4750, type: 3}
+  warnings:
+  - name: LowOxygen
+    imageToAffect: {fileID: 0}
+    warningSprite: {fileID: 337105557, guid: 297a5de802b10244ba1893764576210b, type: 3}
+    tickRate: 1
+    shipWarning: 0
+    active: 0
+  - name: Portal
+    imageToAffect: {fileID: 0}
+    warningSprite: {fileID: -3030926, guid: 68a6f3cc02300704cbcae1b1a8f0b55a, type: 3}
+    tickRate: 1
+    shipWarning: 0
+    active: 0
+  - name: GooberRaid
+    imageToAffect: {fileID: 0}
+    warningSprite: {fileID: -1794591819, guid: 6f375784a3c60784c9c94bd8a6ae9942, type: 3}
+    tickRate: 1
+    shipWarning: 0
+    active: 0
 --- !u!114 &6897484885061798330
 MonoBehaviour:
   m_ObjectHideFlags: 0

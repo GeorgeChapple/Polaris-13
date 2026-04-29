@@ -220,9 +220,15 @@ public class CC_CharacterValues : MonoBehaviour
     [Tooltip("How often to apply oxygen empty damage.")]
     public float oxygenEmptyDamageTickRate = 1f;
 
+    [Tooltip("When Oxygen is considered low. 0-1")]
+    public float oxygenLowPercentageThreshold = 0.3f;
+
+    public string lowOxygenWarningName = "LowOxygen";
+
     float oxygenEmptyDamageDelayTimer;
     float oxygenEmptyDamageTickTimer;
     bool oxygenEmptyDamageStarted;
+    bool oxygenWarningTriggered = false;
 
     [Header("Oxygen Thruster Settings")]
     [Tooltip("Base oxygen drain per second for thruster usage. Use the multipliers below per use case.")]
@@ -264,6 +270,7 @@ public class CC_CharacterValues : MonoBehaviour
     public FillUI[] staminaUI;
     public FillUI[] oxygenUI;
     public TextMeshProUGUI speedText;
+    public UI_WarningSystem warningSystem;
 
     // Getters
     public float Health => health;
@@ -343,6 +350,17 @@ public class CC_CharacterValues : MonoBehaviour
         if (speedText != null && rb != null)
         {
             speedText.SetText(System.Convert.ToInt32(rb.linearVelocity.magnitude).ToString());
+        }
+
+        if (CheckOxygenLow() && !oxygenWarningTriggered)
+        {
+            warningSystem.CallWarningByName(lowOxygenWarningName);
+            oxygenWarningTriggered = true;
+        }
+        else if (!CheckOxygenLow() && oxygenWarningTriggered)
+        {
+            warningSystem.EndWarningByName(lowOxygenWarningName);
+            oxygenWarningTriggered = false;
         }
 
         UpdateDeathScreenState();
@@ -1080,6 +1098,15 @@ public class CC_CharacterValues : MonoBehaviour
     public bool HasOxygen(float min = 0.01f)
     {
         return oxygen > min;
+    }
+
+    public bool CheckOxygenLow()
+    {
+        bool low = false;
+
+        if (oxygen / maxOxygen <= oxygenLowPercentageThreshold) { low = true; }
+
+        return low;
     }
 
     public void RespawnReset()

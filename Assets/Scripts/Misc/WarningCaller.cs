@@ -5,7 +5,8 @@ using Unity.Netcode;
 // Summary: Calls warnings on network spawn.
 public class WarningCaller : NetworkBehaviour
 {
-    private string nameOfWarningToCall;
+    [SerializeField] private string nameOfWarningToCall;
+
     private RS_WarningSystem ship;
     private UI_WarningSystem[] players;
 

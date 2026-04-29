@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: -7041427488783902197}
   - component: {fileID: 6236036616367797486}
   - component: {fileID: -2256902651873582584}
+  - component: {fileID: -6891383368054237108}
   m_Layer: 0
   m_Name: Meteor Building_PORTAL
   m_TagString: Untagged
@@ -239,7 +240,9 @@ MonoBehaviour:
   junkRotationRate: {x: 0, y: 0, z: 0}
   spawner: {fileID: 0}
   canTeleport: 1
+  randomTorque: {x: -10, y: 10}
   scaleSpeed: 1
+  destroyOnRocket: 1
   destroyVFX: {fileID: 2014236133279003091, guid: 15c8a3da0cfce7b4b9e9f863de2984b1, type: 3}
 --- !u!54 &-7041427488783902197
 Rigidbody:
@@ -300,3 +303,17 @@ MonoBehaviour:
   floatToSleep: 0
   useGravity: 0
   triggered: 0
+--- !u!114 &-6891383368054237108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6072806901876968853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e98fed7209a7d543a0f456e51addde4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  nameOfWarningToCall: Portal
