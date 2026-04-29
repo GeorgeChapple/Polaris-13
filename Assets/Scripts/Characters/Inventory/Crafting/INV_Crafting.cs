@@ -35,6 +35,7 @@ public class INV_Crafting : MonoBehaviour
     [Header("Crafting UI")]
     [SerializeField] private RectTransform craftingContentRoot;
     [SerializeField] private GameObject craftingButtonPrefab;
+    [SerializeField] private RectTransform craftingPanelRectMask;
 
     [Header("Filter")]
     [SerializeField] private string nameFilter;
@@ -48,6 +49,8 @@ public class INV_Crafting : MonoBehaviour
     private readonly List<INV_CraftingButtonUI> spawnedButtons = new List<INV_CraftingButtonUI>();
 
     private bool openedFromCraftingStation;
+
+    public RectTransform CraftingPanelRectMask => craftingPanelRectMask;
 
     private void Awake()
     {
@@ -150,8 +153,6 @@ public class INV_Crafting : MonoBehaviour
         // craftables first, then non craftables
         SpawnButtonsForList(craftables, true);
         SpawnButtonsForList(nonCraftables, false);
-
-        ExpandContentRoot();
     }
 
     public void SetNameFilter(string newFilter)
@@ -379,40 +380,6 @@ public class INV_Crafting : MonoBehaviour
         {
             Destroy(craftingContentRoot.GetChild(i).gameObject);
         }
-    }
-
-    private void ExpandContentRoot()
-    {
-        if (craftingContentRoot == null)
-        {
-            return;
-        }
-
-        float totalHeight = 0f;
-        VerticalLayoutGroup layoutGroup = craftingContentRoot.GetComponent<VerticalLayoutGroup>();
-        float spacing = layoutGroup != null ? layoutGroup.spacing : 0f;
-
-        for (int i = 0; i < craftingContentRoot.childCount; i++)
-        {
-            RectTransform child = craftingContentRoot.GetChild(i) as RectTransform;
-            if (child == null)
-            {
-                continue;
-            }
-
-            totalHeight += child.sizeDelta.y;
-
-            if (i < craftingContentRoot.childCount - 1)
-            {
-                totalHeight += spacing;
-            }
-        }
-
-        Vector2 size = craftingContentRoot.sizeDelta;
-        size.y = totalHeight;
-        craftingContentRoot.sizeDelta = size;
-
-        LayoutRebuilder.ForceRebuildLayoutImmediate(craftingContentRoot);
     }
 
     public void TryCraftItem(INV_Item item, int recipeIndex)
