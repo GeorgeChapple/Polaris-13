@@ -20,6 +20,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI recipeIndexText;
 
     [Header("Mesh Visual")]
+    [SerializeField] private GameObject meshSourceObject;
     [SerializeField] private MeshFilter meshFilter;
     [SerializeField] private MeshRenderer meshRenderer;
 
@@ -27,6 +28,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
     private INV_Item item;
     private int selectedRecipeIndex;
     private bool itemInteractable;
+    private RectTransform maskRect;
 
     public void Init(INV_Crafting craftingRef, INV_Item itemRef, bool interactable, int startingRecipeIndex)
     {
@@ -34,10 +36,57 @@ public class INV_CraftingButtonUI : MonoBehaviour
         item = itemRef;
         itemInteractable = interactable;
         selectedRecipeIndex = Mathf.Max(0, startingRecipeIndex);
+        maskRect = crafting.CraftingPanelRectMask;
 
         ApplyMeshVisuals();
         WireButtons();
         RefreshVisuals();
+    }
+
+    private void Update()
+    {
+        UpdateMeshRendererVisibility();
+    }
+
+    private void UpdateMeshRendererVisibility()
+    {
+        if (meshRenderer == null || maskRect == null)
+        {
+            return;
+        }
+
+        bool validVisual = item != null && item.Mesh != null && item.Material != null;
+
+        if (!validVisual)
+        {
+            meshRenderer.enabled = false;
+            return;
+        }
+
+        Bounds meshBounds = meshRenderer.bounds;
+        Bounds viewportBounds = GetRectTransformWorldBounds(maskRect);
+
+        bool overlapsViewport = meshBounds.Intersects(viewportBounds);
+
+        if (meshRenderer.enabled != overlapsViewport)
+        {
+            meshRenderer.enabled = overlapsViewport;
+        }
+    }
+
+    private Bounds GetRectTransformWorldBounds(RectTransform rectTransform)
+    {
+        Vector3[] corners = new Vector3[4];
+        rectTransform.GetWorldCorners(corners);
+
+        Bounds bounds = new Bounds(corners[0], Vector3.zero);
+
+        for (int i = 1; i < corners.Length; i++)
+        {
+            bounds.Encapsulate(corners[i]);
+        }
+
+        return bounds;
     }
 
     private void WireButtons()
