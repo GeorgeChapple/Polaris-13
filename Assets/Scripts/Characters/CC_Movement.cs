@@ -445,8 +445,8 @@ public class CC_Movement : NetworkBehaviour
         bool usingOxygenForThrusters = usingGroundThrusters || usingSpaceMoveThrusters || usingSpaceStabiliseThrusters;
         values.TickOxygenThrusterUsage(usingOxygenForThrusters, true, oxygenDrainMultiplierThisTick);
 
-        // passive oxygen drain while not in usable gravity
-        values.TickPassiveOxygenDrainInSpace(!HasUsableGravity());
+        // passive oxygen drain while not in a gravity source that gives oxygen
+        values.TickPassiveOxygenDrain(IsOxygenProvided());
 
         // if we run out of stamina, force sprint off
         if (sprinting && !values.HasStamina())
@@ -479,6 +479,15 @@ public class CC_Movement : NetworkBehaviour
         }
 
         return currentGravity.magnitude >= zeroGravityThreshold;
+    }
+    public bool IsOxygenProvided()
+    {
+        if (customGravityBody != null)
+        {
+            return customGravityBody.OxygenProvided;
+        }
+
+        return CustomGravity.ProvidesOxygen(rb.position);
     }
 
     public float GetGravityAlignment01()

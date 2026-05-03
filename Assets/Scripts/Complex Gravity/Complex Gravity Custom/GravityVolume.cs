@@ -9,6 +9,8 @@ using UnityEngine;
 
 public class GravityVolume : GravitySource
 {
+    [Tooltip("If this gravity volume should give oxygen to the player.")]
+    [SerializeField] private bool provideOxygen = false;
     [SerializeField] private float gravity = 9.81f;
     [SerializeField] private Vector3 volumeSize = new Vector3(1f, 1f, 1f);
     [SerializeField] private Vector3 volumeOffset = Vector3.zero;
@@ -19,20 +21,10 @@ public class GravityVolume : GravitySource
 
     public override Vector3 GetGravity(Vector3 position)
     {
-        // convert world position into the volume's local space
-        Vector3 offset = position - transform.position;
-        Vector3 local = Quaternion.Inverse(transform.rotation) * offset;
-
-        // move into the volume's local offset space
-        local -= volumeOffset;
-
-        // half extents of the gravity volume
-        Vector3 halfExtents = volumeSize * 0.5f;
+        Vector3 local = GetLocalVolumePosition(position);
 
         // outside the volume? no gravity bro
-        if (local.x < -halfExtents.x || local.x > halfExtents.x ||
-            local.y < -halfExtents.y || local.y > halfExtents.y ||
-            local.z < -halfExtents.z || local.z > halfExtents.z)
+        if (!IsInsideVolumeLocal(local))
         {
             return Vector3.zero;
         }
@@ -58,6 +50,39 @@ public class GravityVolume : GravitySource
         }
 
         return transform.rotation * toCenter.normalized * gravity;
+    }
+
+    public override bool ProvidesOxygen(Vector3 position)
+    {
+        if (!provideOxygen) { return false; }
+
+        Vector3 local = GetLocalVolumePosition(position);
+
+        // oxygen uses the same volume as gravity
+        return IsInsideVolumeLocal(local);
+    }
+
+    private Vector3 GetLocalVolumePosition(Vector3 position)
+    {
+        // convert world position into the volume's local space
+        Vector3 offset = position - transform.position;
+        Vector3 local = Quaternion.Inverse(transform.rotation) * offset;
+
+        // move into the volume's local offset space
+        local -= volumeOffset;
+
+        return local;
+    }
+
+    private bool IsInsideVolumeLocal(Vector3 local)
+    {
+        // half extents of the gravity volume
+        Vector3 halfExtents = volumeSize * 0.5f;
+
+        return
+            local.x >= -halfExtents.x && local.x <= halfExtents.x &&
+            local.y >= -halfExtents.y && local.y <= halfExtents.y &&
+            local.z >= -halfExtents.z && local.z <= halfExtents.z;
     }
 
     void OnDrawGizmos()

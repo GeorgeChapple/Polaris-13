@@ -1050,9 +1050,9 @@ public class CC_CharacterValues : MonoBehaviour
         RegenOxygen(oxygenRegenPerSecond * Time.deltaTime);
     }
 
-    public void TickPassiveOxygenDrainInSpace(bool inSpace)
+    public void TickPassiveOxygenDrain(bool oxygenProvided)
     {
-        if (!inSpace) { return; }
+        if (oxygenProvided) { return; }
 
         DrainOxygen(oxygenDrainPerSecondInSpace * Time.deltaTime);
 
