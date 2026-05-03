@@ -357,6 +357,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69edbb7fac7e63f4c8c28ddf271332cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  provideOxygen: 0
   gravity: 9.81
   volumeSize: {x: 10, y: 15.5, z: 10}
   volumeOffset: {x: 0, y: 2.22, z: 0}
@@ -2163,6 +2164,9 @@ PrefabInstance:
       addedObject: {fileID: 2605899917195111731}
     - targetCorrespondingSourceObject: {fileID: -7048714484732419477, guid: 44ad8ae13e72d4d4d828b8d4f366f6e6, type: 3}
       insertIndex: -1
+      addedObject: {fileID: 6803069264271701963}
+    - targetCorrespondingSourceObject: {fileID: -7048714484732419477, guid: 44ad8ae13e72d4d4d828b8d4f366f6e6, type: 3}
+      insertIndex: -1
       addedObject: {fileID: 6618605412147517105}
     - targetCorrespondingSourceObject: {fileID: -7048714484732419477, guid: 44ad8ae13e72d4d4d828b8d4f366f6e6, type: 3}
       insertIndex: -1
@@ -2170,9 +2174,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -7048714484732419477, guid: 44ad8ae13e72d4d4d828b8d4f366f6e6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3162550759790367084}
-    - targetCorrespondingSourceObject: {fileID: -7048714484732419477, guid: 44ad8ae13e72d4d4d828b8d4f366f6e6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7381253007284425724}
     - targetCorrespondingSourceObject: {fileID: -7048714484732419477, guid: 44ad8ae13e72d4d4d828b8d4f366f6e6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3839935274079253447}
@@ -4456,89 +4457,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2677242418496969742, guid: 4172c3a9179eb1a4da3272e93cc034a1, type: 3}
   m_PrefabInstance: {fileID: 6013434478533224947}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &6634951087987967476
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 3679435959091197844}
-    m_Modifications:
-    - target: {fileID: 766809813825591996, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_Name
-      value: Debris Elite Chest
-      objectReference: {fileID: 0}
-    - target: {fileID: 766809813825591996, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 19.685041
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 19.685041
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 32.92562
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -0.5239999
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.49899983
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 1.1529994
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.6619522
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0.6619523
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0.24863465
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0.24863467
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 48.827
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: 7223436805877648526, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-      propertyPath: GlobalObjectIdHash
-      value: 1055197590
-      objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 7223436805877648526, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
---- !u!4 &7381253007284425724 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4214083221071435272, guid: 83611a110239dde4aa4f5a24dea2523f, type: 3}
-  m_PrefabInstance: {fileID: 6634951087987967476}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6770423931105956913
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4732,6 +4650,80 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 2231738714890029096, guid: 09bc350afc5fdd94c8a7a322ed174d7d, type: 3}
   m_PrefabInstance: {fileID: 7098094296705457057}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7210884430874763715
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3679435959091197844}
+    m_Modifications:
+    - target: {fileID: 766809813825591996, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_Name
+      value: Debris Elite Chest
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 19.68504
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 19.685043
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 32.925625
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.621
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.633
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.153
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.6606907
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.6606907
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.25196776
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.2519678
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 48.249
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -90
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+--- !u!4 &6803069264271701963 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4214083221071435272, guid: 64241c9ac893dec4c867c0e177088f28, type: 3}
+  m_PrefabInstance: {fileID: 7210884430874763715}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7465326548233339507
 PrefabInstance:

@@ -27,6 +27,8 @@ public class INV_Chest : NetworkBehaviour
 
     [Header("Loot Profile")]
     [SerializeField] private INV_ChestLootProfile lootProfile;
+    [SerializeField] private bool populateLootOnSpawn = true;
+    [SerializeField] private bool hasPopulatedLoot;
 
     [Header("Chest Data")]
     [SerializeField] private List<ChestItemData> items = new List<ChestItemData>();
@@ -46,6 +48,16 @@ public class INV_Chest : NetworkBehaviour
     public IReadOnlyList<ChestItemData> Items => items;
     public int GridHeight => chestGridMaxHeight;
     public int GridWidth => chestGridMaxWidth;
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        // only server sets up chest loot
+        if (!IsServer) { return; }
+
+        PopulateChest_Server();
+    }
 
     public void SetupEverything(GameObject player)
     {
@@ -537,5 +549,74 @@ public class INV_Chest : NetworkBehaviour
         }
 
         finalSize = new Vector2Int((maxX - minX) + 1, (maxY - minY) + 1);
+    }
+
+    private void PopulateChest_Server()
+    {
+        if (!IsServer || !populateLootOnSpawn || hasPopulatedLoot) { return; }
+        if (lootProfile == null) { return; }
+
+        hasPopulatedLoot = true;
+
+        ClearItems_Server();
+
+        int minItemCount = Mathf.Max(0, lootProfile.ItemCountRange.x);
+        int maxItemCount = Mathf.Max(minItemCount, lootProfile.ItemCountRange.y);
+        int itemCount = Random.Range(minItemCount, maxItemCount + 1);
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            INV_Item randomItem = GetRandomChestItem();
+            if (randomItem == null) { continue; }
+
+            int minItemAmount = Mathf.Max(0, randomItem.AmountSpawnedInChestRange.x);
+            int maxItemAmount = Mathf.Max(minItemAmount, randomItem.AmountSpawnedInChestRange.y);
+            int itemAmount = randomItem.Stackable ? Random.Range(minItemAmount, maxItemAmount + 1) : 1;
+
+            if (!TryStoreItemDataAutoPlace(randomItem, itemAmount)) { break; }
+        }
+
+        RefreshAllViewers();
+    }
+
+    private INV_Item GetRandomChestItem()
+    {
+        if (lootProfile == null) { return null; }
+        if (INV_ItemDatabase.Instance == null) { return null; }
+
+        List<INV_Item> allItems = (List<INV_Item>)INV_ItemDatabase.Instance.Items;
+        if (allItems == null || allItems.Count == 0) { return null; }
+
+        float totalWeight = 0f;
+
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            INV_Item item = allItems[i];
+            if (item == null) { continue; }
+
+            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
+            if (weight <= 0f) { continue; }
+
+            totalWeight += weight;
+        }
+
+        if (totalWeight <= 0f) { return null; }
+
+        float roll = UnityEngine.Random.Range(0f, totalWeight);
+        float running = 0f;
+
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            INV_Item item = allItems[i];
+            if (item == null) { continue; }
+
+            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
+            if (weight <= 0f) { continue; }
+
+            running += weight;
+            if (roll <= running) { return item; }
+        }
+
+        return null;
     }
 }

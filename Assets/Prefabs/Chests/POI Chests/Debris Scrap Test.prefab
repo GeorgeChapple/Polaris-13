@@ -11,18 +11,15 @@ GameObject:
   - component: {fileID: 4214083221071435272}
   - component: {fileID: 7918120013174876489}
   - component: {fileID: 6042608993168732536}
-  - component: {fileID: 4939090742074329362}
-  - component: {fileID: 4222136643010247964}
-  - component: {fileID: -8215809144646818012}
+  - component: {fileID: 7223436805877648526}
   - component: {fileID: 6844662600475124100}
   - component: {fileID: 5690339217643943347}
   - component: {fileID: 1183337127425948113}
-  - component: {fileID: 3654981113428827369}
   - component: {fileID: 6060258083100011228}
-  - component: {fileID: 4671040411471838177}
-  - component: {fileID: 421526680324688380}
+  - component: {fileID: 8651609666324516585}
+  - component: {fileID: -1253570271887047045}
   m_Layer: 8
-  m_Name: Debris Standard Chest
+  m_Name: Debris Scrap Test
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -37,8 +34,8 @@ Transform:
   m_GameObject: {fileID: 766809813825591996}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.96, y: -0.686, z: 56.51}
-  m_LocalScale: {x: 75, y: 75, z: 75}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 50, y: 50, z: 50}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
@@ -96,49 +93,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!54 &4939090742074329362
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766809813825591996}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!114 &4222136643010247964
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766809813825591996}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  floatToSleep: 0
-  useGravity: 0
-  triggered: 0
---- !u!114 &-8215809144646818012
+--- !u!114 &7223436805877648526
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -150,14 +105,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3419444705
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 1316861566
+  InScenePlacedSourceGlobalObjectIdHash: 1506941408
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
+  SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -238,34 +193,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  lootProfile: {fileID: 11400000, guid: bb7d4be16c82afa40bb858550b0337c7, type: 2}
+  lootProfile: {fileID: 11400000, guid: 2785f6561e1562f429c6bba42bfc615c, type: 2}
   populateLootOnSpawn: 1
   hasPopulatedLoot: 0
   items: []
-  chestGridMaxHeight: 4
-  chestGridMaxWidth: 8
+  chestGridMaxHeight: 3
+  chestGridMaxWidth: 6
   logChest: 0
---- !u!114 &3654981113428827369
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766809813825591996}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a4f3c35bbbefca74ea463c50d498e3dc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  junkRotation: {x: 0, y: 0, z: 0, w: 0}
-  junkRotationRate: {x: 0, y: 0, z: 0}
-  spawner: {fileID: 0}
-  canTeleport: 1
-  randomTorque: {x: -10, y: 10}
-  scaleSpeed: 1
-  destroyOnRocket: 1
-  destroyVFX: {fileID: 2014236133279003091, guid: 15c8a3da0cfce7b4b9e9f863de2984b1, type: 3}
 --- !u!114 &6060258083100011228
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -312,24 +246,7 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
---- !u!114 &4671040411471838177
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766809813825591996}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkRigidbodyBaseExpanded: 0
-  UseRigidBodyForMotion: 1
-  AutoUpdateKinematicState: 1
-  AutoSetKinematicOnDespawn: 1
---- !u!64 &421526680324688380
+--- !u!64 &8651609666324516585
 MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -351,3 +268,16 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -5495902117074765545, guid: e3919765a799f8e4e8974af6ca230404, type: 3}
+--- !u!114 &-1253570271887047045
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766809813825591996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e1535f31a4056449a26d288c0bed6e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
