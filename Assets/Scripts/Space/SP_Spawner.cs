@@ -124,26 +124,6 @@ public class SP_Spawner : NetworkBehaviour
                             itemDrop.Init(GetRandomDebrisItem());
                         }
 
-                        INV_Chest chestObject = newDebris.GetComponent<INV_Chest>();
-                        if (chestObject != null)
-                        {
-                            PopulateChest(chestObject);
-                        }
-                        else
-                        {
-                            // for POIs with chests inside
-                            INV_Chest[] chestsInChildren = newDebris.GetComponentsInChildren<INV_Chest>();
-                            if (chestsInChildren != null || chestsInChildren.Count() > 0)
-                            {
-                                foreach (INV_Chest chest in chestsInChildren)
-                                {
-                                    PopulateChest(chest); // note to self, add item rarities into this system
-                                }
-                            }
-                        }
-
-
-
                         spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirectionNetworked.Value);
                     }
 
@@ -156,36 +136,6 @@ public class SP_Spawner : NetworkBehaviour
                 }
             }
         }
-    }
-
-    private void PopulateChest(INV_Chest chest)
-    {
-        if (!IsServer || chest == null) { return; }
-
-        INV_ChestLootProfile lootProfile = chest.LootProfile;
-        if (lootProfile == null) { return; }
-
-        chest.ClearItems_Server();
-
-        int minItemCount = Mathf.Max(0, lootProfile.ItemCountRange.x);
-        int maxItemCount = Mathf.Max(minItemCount, lootProfile.ItemCountRange.y);
-        int itemCount = Random.Range(minItemCount, maxItemCount + 1);
-
-        
-
-        for (int i = 0; i < itemCount; i++)
-        {
-            INV_Item randomItem = GetRandomChestItem(chest);
-            if (randomItem == null) { continue; }
-
-            int minItemAmount = Mathf.Max(0, randomItem.AmountSpawnedInChestRange.x);
-            int maxItemAmount = Mathf.Max(minItemAmount, randomItem.AmountSpawnedInChestRange.y);
-            int itemAmount = randomItem.Stackable ? Random.Range(minItemAmount, maxItemAmount + 1) : 1;
-
-            if (!chest.TryStoreItemDataAutoPlace(randomItem,itemAmount)) { break; }
-        }
-
-        chest.RefreshAllViewers();
     }
 
     private float GetRandomTimeLimit(SP_SpawnSettings settings)
@@ -251,49 +201,6 @@ public class SP_Spawner : NetworkBehaviour
         }
 
         return itemToReturn;
-    }
-
-    private INV_Item GetRandomChestItem(INV_Chest chest)
-    {
-        if (chest == null) { return null; }
-
-        INV_ChestLootProfile lootProfile = chest.LootProfile;
-        if (lootProfile == null) { return null; }
-
-        List<INV_Item> allItems = (List<INV_Item>)INV_ItemDatabase.Instance.Items;
-        if (allItems == null || allItems.Count == 0) { return null; }
-
-        float totalWeight = 0f;
-
-        for (int i = 0; i < allItems.Count; i++)
-        {
-            INV_Item item = allItems[i];
-            if (item == null) { continue; }
-
-            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
-            if (weight <= 0f) { continue; }
-
-            totalWeight += weight;
-        }
-
-        if (totalWeight <= 0f) { return null; }
-
-        float roll = UnityEngine.Random.Range(0f, totalWeight);
-        float running = 0f;
-
-        for (int i = 0; i < allItems.Count; i++)
-        {
-            INV_Item item = allItems[i];
-            if (item == null) { continue; }
-
-            float weight = item.ChanceOfSpawnInChest * lootProfile.GetMultiplier(item.ItemRarityVal);
-            if (weight <= 0f) { continue; }
-
-            running += weight;
-            if (roll <= running) { return item; }
-        }
-
-        return null;
     }
 
     private Vector2 GetRandomSpawnPosition(Vector4 bounds)

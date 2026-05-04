@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 6042608993168732536}
   - component: {fileID: 4939090742074329362}
   - component: {fileID: 4222136643010247964}
-  - component: {fileID: 7223436805877648526}
+  - component: {fileID: -8215809144646818012}
   - component: {fileID: 6844662600475124100}
   - component: {fileID: 5690339217643943347}
   - component: {fileID: 1183337127425948113}
@@ -138,7 +138,7 @@ MonoBehaviour:
   floatToSleep: 0
   useGravity: 0
   triggered: 0
---- !u!114 &7223436805877648526
+--- !u!114 &-8215809144646818012
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -150,14 +150,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3424589570
-  InScenePlacedSourceGlobalObjectIdHash: 1506941408
+  GlobalObjectIdHash: 3419444705
+  InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
+  SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -239,6 +239,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   lootProfile: {fileID: 11400000, guid: bb7d4be16c82afa40bb858550b0337c7, type: 2}
+  populateLootOnSpawn: 1
+  hasPopulatedLoot: 0
   items: []
   chestGridMaxHeight: 4
   chestGridMaxWidth: 8
@@ -260,7 +262,9 @@ MonoBehaviour:
   junkRotationRate: {x: 0, y: 0, z: 0}
   spawner: {fileID: 0}
   canTeleport: 1
+  randomTorque: {x: -10, y: 10}
   scaleSpeed: 1
+  destroyOnRocket: 1
   destroyVFX: {fileID: 2014236133279003091, guid: 15c8a3da0cfce7b4b9e9f863de2984b1, type: 3}
 --- !u!114 &6060258083100011228
 MonoBehaviour:

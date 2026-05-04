@@ -6,7 +6,12 @@ public class GravitySource : MonoBehaviour {
 		return Physics.gravity;
 	}
 
-	void OnEnable () {
+    public virtual bool ProvidesOxygen(Vector3 position)
+    {
+        return false;
+    }
+
+    void OnEnable () {
 		CustomGravity.Register(this);
 	}
 

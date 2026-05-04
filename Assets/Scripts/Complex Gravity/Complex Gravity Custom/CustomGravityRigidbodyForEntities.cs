@@ -8,6 +8,9 @@ using UnityEngine;
 
 public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 {
+    [Header("Refs")]
+    [SerializeField] private CC_Movement movement;
+
     [Header("Gravity Reference")]
     [Tooltip("Transform to use for gravity sampling instead of the rigidbody position.")]
     [SerializeField] private Transform gravitySampleObj;
@@ -45,6 +48,10 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     [Tooltip("Small dead zone around hover height to stop tiny corrections / pogoing.")]
     [SerializeField] private float groundedSnapDeadZone = 0.02f;
 
+    [Header("Settings")]
+    [SerializeField] private bool forceGravity = false;
+    private bool oxygenProvided;
+
     public bool Grounded => grounded;
     public Vector3 UpAxis => upAxis;
     public Vector3 CurrentGravity => currentGravity;
@@ -52,6 +59,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     public LayerMask GroundLayers => groundLayers;
     public Vector3 GroundNormal => hasGroundHit ? groundHit.normal : upAxis;
     public float GroundDistance => hasGroundHit ? groundHit.distance : float.PositiveInfinity;
+    public bool OxygenProvided => oxygenProvided;
 
     private float groundedIgnoreTimer;
     private float groundedLoseTimer;
@@ -63,6 +71,15 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     private RaycastHit groundHit;
     private bool hasGroundHit;
 
+    SP_SpaceManager spaceManager;
+    RS_Move rocket;
+
+    private void Start()
+    {
+        spaceManager = FindFirstObjectByType<SP_SpaceManager>();
+        rocket = FindFirstObjectByType<RS_Move>();
+    }
+
     public void IgnoreGrounding(float duration)
     {
         groundedIgnoreTimer = Mathf.Max(groundedIgnoreTimer, duration);
@@ -73,36 +90,48 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 
     protected override void FixedUpdate()
     {
-        if (useGravity)
+        Vector3 gravitySamplePosition = GetGravitySamplePosition();
+        currentGravity = CustomGravity.GetGravity(gravitySamplePosition, out upAxis);
+        oxygenProvided = CustomGravity.ProvidesOxygen(gravitySamplePosition);
+
+        if (groundedIgnoreTimer > 0f)
         {
-            Vector3 gravitySamplePosition = GetGravitySamplePosition();
-            currentGravity = CustomGravity.GetGravity(gravitySamplePosition, out upAxis);
-
-            if (groundedIgnoreTimer > 0f)
-            {
-                groundedIgnoreTimer -= Time.fixedDeltaTime;
-            }
-
-            UpdateGroundedState();
-
-            if (grounded)
-            {
-                if (stopDownwardVelocityWhenGrounded)
-                {
-                    StopGroundPushThroughVelocity();
-                }
-
-                SnapBodyToGround();
-            }
-
-            if (HandleFloatToSleep()) { return; }
-
-            // only apply gravity if we actually have usable gravity and are not grounded
-            if (!grounded && currentGravity.magnitude > 0.0001f)
-            {
-                body.AddForce(currentGravity, ForceMode.Acceleration);
-            }
+            groundedIgnoreTimer -= Time.fixedDeltaTime;
         }
+
+        UpdateGroundedState();
+
+        if (grounded)
+        {
+            if (stopDownwardVelocityWhenGrounded)
+            {
+                StopGroundPushThroughVelocity();
+            }
+
+            SnapBodyToGround();
+        }
+
+        if (HandleFloatToSleep()) { return; }
+
+        // only apply gravity if we actually have usable gravity and are not grounded
+        if (!grounded && currentGravity.magnitude > 0.0001f)
+        {
+            useGravity = true;
+            body.AddForce(currentGravity, ForceMode.Acceleration);
+        }
+        else if (grounded) // if we're close to ground
+        {
+            useGravity = true;
+        }
+        else // other wise don't so we can be added to global space move
+        {
+            useGravity = false;
+        }
+        if (forceGravity) // this is for when we want to not be added to global space move
+        {
+            useGravity = true;
+        }
+        ToggleGravity();
     }
 
     private Vector3 GetGravitySamplePosition()
@@ -298,6 +327,39 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 
         Vector3 moveDelta = supportNormal * snapDelta;
         body.position += moveDelta;
+    }
+
+    private void ToggleGravity()
+    {
+        if (useGravity)
+        {
+            if (movement != null)
+            {
+                movement.drift.Value = false;
+            }
+            else
+            {
+                if (spaceManager.debris.ContainsKey(gameObject))
+                {
+                    spaceManager.debris.Remove(gameObject);
+                }
+            }
+        }
+        else
+        {
+            if (movement != null)
+            {
+                movement.drift.Value = true;
+                movement.referenceDirection.Value = rocket.worldDirectionNetworked.Value;
+            }
+            else
+            {
+                if (!spaceManager.debris.ContainsKey(gameObject))
+                {
+                    spaceManager.debris.Add(gameObject, rocket.worldDirectionNetworked.Value);
+                }
+            }
+        }
     }
 
     private void OnDrawGizmosSelected()
