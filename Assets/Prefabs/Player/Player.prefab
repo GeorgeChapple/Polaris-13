@@ -7615,7 +7615,7 @@ MonoBehaviour:
   fallTimeout: 0.15
   visualBodyRoot: {fileID: 4116074879981026337}
   replicateVisualBody: 1
-  bodyAnimator: {fileID: 0}
+  bodyAnimator: {fileID: 4748309416809003924}
   networkAnimator: {fileID: 3453544993029424373}
   groundAnimatorMaxSpeed: 5.4
   singlePlayer: 0
@@ -8041,7 +8041,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkAnimatorExpanded: 0
   AuthorityMode: 1
-  m_Animator: {fileID: 0}
+  m_Animator: {fileID: 4748309416809003924}
   TransitionStateInfoList:
   - IsCrossFadeExit: 0
     Layer: 0
@@ -8051,7 +8051,23 @@ MonoBehaviour:
     TriggerNameHash: -505701829
     TransitionIndex: 0
   AnimatorParameterEntries:
-    ParameterEntries: []
+    ParameterEntries:
+    - name: X
+      NameHash: -1213057461
+      Synchronize: 1
+      ParameterType: 1
+    - name: Y
+      NameHash: -1061878051
+      Synchronize: 1
+      ParameterType: 1
+    - name: Grounded
+      NameHash: 862969536
+      Synchronize: 1
+      ParameterType: 4
+    - name: Jumped
+      NameHash: -505701829
+      Synchronize: 1
+      ParameterType: 9
   AnimatorParametersExpanded: 0
 --- !u!1 &6201942070750443391
 GameObject:
@@ -12020,5 +12036,10 @@ PrefabInstance:
 --- !u!4 &1658818440921031150 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 8f9dd39e3e4c21c46ac7bc290fd6e2de, type: 3}
+  m_PrefabInstance: {fileID: 1193445002941449733}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &4748309416809003924 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 8f9dd39e3e4c21c46ac7bc290fd6e2de, type: 3}
   m_PrefabInstance: {fileID: 1193445002941449733}
   m_PrefabAsset: {fileID: 0}
