@@ -122,6 +122,13 @@ public class CC_CameraController : NetworkBehaviour
 
     public bool invertY = false;
 
+    [Header("Saved Settings")]
+    [SerializeField] private float defaultLookSensitivity = 1f;
+    [SerializeField] private bool defaultInvertY;
+
+    private const string MouseSensitivityKey = "Settings_MouseSensitivity";
+    private const string InvertYKey = "Settings_InvertY";
+
     // space roll state
     protected float rollSpeed;
 
@@ -213,6 +220,7 @@ public class CC_CameraController : NetworkBehaviour
         SyncGravityStateFromWorldRotation();
         gravityRecoveryRotation = Quaternion.identity;
         wasUsingGravityLastFrame = movement != null && movement.HasUsableGravity();
+        LoadCameraSettings();
         ApplyCameraWorldRotation();
     }
 
@@ -714,5 +722,43 @@ public class CC_CameraController : NetworkBehaviour
         if (angle > 360f) { angle -= 360f; }
 
         return Mathf.Clamp(angle, min, max);
+    }
+
+    public void LoadCameraSettings()
+    {
+        float sensitivity = PlayerPrefs.GetFloat(MouseSensitivityKey, defaultLookSensitivity);
+        bool savedInvertY = PlayerPrefs.GetInt(InvertYKey, defaultInvertY ? 1 : 0) == 1;
+
+        ApplyLookSensitivity(sensitivity);
+        ApplyInvertY(savedInvertY);
+    }
+
+    public void SetLookSensitivity(float sensitivity)
+    {
+        sensitivity = Mathf.Max(0f, sensitivity);
+
+        PlayerPrefs.SetFloat(MouseSensitivityKey, sensitivity);
+        PlayerPrefs.Save();
+
+        ApplyLookSensitivity(sensitivity);
+    }
+
+    public void SetInvertY(bool shouldInvertY)
+    {
+        PlayerPrefs.SetInt(InvertYKey, shouldInvertY ? 1 : 0);
+        PlayerPrefs.Save();
+
+        ApplyInvertY(shouldInvertY);
+    }
+
+    private void ApplyLookSensitivity(float sensitivity)
+    {
+        lookMultX = sensitivity;
+        lookMultY = sensitivity;
+    }
+
+    private void ApplyInvertY(bool shouldInvertY)
+    {
+        invertY = shouldInvertY;
     }
 }
