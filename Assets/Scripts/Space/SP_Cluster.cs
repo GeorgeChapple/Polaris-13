@@ -3,10 +3,11 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "SP_Cluster", menuName = "Scriptable Objects/SP_Cluster")]
 public class SP_Cluster : ScriptableObject
 {
-    GameObject prefab;
-    Vector2 triggerRadius;
-    Vector2 spawnRadius;
-    Vector2 spaceRadius;
-    int minSpawn;
-    int maxSpawn;
+    public GameObject prefab;
+    public Vector2 triggerRadius;
+    public Vector2 spawnRadius;
+    public Vector2 spaceRadius;
+    public int minSpawn;
+    public int maxSpawn;
+    public Color colour;
 }

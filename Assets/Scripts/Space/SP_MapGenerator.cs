@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class SP_MapGenerator : MonoBehaviour
@@ -18,20 +19,45 @@ public class SP_MapGenerator : MonoBehaviour
     [Serializable]
     public struct Biome
     {
-        ClusterSpawn[] clusterSpawns;
+        public ClusterSpawn[] clusterSpawns;
     }
 
+    [Serializable]
     public struct ClusterSpawn
     {
-        SP_Cluster clusterPrefab;
-        int minSpawn;
-        int maxSpawn;
+        public SP_Cluster clusterPrefab;
+        public int minSpawn;
+        public int maxSpawn;
     }
 
     public struct Cluster
     {
-        GameObject prefab;
-        Vector3 position;
-        float radius;
+        public GameObject prefab;
+        public Vector3 position;
+        public float radius;
+        public Color colour;
+
+        public Cluster(GameObject _prefab, Vector3 _position, float _radius, Color _colour)
+        {
+            prefab = _prefab;
+            position = _position;
+            radius = _radius;
+            colour = _colour;
+        }
+    }
+
+    private List<Cluster> GenerateMap(Biome biome)
+    {
+        List<Cluster> newClusters = new List<Cluster>();
+        foreach (ClusterSpawn spawn in biome.clusterSpawns)
+        {
+            for (int i = 0; i < UnityEngine.Random.Range(spawn.minSpawn, spawn.maxSpawn); i++)
+            {
+                SP_Cluster prefab = spawn.clusterPrefab;
+                
+            }
+        }
+
+        return newClusters;
     }
 }
