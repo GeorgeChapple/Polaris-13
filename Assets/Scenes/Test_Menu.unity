@@ -1534,7 +1534,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 185080823}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1383716415}
+        m_TargetAssemblyTypeName: Unity.Multiplayer.Widgets.CreateSession, Unity.Multiplayer.Widgets.Session
+        m_MethodName: set_enabled
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &185080823
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8541,7 +8553,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1302420476}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 172551558}
+        m_TargetAssemblyTypeName: Unity.Multiplayer.Widgets.CreateSession, Unity.Multiplayer.Widgets.Session
+        m_MethodName: set_enabled
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1302420476
 MonoBehaviour:
   m_ObjectHideFlags: 0
