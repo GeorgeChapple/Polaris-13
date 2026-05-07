@@ -5713,7 +5713,7 @@ GameObject:
   - component: {fileID: 2948513718352719565}
   m_Layer: 5
   m_Name: Show Session Code
-  m_TagString: Untagged
+  m_TagString: SessionCode
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6327,7 +6327,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8300988698325763233}
   m_HandleRect: {fileID: 8501576351295428300}
   m_Direction: 0
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -10899,7 +10899,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Quit
+  m_text: Return to Main Menu
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 940dfec0df919544c8cca1f0af9bb9e0, type: 2}
   m_sharedMaterial: {fileID: 6854198053467255885, guid: 940dfec0df919544c8cca1f0af9bb9e0, type: 2}
@@ -13056,6 +13056,7 @@ GameObject:
   - component: {fileID: 6897484885061798330}
   - component: {fileID: 8634075486662655660}
   - component: {fileID: 3453544993029424373}
+  - component: {fileID: 4705677791594903666}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -13775,6 +13776,21 @@ MonoBehaviour:
       Synchronize: 1
       ParameterType: 9
   AnimatorParametersExpanded: 0
+--- !u!114 &4705677791594903666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6189470309648960028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f528bf7d9ce612a48a301cbfb67be378, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneName: Test_Menu
+  loadDelay: 0.1
+  enableCursor: 1
 --- !u!1 &6201942070750443391
 GameObject:
   m_ObjectHideFlags: 0
@@ -17567,7 +17583,7 @@ GameObject:
   - component: {fileID: 3046753264756087431}
   - component: {fileID: 3809150684662827246}
   m_Layer: 5
-  m_Name: Quit
+  m_Name: ReturnToMainMenu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -17591,7 +17607,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 70, y: 35}
+  m_SizeDelta: {x: 280, y: 35}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &198372311727065312
 CanvasRenderer:
@@ -17674,7 +17690,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 3046753264756087431}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 4705677791594903666}
+        m_TargetAssemblyTypeName: MS_SessionEnder, Assembly-CSharp
+        m_MethodName: EndSession
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &7839017624350086631
 GameObject:
   m_ObjectHideFlags: 0
