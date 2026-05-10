@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
+using System.IO;
 using UnityEngine.VFX;
 
 public class SP_MapGenerator : MonoBehaviour
@@ -14,6 +14,7 @@ public class SP_MapGenerator : MonoBehaviour
     public Texture2D positionData;
     private int spawned = 0;
     private VisualEffect effect;
+    //bool save = true;
 
 
 
@@ -70,18 +71,31 @@ public class SP_MapGenerator : MonoBehaviour
 
     private void FixedUpdate()
     { 
-        Texture2D newData = new Texture2D(spawned, 1, TextureFormat.RGBA32_SIGNED, false);
+        UpdateTextureData();
+        //if (save)
+        //{
+        //    File.WriteAllBytes("Assets/Shaders/Untitled.png", positionData.EncodeToPNG());
+        //    save = false;
+        //}
+    }
+
+    private void UpdateTextureData()
+    {
+        Texture2D newPositionData = new Texture2D(spawned, 3, TextureFormat.RGBA32_SIGNED, false);
+        newPositionData.filterMode = FilterMode.Point;
         int i = 0;
         foreach (ClusterManager manager in clusters)
         {
-            foreach(Cluster cluster in manager.clusterGroup)
+            foreach (Cluster cluster in manager.clusterGroup)
             {
-                newData.SetPixel(i, 1, PositionToColour(cluster.position, mapSize));
+                newPositionData.SetPixel(i, 0, PositionToColour(cluster.position, mapSize));
+                newPositionData.SetPixel(i, 1, RadiusToColour(cluster.radius, mapSize));
+                newPositionData.SetPixel(i, 2, cluster.colour);
                 i++;
             }
         }
-        newData.Apply();
-        positionData = newData;
+        newPositionData.Apply();
+        positionData = newPositionData;
         effect.SetTexture("_positionData", positionData);
         effect.SetInt("_spawnCount", spawned);
     }
@@ -95,6 +109,18 @@ public class SP_MapGenerator : MonoBehaviour
             1f
             );
         return newPosition;
+    }
+
+    private Color RadiusToColour(float radius, Vector3 bounds)
+    {
+        float diameter = radius * 2;
+        Color newScale = new Color(
+            diameter / bounds.x,
+            diameter / bounds.y,
+            diameter / bounds.z,
+            1f
+            );
+        return newScale;
     }
 
     private List<ClusterManager> GenerateMap(Biome biome)
