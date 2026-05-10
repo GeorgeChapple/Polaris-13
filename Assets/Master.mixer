@@ -128,13 +128,19 @@ AudioMixerController:
   m_SuspendThreshold: -80
   m_EnableSuspend: 1
   m_UpdateMode: 0
-  m_ExposedParameters: []
+  m_ExposedParameters:
+  - guid: 62ce64827b27f9242af8c789f990574b
+    name: MasterVolume
+  - guid: 8eddf61127e28b64db1dc1981c54251d
+    name: MusicVolume
+  - guid: 348db96ad28887840b0952f90c192639
+    name: SFXVolume
   m_AudioMixerGroupViews:
   - guids:
     - 7c23255cdcdba3844acb3097ea2a6028
-    - 3772e1ca6a3c01a4b8e9ee5187e98b1d
     - 987eb7dc23871ac41b89a9ee821e8d12
     - 1c86d7540f0145449a237e45caad8c3d
+    - 3772e1ca6a3c01a4b8e9ee5187e98b1d
     name: View
   m_CurrentViewIndex: 0
   m_TargetSnapshot: {fileID: 24500006}
@@ -148,7 +154,6 @@ AudioMixerGroupController:
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: 7c23255cdcdba3844acb3097ea2a6028
   m_Children:
-  - {fileID: -7902124793016572717}
   - {fileID: -5376822762015411565}
   - {fileID: 4625465415576887179}
   m_Volume: 62ce64827b27f9242af8c789f990574b
@@ -185,6 +190,7 @@ AudioMixerSnapshotController:
   m_SnapshotID: 523a7c9b01a10fa428e03be8145073c5
   m_FloatValues:
     f17f1f72518a7974097fbd3e3451c7a0: 1.74
+    62ce64827b27f9242af8c789f990574b: 0
     0773cda2bc40f4d48a490eaf7a66d2b2: -7560
     c1848d039cfe98a49ab789266069e8a4: 0.469
     121b9af3306e4c445810afb271f3b7a4: 100
@@ -301,10 +307,11 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: BackgroundMusic
+  m_Name: Music
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: 1c86d7540f0145449a237e45caad8c3d
-  m_Children: []
+  m_Children:
+  - {fileID: -7902124793016572717}
   m_Volume: 8eddf61127e28b64db1dc1981c54251d
   m_Pitch: 72b08733604168946af6d9e42a2f8948
   m_Send: 00000000000000000000000000000000

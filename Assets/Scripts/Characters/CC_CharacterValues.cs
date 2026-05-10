@@ -14,6 +14,10 @@ public class CC_CharacterValues : MonoBehaviour
     {
         public Image img;
 
+        public string valueName;
+
+        public TextMeshProUGUI text;
+
         public bool appearOnUpdated;
 
         [Tooltip("How long the ui stays visible after being updated.")]
@@ -72,6 +76,15 @@ public class CC_CharacterValues : MonoBehaviour
 
             lastFill = v;
             img.fillAmount = v;
+
+        }
+
+        public void SetText(float max, float current)
+        {
+            if (text != null)
+            {
+                text.SetText($"{valueName}: {Mathf.Ceil(current)}/{max}");
+            }
         }
 
         public void Tick()
@@ -435,27 +448,62 @@ public class CC_CharacterValues : MonoBehaviour
 
         if (healthUI != null)
         {
-            for (int i = 0; i < healthUI.Length; i++) { if (healthUI[i] != null) { healthUI[i].SetFill(h01, triggerAppear); } }
+            for (int i = 0; i < healthUI.Length; i++) 
+            {
+                if (healthUI[i] != null) 
+                { 
+                    healthUI[i].SetFill(h01, triggerAppear);
+                    healthUI[i].SetText(maxHealth, health);
+                } 
+            }
         }
 
         if (hungerUI != null)
         {
-            for (int i = 0; i < hungerUI.Length; i++) { if (hungerUI[i] != null) { hungerUI[i].SetFill(hu01, triggerAppear); } }
+            for (int i = 0; i < hungerUI.Length; i++)
+            { 
+                if (hungerUI[i] != null) 
+                { 
+                    hungerUI[i].SetFill(hu01, triggerAppear);
+                    hungerUI[i].SetText(maxHunger, hunger);
+                } 
+            }
         }
 
         if (thirstUI != null)
         {
-            for (int i = 0; i < thirstUI.Length; i++) { if (thirstUI[i] != null) { thirstUI[i].SetFill(t01, triggerAppear); } }
+            for (int i = 0; i < thirstUI.Length; i++) 
+            {
+                if (thirstUI[i] != null) 
+                { 
+                    thirstUI[i].SetFill(t01, triggerAppear);
+                    thirstUI[i].SetText(maxThirst, thirst);
+                } 
+            }
         }
 
         if (staminaUI != null)
         {
-            for (int i = 0; i < staminaUI.Length; i++) { if (staminaUI[i] != null) { staminaUI[i].SetFill(s01, triggerAppear); } }
+            for (int i = 0; i < staminaUI.Length; i++)
+            {
+                if (staminaUI[i] != null)
+                {
+                    staminaUI[i].SetFill(s01, triggerAppear);
+                    staminaUI[i].SetText(maxStamina, stamina);
+                }
+            }
         }
 
         if (oxygenUI != null)
         {
-            for (int i = 0; i < oxygenUI.Length; i++) { if (oxygenUI[i] != null) { oxygenUI[i].SetFill(o01, triggerAppear); } }
+            for (int i = 0; i < oxygenUI.Length; i++) 
+            {
+                if (oxygenUI[i] != null)                                    
+                {
+                    oxygenUI[i].SetFill(o01, triggerAppear);
+                    oxygenUI[i].SetText(maxOxygen, oxygen);
+                }
+            }
         }
     }
 
