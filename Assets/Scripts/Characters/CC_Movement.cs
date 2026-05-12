@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Net.Sockets;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Components;
@@ -474,6 +473,20 @@ public class CC_Movement : NetworkBehaviour
         {
             currentGravity = CustomGravity.GetGravity(rb.position, out upAxis);
         }
+
+        if (upAxis.sqrMagnitude < 0.0001f)
+        {
+            upAxis = Vector3.up;
+        }
+
+        upAxis.Normalize();
+    }
+
+    public void RefreshGravityForCamera()
+    {
+        if (rb == null) { return; }
+
+        UpdateGravity();
     }
 
     public bool HasUsableGravity()
@@ -485,6 +498,7 @@ public class CC_Movement : NetworkBehaviour
 
         return currentGravity.magnitude >= zeroGravityThreshold;
     }
+
     public bool IsOxygenProvided()
     {
         if (customGravityBody != null)
@@ -641,12 +655,12 @@ public class CC_Movement : NetworkBehaviour
         // timers
         if (grounded)
         {
-            if (jumpTimeoutDelta > 0f) { jumpTimeoutDelta -= Time.deltaTime; }
+            if (jumpTimeoutDelta > 0f) { jumpTimeoutDelta -= Time.fixedDeltaTime; }
         }
         else
         {
-            jumpTimeoutDelta = Mathf.Max(0f, jumpTimeoutDelta - Time.deltaTime);
-            if (fallTimeoutDelta > 0f) { fallTimeoutDelta -= Time.deltaTime; }
+            jumpTimeoutDelta = Mathf.Max(0f, jumpTimeoutDelta - Time.fixedDeltaTime);
+            if (fallTimeoutDelta > 0f) { fallTimeoutDelta -= Time.fixedDeltaTime; }
         }
     }
 
@@ -858,9 +872,17 @@ public class CC_Movement : NetworkBehaviour
 
         float alignStrength = GetGravityAlignmentSharpness();
 
-        if (!HasUsableGravity() || alignStrength <= 0.0001f)
+        // in free space the body should always face exactly where the camera is facing
+        if (!HasUsableGravity())
         {
-            // in free space the body should always face exactly where the camera is facing
+            bodyRotation = CameraTarget.rotation;
+            rb.MoveRotation(bodyRotation);
+            return;
+        }
+
+        // when gravity exists but we are not close enough to align yet, keep space body rotation
+        if (alignStrength >= 0f && alignStrength <= 0.0001f)
+        {
             bodyRotation = CameraTarget.rotation;
             rb.MoveRotation(bodyRotation);
             return;
@@ -872,12 +894,12 @@ public class CC_Movement : NetworkBehaviour
 
         if (targetForward.sqrMagnitude < 0.0001f)
         {
-            targetForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
+            targetForward = Vector3.ProjectOnPlane(groundedForward, upAxis);
         }
 
         if (targetForward.sqrMagnitude < 0.0001f)
         {
-            targetForward = groundedForward;
+            targetForward = Vector3.ProjectOnPlane(rb.rotation * Vector3.forward, upAxis);
         }
 
         if (targetForward.sqrMagnitude < 0.0001f)
@@ -887,7 +909,12 @@ public class CC_Movement : NetworkBehaviour
 
         if (targetForward.sqrMagnitude < 0.0001f)
         {
-            targetForward = Vector3.forward;
+            targetForward = Vector3.Cross(upAxis, Vector3.right);
+        }
+
+        if (targetForward.sqrMagnitude < 0.0001f)
+        {
+            targetForward = Vector3.Cross(upAxis, Vector3.forward);
         }
 
         targetForward.Normalize();
@@ -934,45 +961,45 @@ public class CC_Movement : NetworkBehaviour
     }
 
     public void UpdateCapsuleCrouch(float crouchSharpness)
-{
-    bool canCrouch = HasUsableGravity() && grounded && !jumpedThisTick;
-    if (!canCrouch) { crouching = false; }
-
-    if (bodyCapsule == null) { return; }
-
-    float targetHeight = capsuleBaseHeight * (crouching ? crouchCapsuleHeightMult : 1f);
-
-    // move the capsule center along the current gravity up axis.
-    Vector3 localUpAxis = GetCapsuleLocalUpAxis();
-
-    Vector3 targetCenter = capsuleBaseCenter;
-    if (crouching)
     {
-        targetCenter -= localUpAxis * ((capsuleBaseHeight - targetHeight) * 0.5f);
+        bool canCrouch = HasUsableGravity() && grounded && !jumpedThisTick;
+        if (!canCrouch) { crouching = false; }
+
+        if (bodyCapsule == null) { return; }
+
+        float targetHeight = capsuleBaseHeight * (crouching ? crouchCapsuleHeightMult : 1f);
+
+        // move the capsule center along the current gravity up axis.
+        Vector3 localUpAxis = GetCapsuleLocalUpAxis();
+
+        Vector3 targetCenter = capsuleBaseCenter;
+        if (crouching)
+        {
+            targetCenter -= localUpAxis * ((capsuleBaseHeight - targetHeight) * 0.5f);
+        }
+
+        float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
+
+        bodyCapsule.height = Mathf.Lerp(bodyCapsule.height, targetHeight, t);
+        bodyCapsule.center = Vector3.Lerp(bodyCapsule.center, targetCenter, t);
     }
 
-    float t = 1f - Mathf.Exp(-crouchSharpness * Time.deltaTime);
-
-    bodyCapsule.height = Mathf.Lerp(bodyCapsule.height, targetHeight, t);
-    bodyCapsule.center = Vector3.Lerp(bodyCapsule.center, targetCenter, t);
-}
-
-private Vector3 GetCapsuleLocalUpAxis()
-{
-    if (bodyCapsule == null)
+    private Vector3 GetCapsuleLocalUpAxis()
     {
-        return Vector3.up;
+        if (bodyCapsule == null)
+        {
+            return Vector3.up;
+        }
+
+        Vector3 localUpAxis = bodyCapsule.transform.InverseTransformDirection(upAxis);
+
+        if (localUpAxis.sqrMagnitude < 0.0001f)
+        {
+            return Vector3.up;
+        }
+
+        return localUpAxis.normalized;
     }
-
-    Vector3 localUpAxis = bodyCapsule.transform.InverseTransformDirection(upAxis);
-
-    if (localUpAxis.sqrMagnitude < 0.0001f)
-    {
-        return Vector3.up;
-    }
-
-    return localUpAxis.normalized;
-}
 
     void UpdateReplicatedVisualBody()
     {

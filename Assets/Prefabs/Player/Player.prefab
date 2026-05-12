@@ -5514,7 +5514,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8acdd3c5b891eb74582715cd1bcd8b4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  t: {fileID: 4827758710393173946}
+  t: {fileID: 9120988383163063865}
+  rotationOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &2375620102634745876
 GameObject:
   m_ObjectHideFlags: 0
@@ -14008,6 +14009,7 @@ MonoBehaviour:
   gravityRecoverySharpness: 8
   gravityRecoverySnapSharpness: 20
   gravityRecoverySnapAngle: 0.5
+  gravityRollRecoveryDot: 0.98
   enableCameraBobbing: 1
   bobFrequency: 1.5
   bobAmplitude: 0.008
