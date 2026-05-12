@@ -10,4 +10,5 @@ public class SP_Cluster : ScriptableObject
     public int minSpawn;
     public int maxSpawn;
     public Color colour;
+    public float colourBrightness;
 }

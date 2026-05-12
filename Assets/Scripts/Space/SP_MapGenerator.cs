@@ -10,13 +10,9 @@ public class SP_MapGenerator : MonoBehaviour
     public Biome[] biomes;
     public int seed;
     public List<ClusterManager> clusters = new List<ClusterManager>();
-    [SerializeField] private GameObject TEMP;
     public Texture2D positionData;
     private int spawned = 0;
     private VisualEffect effect;
-    //bool save = true;
-
-
 
     [Serializable]
     public struct Biome
@@ -52,13 +48,15 @@ public class SP_MapGenerator : MonoBehaviour
         public Vector3 position;
         public float radius;
         public Color colour;
+        public float colourBrightness;
 
-        public Cluster(GameObject _prefab, Vector3 _position, float _radius, Color _colour)
+        public Cluster(GameObject _prefab, Vector3 _position, float _radius, Color _colour, float _colourBrightness)
         {
             prefab = _prefab;
             position = _position;
             radius = _radius;
             colour = _colour;
+            colourBrightness = _colourBrightness;
         }
     }
 
@@ -81,7 +79,7 @@ public class SP_MapGenerator : MonoBehaviour
 
     private void UpdateTextureData()
     {
-        Texture2D newPositionData = new Texture2D(spawned, 3, TextureFormat.RGBA32_SIGNED, false);
+        Texture2D newPositionData = new Texture2D(spawned, 4, TextureFormat.RGBA32_SIGNED, false);
         newPositionData.filterMode = FilterMode.Point;
         int i = 0;
         foreach (ClusterManager manager in clusters)
@@ -91,6 +89,7 @@ public class SP_MapGenerator : MonoBehaviour
                 newPositionData.SetPixel(i, 0, PositionToColour(cluster.position, mapSize));
                 newPositionData.SetPixel(i, 1, RadiusToColour(cluster.radius, mapSize));
                 newPositionData.SetPixel(i, 2, cluster.colour);
+                newPositionData.SetPixel(i, 3, Color.white * (cluster.colourBrightness / 100f));
                 i++;
             }
         }
@@ -179,7 +178,8 @@ public class SP_MapGenerator : MonoBehaviour
                         prefab.prefabs[UnityEngine.Random.Range(0, prefab.prefabs.Length)],
                         newPosition + offset,
                         UnityEngine.Random.Range(prefab.triggerRadius.x, prefab.triggerRadius.y),
-                        prefab.colour
+                        prefab.colour,
+                        prefab.colourBrightness
                         );
                     newClusters.Add(newCluster);
                     spawned++;
@@ -191,7 +191,7 @@ public class SP_MapGenerator : MonoBehaviour
         return newClusterManagers;
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         CustomGizmos.DrawBox(Vector3.zero, transform.rotation, mapSize, Color.yellow);
         foreach (ClusterManager manager in clusters)
