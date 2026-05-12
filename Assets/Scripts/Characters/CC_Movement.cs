@@ -1110,6 +1110,8 @@ private Vector3 GetCapsuleLocalUpAxis()
 
     protected void ApplySpaceDrift()
     {
+        if (rocket == null) { return; }
+        if (IsOxygenProvided()) { return; }
         if (drift.Value)
         {
             Vector3 refDir = referenceDirection.Value;
