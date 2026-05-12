@@ -92,6 +92,9 @@ public class CC_Movement : NetworkBehaviour
     [Tooltip("If true, owner updates the replicated visual body root from the local visual body source.")]
     [SerializeField] private bool replicateVisualBody = true;
 
+    [Tooltip("If true, hides body renderers for the owning player.")]
+    [SerializeField] private bool hideBody = true;
+
     [Header("Animator")]
     [SerializeField] private Animator bodyAnimator;
     [SerializeField] private NetworkAnimator networkAnimator;
@@ -294,6 +297,16 @@ public class CC_Movement : NetworkBehaviour
             yield return null;
         }
         rocket = FindFirstObjectByType<RS_Move>();
+        if (hideBody)
+        {
+            if (IsOwner)
+            {
+                foreach (Renderer bodyRenderers in bodyAnimator.GetComponentsInChildren<Renderer>())
+                {
+                    bodyRenderers.enabled = false;
+                }
+            }
+        }
     }
 
     private void Update()
@@ -334,14 +347,6 @@ public class CC_Movement : NetworkBehaviour
     public virtual void TickFixed(Vector2 moveInput, bool jumpInput, float rollInput, bool sprintInput, bool crouchInput, bool stabiliseInput)
     {
         if (!IsLocallyControlled() || rb == null) { return; }
-
-        if (IsOwner)
-        {
-            foreach (Renderer bodyRenderers in bodyAnimator.GetComponentsInChildren<Renderer>())
-            {
-                bodyRenderers.enabled = false;
-            }
-        }
 
         // keep our up axis updated from gravity
         UpdateGravity();
