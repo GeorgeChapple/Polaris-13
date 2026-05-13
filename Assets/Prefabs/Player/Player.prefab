@@ -14120,7 +14120,7 @@ MonoBehaviour:
   fallTimeout: 0.15
   visualBodyRoot: {fileID: 4116074879981026337}
   replicateVisualBody: 1
-  hideBody: 0
+  hideBody: 1
   bodyAnimator: {fileID: 7242076062211711898}
   networkAnimator: {fileID: 3453544993029424373}
   groundAnimatorMaxSpeed: 5.4
@@ -21941,10 +21941,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4116074879981026337}
     m_Modifications:
-    - target: {fileID: 5121095073581654048, guid: 9593c0ef718c2ad4cbdf2b89dba47125, type: 3}
-      propertyPath: m_UpdateMode
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8f9dd39e3e4c21c46ac7bc290fd6e2de, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.5
@@ -22116,6 +22112,10 @@ PrefabInstance:
     - target: {fileID: 7960617243149385267, guid: 8f9dd39e3e4c21c46ac7bc290fd6e2de, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5121095073581654048, guid: 9593c0ef718c2ad4cbdf2b89dba47125, type: 3}
+      propertyPath: m_UpdateMode
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
