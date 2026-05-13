@@ -1,8 +1,9 @@
 using NUnit.Framework;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode;
 
-public class BD_Goober : MonoBehaviour
+public class BD_Goober : NetworkBehaviour
 {
     private List<Rigidbody> neighbours = new List<Rigidbody>();
     public Transform target;
@@ -12,18 +13,21 @@ public class BD_Goober : MonoBehaviour
     [SerializeField] private float alignmentThreshold = 1f;
     [SerializeField] private float cohesion = 1f;
     [SerializeField] private float cohesionThreshold = 1f;
-    [SerializeField] private Vector3 bounds = new Vector3(20, 20, 20);
     private Rigidbody rb;
     public Vector3 velocity = Vector3.forward;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        if (!IsServer)
+        {
+            this.enabled = false;
+        }
         rb = GetComponent<Rigidbody>();
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         neighbours.Clear();
         foreach (BD_Goober gb in FindObjectsByType<BD_Goober>(FindObjectsSortMode.None))
@@ -41,7 +45,6 @@ public class BD_Goober : MonoBehaviour
         {
             FlockUpdate(Vector3.zero);
         }
-        //Boid.Constrain(rb, bounds);
     }
 
     private void FlockUpdate(Vector3 target)
