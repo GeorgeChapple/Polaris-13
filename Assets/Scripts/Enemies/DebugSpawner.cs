@@ -33,6 +33,7 @@ public class DebugSpawner : MonoBehaviour
         }
         if ( destroy )
         {
+            destroy = false;
             foreach (BD_Goober gb in FindObjectsByType<BD_Goober>(FindObjectsSortMode.None))
             {
                 gb.GetComponent<NetworkObject>().Despawn();
