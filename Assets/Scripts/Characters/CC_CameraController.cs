@@ -73,6 +73,9 @@ public class CC_CameraController : NetworkBehaviour
     [Tooltip("When recovery is smaller than this angle, snap it fully to identity.")]
     public float gravityRecoverySnapAngle = 0.5f;
 
+    [Tooltip("How close the camera can look to gravity up/down before roll recovery pauses. Higher = closer to straight up/down.")]
+    [SerializeField, Range(0.9f, 0.9999f)] private float gravityRollRecoveryDot = 0.98f;
+
     [Header("Camera Bobbing")]
     [Tooltip("If true, camera bobbing is enabled while grounded in usable gravity.")]
     public bool enableCameraBobbing = true;
@@ -121,6 +124,13 @@ public class CC_CameraController : NetworkBehaviour
     public float stickBaseY = 180f;
 
     public bool invertY = false;
+
+    [Header("Saved Settings")]
+    [SerializeField] private float defaultLookSensitivity = 1f;
+    [SerializeField] private bool defaultInvertY;
+
+    private const string MouseSensitivityKey = "Settings_MouseSensitivity";
+    private const string InvertYKey = "Settings_InvertY";
 
     // space roll state
     protected float rollSpeed;
@@ -209,10 +219,16 @@ public class CC_CameraController : NetworkBehaviour
             }
         }
 
+        if (movement != null)
+        {
+            movement.RefreshGravityForCamera();
+        }
+
         InitialiseCameraWorldRotation();
         SyncGravityStateFromWorldRotation();
         gravityRecoveryRotation = Quaternion.identity;
         wasUsingGravityLastFrame = movement != null && movement.HasUsableGravity();
+        LoadCameraSettings();
         ApplyCameraWorldRotation();
     }
 
@@ -241,6 +257,9 @@ public class CC_CameraController : NetworkBehaviour
         if (movement == null) { return; }
 
         Vector3 upAxis = movement.UpAxis;
+        if (upAxis.sqrMagnitude < 0.0001f) { upAxis = Vector3.up; }
+        upAxis.Normalize();
+
         Vector3 forward = cameraWorldRotation * Vector3.forward;
         Vector3 right = cameraWorldRotation * Vector3.right;
 
@@ -258,12 +277,23 @@ public class CC_CameraController : NetworkBehaviour
 
         if (gravityAlignedForward.sqrMagnitude < 0.0001f)
         {
-            gravityAlignedForward = Vector3.forward;
+            gravityAlignedForward = Vector3.ProjectOnPlane(Vector3.forward, upAxis);
+        }
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.Cross(upAxis, Vector3.right);
+        }
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.Cross(upAxis, Vector3.forward);
         }
 
         gravityAlignedForward.Normalize();
 
-        gravityAlignedPitch = Vector3.SignedAngle(gravityAlignedForward, forward, right);
+        // positive pitch = looking up
+        gravityAlignedPitch = -Vector3.SignedAngle(gravityAlignedForward, forward, right);
         gravityAlignedPitch = Mathf.Clamp(gravityAlignedPitch, bottomClamp, topClamp);
     }
 
@@ -401,6 +431,8 @@ public class CC_CameraController : NetworkBehaviour
     {
         if (cinemachineCameraTarget == null || movement == null) { return; }
 
+        movement.RefreshGravityForCamera();
+
         InitialiseCameraWorldRotation();
 
         float sx = isMouse ? mouseBaseX * lookMultX : stickBaseX * lookMultX;
@@ -422,7 +454,6 @@ public class CC_CameraController : NetworkBehaviour
             Vector3 currentForward = cameraWorldRotation * Vector3.forward;
 
             Quaternion yawQ = Quaternion.AngleAxis(yawDelta, currentUp);
-            Quaternion pitchQ = Quaternion.AngleAxis(-pitchDelta, currentRight);
 
             // thruster-style roll acceleration
             float targetRollSpeed = -rollInput * rollMaxSpeed;
@@ -436,7 +467,7 @@ public class CC_CameraController : NetworkBehaviour
             float rollDelta = rollSpeed * Time.deltaTime;
             Quaternion rollQ = Quaternion.AngleAxis(rollDelta, currentForward);
 
-            cameraWorldRotation = rollQ * pitchQ * yawQ * cameraWorldRotation;
+            cameraWorldRotation = rollQ * Quaternion.AngleAxis(-pitchDelta, currentRight) * yawQ * cameraWorldRotation;
             cameraWorldRotation = Quaternion.Normalize(cameraWorldRotation);
 
             wasUsingGravityLastFrame = false;
@@ -448,77 +479,145 @@ public class CC_CameraController : NetworkBehaviour
         if (!wasUsingGravityLastFrame)
         {
             rollSpeed = 0f;
+
+            // pull the current free space camera into stable gravity yaw/pitch state
+            SyncGravityStateFromWorldRotation();
+
+            Vector3 enterUpAxis = movement.UpAxis;
+            if (enterUpAxis.sqrMagnitude < 0.0001f) { enterUpAxis = Vector3.up; }
+            enterUpAxis.Normalize();
+
+            Vector3 enterForward = gravityAlignedForward;
+            if (enterForward.sqrMagnitude < 0.0001f)
+            {
+                enterForward = Vector3.ProjectOnPlane(cameraWorldRotation * Vector3.forward, enterUpAxis);
+            }
+
+            if (enterForward.sqrMagnitude < 0.0001f)
+            {
+                enterForward = Vector3.ProjectOnPlane(transform.forward, enterUpAxis);
+            }
+
+            if (enterForward.sqrMagnitude < 0.0001f)
+            {
+                enterForward = Vector3.forward;
+            }
+
+            enterForward.Normalize();
+
+            Vector3 enterRight = Vector3.Cross(enterUpAxis, enterForward);
+            if (enterRight.sqrMagnitude < 0.0001f)
+            {
+                enterRight = cameraWorldRotation * Vector3.right;
+            }
+
+            enterRight.Normalize();
+
+            Quaternion enterPitchQ = Quaternion.AngleAxis(-gravityAlignedPitch, enterRight);
+
+            Vector3 enterLookForward = enterPitchQ * enterForward;
+            Vector3 enterLookUp = enterPitchQ * enterUpAxis;
+
+            Quaternion targetNoRollRotation = Quaternion.LookRotation(enterLookForward, enterLookUp);
+
+            // keep whatever space tilt/roll we had and recover it smoothly after gravity takes over
+            gravityRecoveryRotation = Quaternion.Inverse(targetNoRollRotation) * cameraWorldRotation;
         }
 
         wasUsingGravityLastFrame = true;
 
-        // gravity mode should keep camera forward from player look
-        // gravity only recovers roll toward the up axis
+        // gravity mode uses stable yaw + clamped pitch
         Vector3 upAxis = movement.UpAxis;
+        if (upAxis.sqrMagnitude < 0.0001f) { upAxis = Vector3.up; }
+        upAxis.Normalize();
 
-        Vector3 lookForward = cameraWorldRotation * Vector3.forward;
-        Vector3 lookRight = cameraWorldRotation * Vector3.right;
-        Vector3 lookUp = cameraWorldRotation * Vector3.up;
+        // keep gravity forward on the gravity plane
+        gravityAlignedForward = Vector3.ProjectOnPlane(gravityAlignedForward, upAxis);
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.ProjectOnPlane(cameraWorldRotation * Vector3.forward, upAxis);
+        }
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.ProjectOnPlane(transform.forward, upAxis);
+        }
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.Cross(upAxis, Vector3.right);
+        }
+
+        if (gravityAlignedForward.sqrMagnitude < 0.0001f)
+        {
+            gravityAlignedForward = Vector3.Cross(upAxis, Vector3.forward);
+        }
+
+        gravityAlignedForward.Normalize();
 
         // yaw around gravity up
         if (Mathf.Abs(yawDelta) > 0.0001f)
         {
             Quaternion yawQ = Quaternion.AngleAxis(yawDelta, upAxis);
-            lookForward = yawQ * lookForward;
-            lookRight = yawQ * lookRight;
-            lookUp = yawQ * lookUp;
+            gravityAlignedForward = yawQ * gravityAlignedForward;
+            gravityAlignedForward = Vector3.ProjectOnPlane(gravityAlignedForward, upAxis);
+
+            if (gravityAlignedForward.sqrMagnitude > 0.0001f)
+            {
+                gravityAlignedForward.Normalize();
+            }
         }
 
-        // pitch around current camera right
-        if (Mathf.Abs(pitchDelta) > 0.0001f)
+        // pitch around gravity local right
+        gravityAlignedPitch = ClampAngle(gravityAlignedPitch + pitchDelta, bottomClamp, topClamp);
+
+        Vector3 rightAxis = Vector3.Cross(upAxis, gravityAlignedForward);
+
+        if (rightAxis.sqrMagnitude < 0.0001f)
         {
-            Quaternion pitchQ = Quaternion.AngleAxis(-pitchDelta, lookRight);
-            lookForward = pitchQ * lookForward;
-            lookUp = pitchQ * lookUp;
+            rightAxis = cameraWorldRotation * Vector3.right;
         }
+
+        rightAxis.Normalize();
+
+        Quaternion pitchQ = Quaternion.AngleAxis(-gravityAlignedPitch, rightAxis);
+
+        Vector3 lookForward = pitchQ * gravityAlignedForward;
+        Vector3 lookUp = pitchQ * upAxis;
 
         lookForward.Normalize();
+        lookUp.Normalize();
 
-        // recover only roll so camera up moves toward gravity up around current forward
-        Vector3 desiredUp = Vector3.ProjectOnPlane(upAxis, lookForward);
-        if (desiredUp.sqrMagnitude < 0.0001f)
+        // looking straight up/down has no stable roll, so pause roll recovery near it
+        float dotUpDown = Mathf.Abs(Vector3.Dot(lookForward, upAxis));
+        bool canRecoverRoll = dotUpDown < gravityRollRecoveryDot;
+
+        if (canRecoverRoll)
         {
-            desiredUp = Vector3.ProjectOnPlane(lookUp, lookForward);
+            float alignStrength = movement.GetGravityAlignmentSharpness();
+            float recoverySharpness = Mathf.Max(gravityRecoverySharpness, alignStrength > 0f ? alignStrength : 0f);
+
+            if (alignStrength < 0f)
+            {
+                recoverySharpness = gravityRecoverySnapSharpness;
+            }
+
+            float t = 1f - Mathf.Exp(-recoverySharpness * Time.deltaTime);
+            gravityRecoveryRotation = Quaternion.Slerp(gravityRecoveryRotation, Quaternion.identity, t);
+
+            if (Quaternion.Angle(gravityRecoveryRotation, Quaternion.identity) <= gravityRecoverySnapAngle)
+            {
+                gravityRecoveryRotation = Quaternion.identity;
+            }
         }
-        if (desiredUp.sqrMagnitude < 0.0001f)
-        {
-            desiredUp = lookUp;
-        }
-        desiredUp.Normalize();
 
-        Vector3 currentUpOnPlane = Vector3.ProjectOnPlane(lookUp, lookForward);
-        if (currentUpOnPlane.sqrMagnitude < 0.0001f)
-        {
-            currentUpOnPlane = desiredUp;
-        }
-        currentUpOnPlane.Normalize();
-
-        float signedRollError = Vector3.SignedAngle(currentUpOnPlane, desiredUp, lookForward);
-
-        float alignStrength = movement.GetGravityAlignmentSharpness();
-        float recoverySharpness = Mathf.Max(gravityRecoverySharpness, alignStrength > 0f ? alignStrength : 0f);
-
-        float t = 1f - Mathf.Exp(-recoverySharpness * Time.deltaTime);
-        float recoveredRollStep = signedRollError * t;
-
-        Quaternion rollRecoveryQ = Quaternion.AngleAxis(recoveredRollStep, lookForward);
-
-        Vector3 finalUp = rollRecoveryQ * lookUp;
-
-        cameraWorldRotation = Quaternion.LookRotation(lookForward, finalUp);
+        Quaternion noRollRotation = Quaternion.LookRotation(lookForward, lookUp);
+        cameraWorldRotation = noRollRotation * gravityRecoveryRotation;
         cameraWorldRotation = Quaternion.Normalize(cameraWorldRotation);
 
-        // keep body yaw state roughly synced from planar forward when gravity exists
-        Vector3 planarForward = Vector3.ProjectOnPlane(lookForward, upAxis);
-        if (planarForward.sqrMagnitude > 0.0001f)
-        {
-            movement.SetGroundForward(planarForward.normalized);
-        }
+        // keep body yaw state synced from stable planar forward
+        movement.SetGroundForward(gravityAlignedForward);
 
         ApplyCameraWorldRotation();
     }
@@ -644,6 +743,7 @@ public class CC_CameraController : NetworkBehaviour
 
         return localRightAxis.normalized;
     }
+
     void UpdateReplicatedCameraDirection()
     {
         if (!replicateCameraDirection || !IsLocallyControlled() || replicatedCameraDirectionRoot == null) { return; }
@@ -714,5 +814,43 @@ public class CC_CameraController : NetworkBehaviour
         if (angle > 360f) { angle -= 360f; }
 
         return Mathf.Clamp(angle, min, max);
+    }
+
+    public void LoadCameraSettings()
+    {
+        float sensitivity = PlayerPrefs.GetFloat(MouseSensitivityKey, defaultLookSensitivity);
+        bool savedInvertY = PlayerPrefs.GetInt(InvertYKey, defaultInvertY ? 1 : 0) == 1;
+
+        ApplyLookSensitivity(sensitivity);
+        ApplyInvertY(savedInvertY);
+    }
+
+    public void SetLookSensitivity(float sensitivity)
+    {
+        sensitivity = Mathf.Max(0f, sensitivity);
+
+        PlayerPrefs.SetFloat(MouseSensitivityKey, sensitivity);
+        PlayerPrefs.Save();
+
+        ApplyLookSensitivity(sensitivity);
+    }
+
+    public void SetInvertY(bool shouldInvertY)
+    {
+        PlayerPrefs.SetInt(InvertYKey, shouldInvertY ? 1 : 0);
+        PlayerPrefs.Save();
+
+        ApplyInvertY(shouldInvertY);
+    }
+
+    private void ApplyLookSensitivity(float sensitivity)
+    {
+        lookMultX = sensitivity;
+        lookMultY = sensitivity;
+    }
+
+    private void ApplyInvertY(bool shouldInvertY)
+    {
+        invertY = shouldInvertY;
     }
 }

@@ -37,6 +37,11 @@ public class INV_Chest : NetworkBehaviour
     [SerializeField] private int chestGridMaxHeight = 4;
     [SerializeField] private int chestGridMaxWidth = 10;
 
+    [Header("Editor Set Items")]
+    [SerializeField] private bool populateEditorItemsOnSpawn;
+    [SerializeField] private bool clearBeforeEditorPopulate = true;
+    [SerializeField] private List<INV_Item> itemsToSpawnInChest = new List<INV_Item>();
+
     [Header("Debug")]
     [SerializeField] private bool logChest;
 
@@ -55,6 +60,12 @@ public class INV_Chest : NetworkBehaviour
 
         // only server sets up chest loot
         if (!IsServer) { return; }
+
+        if (populateEditorItemsOnSpawn)
+        {
+            PopulateEditorItems_Server();
+            return;
+        }
 
         PopulateChest_Server();
     }
@@ -574,6 +585,53 @@ public class INV_Chest : NetworkBehaviour
             int itemAmount = randomItem.Stackable ? Random.Range(minItemAmount, maxItemAmount + 1) : 1;
 
             if (!TryStoreItemDataAutoPlace(randomItem, itemAmount)) { break; }
+        }
+
+        RefreshAllViewers();
+    }
+
+    public void PopulateEditorItems_Server()
+    {
+        if (!IsServer) { return; }
+        if (hasPopulatedLoot) { return; }
+
+        hasPopulatedLoot = true;
+
+        if (clearBeforeEditorPopulate)
+        {
+            ClearItems_Server();
+        }
+
+        if (itemsToSpawnInChest == null || itemsToSpawnInChest.Count == 0)
+        {
+            RefreshAllViewers();
+            return;
+        }
+
+        for (int i = 0; i < itemsToSpawnInChest.Count; i++)
+        {
+            INV_Item item = itemsToSpawnInChest[i];
+            if (item == null) { continue; }
+
+            int quantity = 1;
+
+            if (item.Stackable)
+            {
+                int minItemAmount = Mathf.Max(1, item.AmountSpawnedInChestRange.x);
+                int maxItemAmount = Mathf.Max(minItemAmount, item.AmountSpawnedInChestRange.y);
+
+                quantity = Random.Range(minItemAmount, maxItemAmount + 1);
+            }
+
+            if (!TryStoreItemDataAutoPlace(item, quantity))
+            {
+                if (logChest)
+                {
+                    Debug.LogWarning($"Could not auto place editor item in chest: {item.Name}", this);
+                }
+
+                continue;
+            }
         }
 
         RefreshAllViewers();
