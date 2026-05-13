@@ -23,6 +23,7 @@ public class DebugSpawner : MonoBehaviour
                             transform.position + new Vector3(i, j, k),
                             transform.rotation
                             );
+                        newGoob.GetComponent<BD_Goober>().target = this.gameObject.transform;
                     }
                 }
             }
