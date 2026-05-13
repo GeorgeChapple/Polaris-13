@@ -23,10 +23,6 @@ public class DebugSpawner : MonoBehaviour
                             transform.position + new Vector3(i, j, k),
                             transform.rotation
                             );
-                        if (!newGoob.GetComponent<NetworkObject>().IsSpawned)
-                        {
-                            newGoob.GetComponent<NetworkObject>().Spawn();
-                        }
                     }
                 }
             }
@@ -36,7 +32,6 @@ public class DebugSpawner : MonoBehaviour
             destroy = false;
             foreach (BD_Goober gb in FindObjectsByType<BD_Goober>(FindObjectsSortMode.None))
             {
-                gb.GetComponent<NetworkObject>().Despawn();
                 Destroy(gb.gameObject);
             }
         }
