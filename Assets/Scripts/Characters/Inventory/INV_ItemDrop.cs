@@ -18,6 +18,9 @@ public class INV_ItemDrop : NetworkBehaviour
     [Tooltip("If true, renames the drop object to include the item name.")]
     [SerializeField] private bool renameToItemName = true;
 
+    [Tooltip("If true, we set up the object from the inputted item data rather than network ID.")]
+    [SerializeField] private bool setUpWithoutNetworkID = false;
+
     public INV_Item Item => item;
 
     private MeshFilter mf;
@@ -37,6 +40,7 @@ public class INV_ItemDrop : NetworkBehaviour
 
         // when a client spawns this object, the value may already be present.
         ResolveAndApplyFromNetworkId();
+        if (setUpWithoutNetworkID) { Init(item); }
     }
 
     public override void OnNetworkDespawn()
