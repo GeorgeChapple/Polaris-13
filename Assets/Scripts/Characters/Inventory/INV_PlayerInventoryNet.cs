@@ -224,6 +224,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
                 RemoveCraftRequirementsLocally(craftedItem, recipeIndex);
                 inventory.TryAddItem(craftedItem, returnAmount);
+
+                UnlockCraftedItem(craftedItemId);
             }
         }
 
@@ -938,6 +940,22 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     private INV_Item GetItemById(string itemId)
     {
         return INV_ItemDatabase.Instance != null ? INV_ItemDatabase.Instance.GetItemById(itemId) : null;
+    }
+
+    private void UnlockCraftedItem(string craftedItemId)
+    {
+        if (string.IsNullOrWhiteSpace(craftedItemId) || INV_ItemDatabase.Instance == null)
+        {
+            return;
+        }
+
+        INV_Item item = INV_ItemDatabase.Instance.GetItemById(craftedItemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        item.UnlockItem();
     }
 
     // equipped item
@@ -1791,6 +1809,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         if (IsOwner)
         {
+            if (succeeded)
+            {
+                UnlockCraftedItem(craftedItemId);
+            }
+
             OnCraftRequestFinished?.Invoke(succeeded, craftedItemId);
             return;
         }
