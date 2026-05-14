@@ -31,6 +31,9 @@ public class INV_Item : ScriptableObject
     [SerializeField] private float thirstReplenish;
     [SerializeField] private float thirstDrainDelay;
 
+    [Tooltip("Whether the item has been seen by the player, dictates whether any crafting recipes this item is in shows its name.")]
+    [SerializeField] private bool unlocked = false;
+
     [Header("Shop")]
     [SerializeField] private int retailPrice;
     [SerializeField] private Vector2 shopMultiplierRange = new Vector2(0.75f, 2f);
@@ -79,6 +82,7 @@ public class INV_Item : ScriptableObject
         public string recipeName = "Recipe";
         public List<CraftingStack> requirements = new List<CraftingStack>();
         public int amountGiven = 1;
+        public bool unlocked = false;
     }
 
     [Header("Visuals")]
@@ -147,6 +151,7 @@ public class INV_Item : ScriptableObject
     [Tooltip("Fallback size (only used if inventorySpaceShape is empty). Grid size in cells (X = width, Y = height).")]
     [SerializeField] private Vector2 inventorySpace = new Vector2(1, 1);
 
+
     // getters
     public string ItemID => itemID;
     public string Name => m_name;
@@ -159,6 +164,7 @@ public class INV_Item : ScriptableObject
     public float HungerDrainDelay => hungerDrainDelay;
     public float ThirstReplenish => thirstReplenish;
     public float ThirstDrainDelay => thirstDrainDelay;
+    public bool Unlocked => unlocked;
 
     public int RetailPrice => retailPrice;
     public Vector2 ShopMultiplierRange => shopMultiplierRange;
@@ -260,6 +266,35 @@ public class INV_Item : ScriptableObject
         }
 
         return null;
+    }
+
+    public void ResetUnlocked()
+    {
+        unlocked = false;
+        foreach (CraftingRecipe recipe in craftingRecipes)
+        {
+            recipe.unlocked = false;
+        }
+    }
+
+    public void UnlockItem()
+    {
+        unlocked = true;
+        INV_ItemDatabase.Instance.UnlockRecipesByItem(this);
+    }
+
+    public void UnlockRecipeByItem(INV_Item item)
+    {
+        for (int i = 0; i < craftingRecipes.Count; i++)
+        {
+            for (int j = 0; j < craftingRecipes[i].requirements.Count; j++)
+            {
+                if (craftingRecipes[i].requirements[j].item == item)
+                {
+                    craftingRecipes[i].unlocked = true;
+                }
+            }
+        }
     }
 
     public string GetRecipeName(int recipeIndex)

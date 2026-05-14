@@ -149,7 +149,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
     {
         if (itemNameText != null)
         {
-            itemNameText.SetText(item != null ? $"{item.Name} x{item.GetRecipeReturnAmount(selectedRecipeIndex)}" : "Null Item");
+            itemNameText.SetText(item != null ? $"{(item.Unlocked == true ? item.Name : "???")} x{item.GetRecipeReturnAmount(selectedRecipeIndex)}" : "Null Item");
         }
 
         if (requirementsText != null)
@@ -160,7 +160,13 @@ public class INV_CraftingButtonUI : MonoBehaviour
 
     private void ApplyRecipeUi()
     {
-        bool hasMultipleRecipes = item != null && item.RecipeCount > 1;
+        bool anyUnlocked = false;
+        foreach (INV_Item.CraftingRecipe recipe in item.CraftingRecipes)
+        {
+            if (recipe.unlocked) { anyUnlocked = true; }
+        }
+
+        bool hasMultipleRecipes = item != null && item.RecipeCount > 1 && anyUnlocked;
 
         if (recipeIndexText != null)
         {

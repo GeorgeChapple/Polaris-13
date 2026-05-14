@@ -122,6 +122,13 @@ public class INV_Crafting : MonoBehaviour
                 continue;
             }
 
+            bool anyUnlocked = false;
+            foreach (INV_Item.CraftingRecipe recipe in item.CraftingRecipes)
+            {
+                if (recipe.unlocked) { anyUnlocked = true; }
+            }
+            if (!anyUnlocked) { continue; }
+
             if (!PassesFilter(item))
             {
                 continue;
@@ -490,7 +497,7 @@ public class INV_Crafting : MonoBehaviour
 
         if (item.RecipeCount > 1)
         {
-            lines.Add(item.GetRecipeName(recipeIndex));
+            lines.Add(item.Unlocked == true ? item.GetRecipeName(recipeIndex) : "???");
         }
 
         for (int i = 0; i < recipeRequirements.Count; i++)
@@ -502,7 +509,7 @@ public class INV_Crafting : MonoBehaviour
             }
 
             int currentAmount = inventory != null ? inventory.GetItemCount(req.item.ItemID) : 0;
-            lines.Add($"{req.item.Name} {currentAmount}/{req.amount}");
+            lines.Add($"{(req.item.Unlocked ? req.item.Name : "???")} {currentAmount}/{(req.item.Unlocked ? req.amount : "???")}");
         }
 
         return string.Join("\n", lines);
