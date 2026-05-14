@@ -89,6 +89,7 @@ public class INV_Item : ScriptableObject
     [SerializeField] private Sprite icon;
     [SerializeField] private Mesh mesh;
     [SerializeField] private Material material;
+    [SerializeField] private bool twoHanded;
 
     [Header("Equipped Prefab")]
     [Tooltip("Prefab used when this item is equipped.")]
@@ -186,6 +187,7 @@ public class INV_Item : ScriptableObject
     public Sprite Icon => icon;
     public Mesh Mesh => mesh;
     public Material Material => material;
+    public bool TwoHanded => twoHanded;
 
     public ForwardAxisRot ForwardAxisRotVal => forwardAxisRot;
 

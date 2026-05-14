@@ -14120,7 +14120,7 @@ MonoBehaviour:
   fallTimeout: 0.15
   visualBodyRoot: {fileID: 4116074879981026337}
   replicateVisualBody: 1
-  hideBody: 1
+  hideBody: 0
   bodyAnimator: {fileID: 7242076062211711898}
   networkAnimator: {fileID: 3453544993029424373}
   groundAnimatorMaxSpeed: 5.4
@@ -14447,9 +14447,16 @@ MonoBehaviour:
   crafting: {fileID: 6044450304141551363}
   equippedItemRoot: {fileID: 6389068181120928608}
   observerEquippedItemRoot: {fileID: 348508103958163370}
+  leftArmIKConstraint: {fileID: 5792501226822678726}
+  rightArmIKConstraint: {fileID: 8354438574174215298}
+  leftArmTarget: {fileID: 7875632773981437736}
+  leftArmHint: {fileID: 1426363457198175343}
+  rightArmTarget: {fileID: 1716295129583531036}
+  rightArmHint: {fileID: 6223522442547070387}
   testThrowPower: 10
   testThrowTorque: 6
   logEquippedItem: 0
+  equippedVisual: {fileID: 0}
 --- !u!114 &390546089074243553
 MonoBehaviour:
   m_ObjectHideFlags: 0

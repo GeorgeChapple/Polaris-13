@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1368364734344294676
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8070714490661667870}
+  m_Layer: 0
+  m_Name: RightHandSnapPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8070714490661667870
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1368364734344294676}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.0927, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3552329072312356192}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6119858662496233681
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,6 +382,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3610155980932866396, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+      propertyPath: rightHandSnapPoint
+      value: 
+      objectReference: {fileID: 8070714490661667870}
     - target: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_Name
       value: Hook
@@ -423,6 +458,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       insertIndex: 0
       addedObject: {fileID: 4258233610578208994}
+    - targetCorrespondingSourceObject: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+      insertIndex: 1
+      addedObject: {fileID: 8070714490661667870}
     - targetCorrespondingSourceObject: {fileID: 6167580887810336332, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7424740383702817034}
