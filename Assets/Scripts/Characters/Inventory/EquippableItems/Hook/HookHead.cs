@@ -67,6 +67,10 @@ public class HookHead : NetworkBehaviour
     private Rigidbody draggedBody;
     private INV_ItemDrop draggedItemDrop;
 
+    private GameObject hitObject;
+    private Vector3 offsetFromHitObjectCenter;
+    private Quaternion rotationFromHitObject;
+
     public ulong ShooterNetworkObjectId => shooterNetworkObjectId.Value;
 
     private void Awake()
@@ -122,6 +126,9 @@ public class HookHead : NetworkBehaviour
 
         draggedBody = null;
         draggedItemDrop = null;
+        hitObject = null;
+        offsetFromHitObjectCenter = Vector3.zero;
+        rotationFromHitObject = Quaternion.identity;
 
         ClearShooterAnchor();
 
@@ -166,6 +173,25 @@ public class HookHead : NetworkBehaviour
 
     private void TickDeployed()
     {
+        if (hitObject == null)
+        {
+            BeginReturn(returnTarget);
+            return;
+        }
+
+        Vector3 targetPosition = hitObject.transform.TransformPoint(offsetFromHitObjectCenter);
+        Quaternion targetRotation = hitObject.transform.rotation * rotationFromHitObject;
+
+        if (rb != null)
+        {
+            rb.MovePosition(targetPosition);
+            rb.MoveRotation(targetRotation);
+        }
+        else
+        {
+            transform.SetPositionAndRotation(targetPosition, targetRotation);
+        }
+
         TickShooterAnchor();
     }
 
@@ -294,7 +320,11 @@ public class HookHead : NetworkBehaviour
         if (IsCollisionWithShooter(collision)) { return; }
 
         Rigidbody otherRb = collision.rigidbody;
-        GameObject hitObject = collision.collider != null ? collision.collider.gameObject : collision.gameObject;
+        hitObject = otherRb != null ? otherRb.gameObject : collision.collider != null ? collision.collider.gameObject : collision.gameObject;
+
+        // store where the hook is in the hit objects local space so it follows like a child
+        offsetFromHitObjectCenter = hitObject.transform.InverseTransformPoint(transform.position);
+        rotationFromHitObject = Quaternion.Inverse(hitObject.transform.rotation) * transform.rotation;
 
         if (otherRb != null && IsOnDraggableLayer(hitObject.layer))
         {

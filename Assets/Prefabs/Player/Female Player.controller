@@ -20,7 +20,7 @@ BlendTree:
     m_Motion: {fileID: 1827226128182048838, guid: fddc7ef7bd6ee554e800d4c67fe8a236, type: 3}
     m_Threshold: 1
     m_Position: {x: 0, y: 0.3}
-    m_TimeScale: 1
+    m_TimeScale: 1.5
     m_CycleOffset: 0
     m_DirectBlendParameter: X
     m_Mirror: 0
@@ -28,7 +28,7 @@ BlendTree:
     m_Motion: {fileID: 1827226128182048838, guid: 9fae0b2606f813d41965171d039fe750, type: 3}
     m_Threshold: 2
     m_Position: {x: 0, y: -0.3}
-    m_TimeScale: -1
+    m_TimeScale: -1.5
     m_CycleOffset: 0
     m_DirectBlendParameter: X
     m_Mirror: 0
@@ -52,7 +52,7 @@ BlendTree:
     m_Motion: {fileID: 1827226128182048838, guid: a95780bfc551e2b419aadc96c3102609, type: 3}
     m_Threshold: 5
     m_Position: {x: 0, y: 1}
-    m_TimeScale: 1
+    m_TimeScale: 1.1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
@@ -60,7 +60,7 @@ BlendTree:
     m_Motion: {fileID: 1827226128182048838, guid: a452062994931b544aef32327358e082, type: 3}
     m_Threshold: 6
     m_Position: {x: 0, y: -1}
-    m_TimeScale: -1
+    m_TimeScale: -1.1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
@@ -171,7 +171,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Jump
-  m_Speed: 0.7
+  m_Speed: 1.6
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: -1662212817816451395}
@@ -208,9 +208,9 @@ AnimatorStateTransition:
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
-  m_TransitionDuration: 0.25
+  m_TransitionDuration: 0.27976266
   m_TransitionOffset: 0
-  m_ExitTime: 0.934669
+  m_ExitTime: 0.034333896
   m_HasExitTime: 1
   m_HasFixedDuration: 1
   m_InterruptionSource: 0

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44f08649ef0cd6747ad7ed59b565bfa8, type: 3}
+  m_Name: BAD
+  m_EditorClassIdentifier: 
+  prefabs:
+  - {fileID: 1870968883463380410, guid: 74aca7a5e6c759847b0b3d5055bbd6e8, type: 3}
+  triggerRadius: {x: 0.03, y: 0.05}
+  spawnRadius: {x: 0.05, y: 0.1}
+  spaceRadius: {x: 10, y: 20}
+  minSpawn: 10
+  maxSpawn: 15
+  colour: {r: 1, g: 0, b: 0, a: 1}
+  colourBrightness: 3
