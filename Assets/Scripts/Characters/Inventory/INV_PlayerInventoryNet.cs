@@ -25,9 +25,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     [SerializeField] private TwoBoneIKConstraint leftArmIKConstraint;
     [SerializeField] private TwoBoneIKConstraint rightArmIKConstraint;
     [SerializeField] private Transform leftArmTarget;
-    [SerializeField] private Transform leftArmHint;
     [SerializeField] private Transform rightArmTarget;
-    [SerializeField] private Transform rightArmHint;
 
     [Header("Throw Power, Power is force, Torque is rotational vel added +/- what ever it is.")]
     [SerializeField] private float testThrowPower;
@@ -144,19 +142,31 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         else
         {
             CC_INV_EquippedItem equippedItem = equippedVisual.GetComponentInChildren<CC_INV_EquippedItem>();
-            INV_Item item = equippedItem.Item;
-            if (item.TwoHanded)
+
+            if (equippedItem != null)
             {
-                leftArmIKConstraint.weight = 1;
-                rightArmIKConstraint.weight = 1;
+                INV_Item item = equippedItem.Item;
+                if (item.TwoHanded)
+                {
+                    leftArmIKConstraint.weight = 1;
+                    rightArmIKConstraint.weight = 1;
+                }
+                else
+                {
+                    leftArmIKConstraint.weight = 0;
+                    rightArmIKConstraint.weight = 1;
+                }
+                if (equippedItem.RightHandSnapPoint != null)
+                {
+                    rightArmTarget.position = equippedItem.RightHandSnapPoint.position;
+                    rightArmTarget.rotation = equippedItem.RightHandSnapPoint.rotation;
+                }
+                if (equippedItem.LeftHandSnapPoint != null)
+                {
+                    leftArmTarget.position = equippedItem.LeftHandSnapPoint.position;
+                    leftArmTarget.rotation = equippedItem.LeftHandSnapPoint.rotation;
+                }
             }
-            else
-            {
-                leftArmIKConstraint.weight = 0;
-                rightArmIKConstraint.weight = 1;
-            }
-            rightArmTarget.position = equippedItem.RightHandSnapPoint.position;
-            leftArmTarget.position = equippedItem.LeftHandSnapPoint.position;
         }
     }
 
@@ -1224,7 +1234,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for hold use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for hold use.", equippedVisual);
         }
     }
 
@@ -1265,7 +1275,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for release use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for release use.", equippedVisual);
         }
     }
 
@@ -1306,7 +1316,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for alt use.", equippedVisual);
         }
     }
 
@@ -1347,7 +1357,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt hold use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for alt hold use.", equippedVisual);
         }
     }
 
@@ -1388,7 +1398,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt release use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for alt release use.", equippedVisual);
         }
     }
 
