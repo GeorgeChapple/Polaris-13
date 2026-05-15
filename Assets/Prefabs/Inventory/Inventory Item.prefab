@@ -200,6 +200,7 @@ MonoBehaviour:
   item: {fileID: 11400000, guid: 9e427fbdaae830842ae1e35bd89158f2, type: 2}
   useMeshCollider: 1
   renameToItemName: 1
+  setUpWithoutNetworkID: 0
 --- !u!114 &4043289975837125573
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -235,7 +236,7 @@ MonoBehaviour:
         m_Calls: []
     rewireInteractListenersOnNetworkSpawn: 1
     invokeLegacyInteractEvent: 0
-  oneShot: 0
+  oneShot: 1
   requiresHold: 1
   holdTime: 0
   onStartHold:

@@ -1396,8 +1396,8 @@ MonoBehaviour:
     m_TargetPositionWeight: 1
     m_TargetRotationWeight: 1
     m_HintWeight: 1
-    m_MaintainTargetPositionOffset: 0
-    m_MaintainTargetRotationOffset: 0
+    m_MaintainTargetPositionOffset: 1
+    m_MaintainTargetRotationOffset: 1
 --- !u!1 &791354641389197906
 GameObject:
   m_ObjectHideFlags: 0
@@ -14447,9 +14447,16 @@ MonoBehaviour:
   crafting: {fileID: 6044450304141551363}
   equippedItemRoot: {fileID: 6389068181120928608}
   observerEquippedItemRoot: {fileID: 348508103958163370}
+  leftArmIKConstraint: {fileID: 5792501226822678726}
+  rightArmIKConstraint: {fileID: 8354438574174215298}
+  leftArmTarget: {fileID: 7875632773981437736}
+  leftArmHint: {fileID: 1426363457198175343}
+  rightArmTarget: {fileID: 1716295129583531036}
+  rightArmHint: {fileID: 6223522442547070387}
   testThrowPower: 10
   testThrowTorque: 6
   logEquippedItem: 0
+  equippedVisual: {fileID: 0}
 --- !u!114 &390546089074243553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18401,7 +18408,7 @@ Transform:
   m_GameObject: {fileID: 7585009223491206568}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.269, y: -0.618893, z: -0.395}
+  m_LocalPosition: {x: -0.374, y: -0.419, z: 0.456}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -20018,8 +20025,8 @@ MonoBehaviour:
     m_TargetPositionWeight: 1
     m_TargetRotationWeight: 1
     m_HintWeight: 1
-    m_MaintainTargetPositionOffset: 0
-    m_MaintainTargetRotationOffset: 0
+    m_MaintainTargetPositionOffset: 1
+    m_MaintainTargetRotationOffset: 1
 --- !u!1 &8540508437704646521
 GameObject:
   m_ObjectHideFlags: 0
