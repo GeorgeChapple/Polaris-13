@@ -31,6 +31,9 @@ public class INV_Item : ScriptableObject
     [SerializeField] private float thirstReplenish;
     [SerializeField] private float thirstDrainDelay;
 
+    [Tooltip("Whether the item has been seen by the player, dictates whether any crafting recipes this item is in shows its name.")]
+    [SerializeField] private bool unlocked = false;
+
     [Header("Shop")]
     [SerializeField] private int retailPrice;
     [SerializeField] private Vector2 shopMultiplierRange = new Vector2(0.75f, 2f);
@@ -79,12 +82,14 @@ public class INV_Item : ScriptableObject
         public string recipeName = "Recipe";
         public List<CraftingStack> requirements = new List<CraftingStack>();
         public int amountGiven = 1;
+        public bool unlocked = false;
     }
 
     [Header("Visuals")]
     [SerializeField] private Sprite icon;
     [SerializeField] private Mesh mesh;
     [SerializeField] private Material material;
+    [SerializeField] private bool twoHanded;
 
     [Header("Equipped Prefab")]
     [Tooltip("Prefab used when this item is equipped.")]
@@ -147,6 +152,7 @@ public class INV_Item : ScriptableObject
     [Tooltip("Fallback size (only used if inventorySpaceShape is empty). Grid size in cells (X = width, Y = height).")]
     [SerializeField] private Vector2 inventorySpace = new Vector2(1, 1);
 
+
     // getters
     public string ItemID => itemID;
     public string Name => m_name;
@@ -159,6 +165,7 @@ public class INV_Item : ScriptableObject
     public float HungerDrainDelay => hungerDrainDelay;
     public float ThirstReplenish => thirstReplenish;
     public float ThirstDrainDelay => thirstDrainDelay;
+    public bool Unlocked => unlocked;
 
     public int RetailPrice => retailPrice;
     public Vector2 ShopMultiplierRange => shopMultiplierRange;
@@ -180,6 +187,7 @@ public class INV_Item : ScriptableObject
     public Sprite Icon => icon;
     public Mesh Mesh => mesh;
     public Material Material => material;
+    public bool TwoHanded => twoHanded;
 
     public ForwardAxisRot ForwardAxisRotVal => forwardAxisRot;
 
@@ -224,6 +232,24 @@ public class INV_Item : ScriptableObject
         }
     }
 
+    public int UnlockedRecipeCount
+    {
+        get
+        {
+            int count = 0;
+
+            for (int i = 0; i < RecipeCount; i++)
+            {
+                if (IsRecipeUnlocked(i))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
     // utility
     public Vector2Int ItemGridSize // forces a minimum size of 1,1
     {
@@ -260,6 +286,135 @@ public class INV_Item : ScriptableObject
         }
 
         return null;
+    }
+
+    public bool IsRecipeUnlocked(int recipeIndex)
+    {
+        if (craftingRecipes != null && craftingRecipes.Count > 0)
+        {
+            if (recipeIndex >= 0 && recipeIndex < craftingRecipes.Count)
+            {
+                CraftingRecipe recipe = craftingRecipes[recipeIndex];
+                return recipe != null && recipe.unlocked;
+            }
+
+            return false;
+        }
+        return false;
+    }
+
+    public int GetFirstUnlockedRecipeIndex()
+    {
+        for (int i = 0; i < RecipeCount; i++)
+        {
+            if (IsRecipeUnlocked(i))
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    public int GetNextUnlockedRecipeIndex(int currentRecipeIndex)
+    {
+        if (RecipeCount <= 0)
+        {
+            return 0;
+        }
+
+        for (int i = 1; i <= RecipeCount; i++)
+        {
+            int index = currentRecipeIndex + i;
+
+            if (index >= RecipeCount)
+            {
+                index = 0;
+            }
+
+            if (IsRecipeUnlocked(index))
+            {
+                return index;
+            }
+        }
+
+        return Mathf.Clamp(currentRecipeIndex, 0, RecipeCount - 1);
+    }
+
+    public int GetPreviousUnlockedRecipeIndex(int currentRecipeIndex)
+    {
+        if (RecipeCount <= 0)
+        {
+            return 0;
+        }
+
+        for (int i = 1; i <= RecipeCount; i++)
+        {
+            int index = currentRecipeIndex - i;
+
+            if (index < 0)
+            {
+                index = RecipeCount - 1;
+            }
+
+            if (IsRecipeUnlocked(index))
+            {
+                return index;
+            }
+        }
+
+        return Mathf.Clamp(currentRecipeIndex, 0, RecipeCount - 1);
+    }
+
+    public int GetUnlockedRecipeDisplayNumber(int recipeIndex)
+    {
+        int displayNumber = 0;
+
+        for (int i = 0; i < RecipeCount; i++)
+        {
+            if (!IsRecipeUnlocked(i))
+            {
+                continue;
+            }
+
+            displayNumber++;
+
+            if (i == recipeIndex)
+            {
+                return displayNumber;
+            }
+        }
+
+        return 0;
+    }
+
+    public void ResetUnlocked()
+    {
+        unlocked = false;
+        foreach (CraftingRecipe recipe in craftingRecipes)
+        {
+            recipe.unlocked = false;
+        }
+    }
+
+    public void UnlockItem()
+    {
+        unlocked = true;
+        INV_ItemDatabase.Instance.UnlockRecipesByItem(this);
+    }
+
+    public void UnlockRecipeByItem(INV_Item item)
+    {
+        for (int i = 0; i < craftingRecipes.Count; i++)
+        {
+            for (int j = 0; j < craftingRecipes[i].requirements.Count; j++)
+            {
+                if (craftingRecipes[i].requirements[j].item == item)
+                {
+                    craftingRecipes[i].unlocked = true;
+                }
+            }
+        }
     }
 
     public string GetRecipeName(int recipeIndex)

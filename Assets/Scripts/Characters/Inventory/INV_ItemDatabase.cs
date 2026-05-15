@@ -1,6 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
+
+// Made By: Jason Lodge
+// Summary: Global instance for list of items, used by networked inventory to build items in inventory over network by item id.
 
 [CreateAssetMenu(menuName = "Inventory/Item Database")]
 public class INV_ItemDatabase : ScriptableObject
@@ -39,6 +43,25 @@ public class INV_ItemDatabase : ScriptableObject
     {
         items = newItems ?? new List<INV_Item>();
         BuildLookup();
+    }
+
+    public void ResetItemsUnlocked()
+    {
+        foreach (INV_Item item in items)
+        {
+            item.ResetUnlocked();
+        }
+    }
+
+    public void UnlockRecipesByItem(INV_Item item)
+    {
+        foreach (INV_Item itemCheck in items)
+        {
+            if (itemCheck != item)
+            {
+                itemCheck.UnlockRecipeByItem(item);
+            }
+        }
     }
 
     public INV_Item GetItemById(string itemId)
@@ -178,6 +201,13 @@ public class INV_ItemDatabaseEditor : Editor
 
         Selection.activeObject = database;
         EditorGUIUtility.PingObject(database);
+    }
+
+    [MenuItem("Inventory/Reset All Items and Recipes Unlocked")]
+    public static void ResetUnlocked()
+    {
+        INV_ItemDatabase database = AssetDatabase.LoadAssetAtPath<INV_ItemDatabase>(DatabaseAssetPath);
+        database.ResetItemsUnlocked();
     }
 
     private static void EnsureFolders()

@@ -9,6 +9,9 @@ public class CC_INV_EquippedItem : MonoBehaviour
     [Tooltip("Optional child root to hold the visual. If null we create one if item visual setup is enabled.")]
     [SerializeField] private Transform visualRoot;
 
+    [SerializeField] private Transform rightHandSnapPoint;
+    [SerializeField] private Transform leftHandSnapPoint;
+
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
     private Renderer[] cachedRenderers;
@@ -18,6 +21,9 @@ public class CC_INV_EquippedItem : MonoBehaviour
 
     public INV_Item Item => item;
     public bool IsOwnerVisual => isOwnerVisual;
+
+    public Transform RightHandSnapPoint => rightHandSnapPoint;
+    public Transform LeftHandSnapPoint => leftHandSnapPoint;
 
     public void Init(INV_Item newItem, bool newIsOwnerVisual)
     {

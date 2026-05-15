@@ -38,6 +38,8 @@ public class INV_CraftingButtonUI : MonoBehaviour
         selectedRecipeIndex = Mathf.Max(0, startingRecipeIndex);
         maskRect = crafting.CraftingPanelRectMask;
 
+        SnapToUnlockedRecipe();
+
         ApplyMeshVisuals();
         WireButtons();
         RefreshVisuals();
@@ -110,6 +112,22 @@ public class INV_CraftingButtonUI : MonoBehaviour
         }
     }
 
+    private void SnapToUnlockedRecipe()
+    {
+        if (item == null || item.RecipeCount <= 0)
+        {
+            selectedRecipeIndex = 0;
+            return;
+        }
+
+        if (item.IsRecipeUnlocked(selectedRecipeIndex))
+        {
+            return;
+        }
+
+        selectedRecipeIndex = item.GetFirstUnlockedRecipeIndex();
+    }
+
     private void RefreshVisuals()
     {
         if (item == null)
@@ -127,6 +145,16 @@ public class INV_CraftingButtonUI : MonoBehaviour
         else
         {
             selectedRecipeIndex = 0;
+        }
+
+        SnapToUnlockedRecipe();
+
+        if (!item.IsRecipeUnlocked(selectedRecipeIndex))
+        {
+            ApplyText("Recipe locked");
+            ApplyRecipeUi();
+            SetButtonInteractable(false);
+            return;
         }
 
         string requirementString = crafting != null ? crafting.BuildRequirementText(item, selectedRecipeIndex) : string.Empty;
@@ -149,7 +177,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
     {
         if (itemNameText != null)
         {
-            itemNameText.SetText(item != null ? $"{item.Name} x{item.GetRecipeReturnAmount(selectedRecipeIndex)}" : "Null Item");
+            itemNameText.SetText(item != null ? $"{(item.Unlocked == true ? item.Name : "???")} x{item.GetRecipeReturnAmount(selectedRecipeIndex)}" : "Null Item");
         }
 
         if (requirementsText != null)
@@ -160,14 +188,15 @@ public class INV_CraftingButtonUI : MonoBehaviour
 
     private void ApplyRecipeUi()
     {
-        bool hasMultipleRecipes = item != null && item.RecipeCount > 1;
+        int unlockedRecipeCount = item != null ? item.UnlockedRecipeCount : 0;
+        bool hasMultipleRecipes = item != null && unlockedRecipeCount > 1;
 
         if (recipeIndexText != null)
         {
             if (hasMultipleRecipes)
             {
                 recipeIndexText.gameObject.SetActive(true);
-                recipeIndexText.SetText($"{selectedRecipeIndex + 1}/{item.RecipeCount}");
+                recipeIndexText.SetText($"{item.GetUnlockedRecipeDisplayNumber(selectedRecipeIndex)}/{unlockedRecipeCount}");
             }
             else
             {
@@ -216,32 +245,24 @@ public class INV_CraftingButtonUI : MonoBehaviour
 
     public void NextRecipe()
     {
-        if (item == null || item.RecipeCount <= 1)
+        if (item == null || item.UnlockedRecipeCount <= 1)
         {
             return;
         }
 
-        selectedRecipeIndex++;
-        if (selectedRecipeIndex >= item.RecipeCount)
-        {
-            selectedRecipeIndex = 0;
-        }
+        selectedRecipeIndex = item.GetNextUnlockedRecipeIndex(selectedRecipeIndex);
 
         RefreshVisuals();
     }
 
     public void PreviousRecipe()
     {
-        if (item == null || item.RecipeCount <= 1)
+        if (item == null || item.UnlockedRecipeCount <= 1)
         {
             return;
         }
 
-        selectedRecipeIndex--;
-        if (selectedRecipeIndex < 0)
-        {
-            selectedRecipeIndex = item.RecipeCount - 1;
-        }
+        selectedRecipeIndex = item.GetPreviousUnlockedRecipeIndex(selectedRecipeIndex);
 
         RefreshVisuals();
     }

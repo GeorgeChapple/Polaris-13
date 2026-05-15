@@ -273,6 +273,8 @@ public class INV_ItemDrop : NetworkBehaviour
 
             if (!playerInventory.TryAddItem(item)) { return; }
 
+            item.UnlockItem();
+
             if (junk != null) { junk.RemoveFromSpaceManager(); }
 
             if (NetworkObject == null)

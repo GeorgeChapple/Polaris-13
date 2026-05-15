@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 
 // Made By: Jason Lodge.
 // Summary: Inventory and crafting networking,
@@ -20,6 +21,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     [Tooltip("Fallback root used for non owners / server view. If null, uses replicated camera direction root, then this objects transform.")]
     [SerializeField] private Transform observerEquippedItemRoot;
+
+    [SerializeField] private TwoBoneIKConstraint leftArmIKConstraint;
+    [SerializeField] private TwoBoneIKConstraint rightArmIKConstraint;
+    [SerializeField] private Transform leftArmTarget;
+    [SerializeField] private Transform rightArmTarget;
 
     [Header("Throw Power, Power is force, Torque is rotational vel added +/- what ever it is.")]
     [SerializeField] private float testThrowPower;
@@ -45,7 +51,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     // one local equipped visual per instance
     // owner uses equippedItemRoot, non owners / server use observer root
-    private GameObject equippedVisual;
+    [SerializeField] private GameObject equippedVisual;
 
     private void Awake()
     {
@@ -73,6 +79,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     private void LateUpdate()
     {
         FollowEquippedRoot();
+        SnapHandTargetsToItem();
     }
 
     private void CacheRefs()
@@ -123,6 +130,44 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         equippedVisual.transform.position = followRoot.position;
         equippedVisual.transform.rotation = followRoot.rotation;
         equippedVisual.transform.localScale = Vector3.one;
+    }
+
+    private void SnapHandTargetsToItem()
+    {
+        if (equippedVisual == null)
+        {
+            leftArmIKConstraint.weight = 0;
+            rightArmIKConstraint.weight = 0;
+        }
+        else
+        {
+            CC_INV_EquippedItem equippedItem = equippedVisual.GetComponentInChildren<CC_INV_EquippedItem>();
+
+            if (equippedItem != null)
+            {
+                INV_Item item = equippedItem.Item;
+                if (item.TwoHanded)
+                {
+                    leftArmIKConstraint.weight = 1;
+                    rightArmIKConstraint.weight = 1;
+                }
+                else
+                {
+                    leftArmIKConstraint.weight = 0;
+                    rightArmIKConstraint.weight = 1;
+                }
+                if (equippedItem.RightHandSnapPoint != null)
+                {
+                    rightArmTarget.position = equippedItem.RightHandSnapPoint.position;
+                    rightArmTarget.rotation = equippedItem.RightHandSnapPoint.rotation;
+                }
+                if (equippedItem.LeftHandSnapPoint != null)
+                {
+                    leftArmTarget.position = equippedItem.LeftHandSnapPoint.position;
+                    leftArmTarget.rotation = equippedItem.LeftHandSnapPoint.rotation;
+                }
+            }
+        }
     }
 
     private void OnEquippedItemIdChanged(FixedString128Bytes oldValue, FixedString128Bytes newValue)
@@ -224,6 +269,8 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
                 RemoveCraftRequirementsLocally(craftedItem, recipeIndex);
                 inventory.TryAddItem(craftedItem, returnAmount);
+
+                UnlockCraftedItem(craftedItemId);
             }
         }
 
@@ -940,6 +987,22 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         return INV_ItemDatabase.Instance != null ? INV_ItemDatabase.Instance.GetItemById(itemId) : null;
     }
 
+    private void UnlockCraftedItem(string craftedItemId)
+    {
+        if (string.IsNullOrWhiteSpace(craftedItemId) || INV_ItemDatabase.Instance == null)
+        {
+            return;
+        }
+
+        INV_Item item = INV_ItemDatabase.Instance.GetItemById(craftedItemId);
+        if (item == null)
+        {
+            return;
+        }
+
+        item.UnlockItem();
+    }
+
     // equipped item
     private void EquipItem_Server(string itemId)
     {
@@ -1171,7 +1234,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for hold use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for hold use.", equippedVisual);
         }
     }
 
@@ -1212,7 +1275,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for release use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for release use.", equippedVisual);
         }
     }
 
@@ -1253,7 +1316,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for alt use.", equippedVisual);
         }
     }
 
@@ -1294,7 +1357,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt hold use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for alt hold use.", equippedVisual);
         }
     }
 
@@ -1335,7 +1398,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (!foundUsable && logEquippedItem)
         {
-            Debug.LogWarning($"Equipped item '{itemId}' has no IUsableItem components for alt release use.", equippedVisual);
+            Debug.LogWarning($"Equipped item '{itemId}' has no CC_INV_UsableItems components for alt release use.", equippedVisual);
         }
     }
 
@@ -1791,6 +1854,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     {
         if (IsOwner)
         {
+            if (succeeded)
+            {
+                UnlockCraftedItem(craftedItemId);
+            }
+
             OnCraftRequestFinished?.Invoke(succeeded, craftedItemId);
             return;
         }
