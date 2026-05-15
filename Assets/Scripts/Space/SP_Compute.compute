@@ -1,0 +1,17 @@
+﻿#pragma kernel CSMain
+static const int threadGroupSize = 1024;
+
+RWStructuredBuffer<float4> debris;
+int debrisCount;
+float rocketSpeed;
+float4 rocketDriection;
+float4 back;
+
+[numthreads(threadGroupSize,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    for (int indexD = 0; indexD < debrisCount; indexD ++) {
+        float4 newDirection = normalize(back + debris[id.x] - rocketDriection) * rocketSpeed;
+        debris[id.x] = newDirection;
+    }
+}

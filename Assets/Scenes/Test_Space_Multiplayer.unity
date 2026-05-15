@@ -8746,7 +8746,6 @@ GameObject:
   - component: {fileID: 709164550}
   - component: {fileID: 709164552}
   - component: {fileID: 709164551}
-  - component: {fileID: 709164556}
   - component: {fileID: 709164553}
   - component: {fileID: 709164555}
   - component: {fileID: 709164554}
@@ -8832,6 +8831,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  computeDebris: {fileID: 7200000, guid: 6ec9c2191ec5cf44fa37028ff018467c, type: 3}
   maxDebris: 300
   rocket: {fileID: 0}
   spawnerSettings:
@@ -8877,23 +8877,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   levelsGenerated: 0
   levels: []
---- !u!114 &709164556
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 709164548}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21688cde0e7663f409926ff34e78645c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mapSize: {x: 0, y: 0, z: 0}
-  biomes: []
-  seed: 0
-  clusters: []
-  positionData: {fileID: 0}
 --- !u!1001 &711621289
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -13,6 +13,7 @@ using UnityEngine;
 [RequireComponent(typeof(BoxCollider))]
 public class SP_SpaceManager : NetworkBehaviour
 {
+    [SerializeField] private ComputeShader computeDebris;
     [SerializeField] private int maxDebris = 20;
     [HideInInspector] public RS_Move rocket; 
     public List<SP_SpawnSettings> spawnerSettings = new List<SP_SpawnSettings>();
@@ -23,6 +24,26 @@ public class SP_SpaceManager : NetworkBehaviour
     public Vector3 spaceBounds = new Vector3(20, 20, 20);
     [HideInInspector] public bool maxDebrisReached;
     [SerializeField] private List<GameObject> debrisDebugList = new List<GameObject>();
+
+    public struct Debris
+    {
+        public GameObject debris;
+        public Vector3 direction;
+
+        public Debris(GameObject _debris, Vector3 _originDirection)
+        {
+            debris = _debris;
+            direction = _originDirection;
+        }
+
+        public static int Size
+        {
+            get
+            {
+                return sizeof(float) * 3 * 5 + sizeof(int);
+            }
+        }
+    }
 
     private void Awake()
     {
@@ -217,36 +238,84 @@ public class SP_SpaceManager : NetworkBehaviour
         }
     }
 
+    //private void MoveDebris()
+    //{
+    //    List<GameObject> debrisObjects = new List<GameObject>(debris.Keys);
+
+    //    foreach (GameObject obj in debrisObjects)
+    //    {
+    //        if (obj == null) continue;
+
+    //        CC_Movement player = obj.GetComponent<CC_Movement>();
+    //        Rigidbody rb = obj.GetComponent<Rigidbody>();
+    //        NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
+
+    //        Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
+    //        if (player != null)
+    //        {
+    //            NetworkObject netObj = obj.GetComponent<NetworkObject>();
+    //            if (netObj != null)
+    //            {
+    //                PlayerMoveRpc(netObj, objDirection);
+    //            }
+    //        }
+    //        else if (rb != null)
+    //        { 
+    //            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+    //        } 
+    //        else
+    //        {
+    //            obj.transform.position = Vector3.Lerp(obj.transform.position, obj.transform.position + objDirection, Time.deltaTime);
+    //        }
+    //    }
+    //}
+
     private void MoveDebris()
     {
-        List<GameObject> debrisObjects = new List<GameObject>(debris.Keys);
+        Vector4[] debrisData = new Vector4[debris.Count];
 
-        foreach (GameObject obj in debrisObjects)
+        int i = 0;
+        foreach (GameObject obj in debris.Keys)
         {
-            if (obj == null) continue;
+            debrisData[i] = debris[obj];
+            i++;
+        }
+        ComputeBuffer debrisBuffer = new ComputeBuffer(debrisData.Length, sizeof(float) * 4);
+        debrisBuffer.SetData(debrisData);
+        Vector4 rocketDirection = rocket.worldDirectionNetworked.Value;
+        Vector4 back4 = Vector3.back;
+        computeDebris.SetBuffer(0, "debris", debrisBuffer);
+        computeDebris.SetInt("debrisCount", debrisData.Length);
+        computeDebris.SetFloat("rocketSpeed", rocket.speed.Value);
+        computeDebris.SetVector("rocketDirection", rocketDirection);
+        computeDebris.SetVector("back", back4);
+        int threadGroups = Mathf.CeilToInt(debrisData.Length / 1024f);
+        computeDebris.Dispatch(0, threadGroups, 1, 1);
+        debrisBuffer.GetData(debrisData);
 
+        i = 0;
+        foreach (GameObject obj in debris.Keys)
+        {
             CC_Movement player = obj.GetComponent<CC_Movement>();
             Rigidbody rb = obj.GetComponent<Rigidbody>();
-            NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
+            Vector3 direction = debrisData[i];
             if (player != null)
             {
                 NetworkObject netObj = obj.GetComponent<NetworkObject>();
                 if (netObj != null)
                 {
-                    PlayerMoveRpc(netObj, objDirection);
+                    PlayerMoveRpc(netObj, direction);
                 }
             }
             else if (rb != null)
-            { 
-                rb.MovePosition(rb.position + objDirection * Time.deltaTime);
-            } 
-            else
             {
-                obj.transform.position = Vector3.Lerp(obj.transform.position, obj.transform.position + objDirection, Time.deltaTime);
+                rb.MovePosition(rb.position + direction * Time.deltaTime);
             }
+            i++;
         }
+
+        debrisBuffer.Release();
     }
 
     [Rpc(SendTo.Everyone)]
