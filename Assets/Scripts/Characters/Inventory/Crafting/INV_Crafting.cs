@@ -122,12 +122,10 @@ public class INV_Crafting : MonoBehaviour
                 continue;
             }
 
-            bool anyUnlocked = false;
-            foreach (INV_Item.CraftingRecipe recipe in item.CraftingRecipes)
+            if (item.UnlockedRecipeCount <= 0)
             {
-                if (recipe.unlocked) { anyUnlocked = true; }
+                continue;
             }
-            if (!anyUnlocked) { continue; }
 
             if (!PassesFilter(item))
             {
@@ -283,6 +281,11 @@ public class INV_Crafting : MonoBehaviour
 
         for (int i = 0; i < item.RecipeCount; i++)
         {
+            if (!item.IsRecipeUnlocked(i))
+            {
+                continue;
+            }
+
             string recipeName = item.GetRecipeName(i);
             if (!string.IsNullOrWhiteSpace(recipeName) && recipeName.ToLowerInvariant().Contains(loweredFilter))
             {
@@ -396,6 +399,11 @@ public class INV_Crafting : MonoBehaviour
             return;
         }
 
+        if (!item.IsRecipeUnlocked(recipeIndex))
+        {
+            return;
+        }
+
         inventoryNet.RequestCraftItem(item.ItemID, recipeIndex);
     }
 
@@ -413,6 +421,11 @@ public class INV_Crafting : MonoBehaviour
 
         for (int i = 0; i < item.RecipeCount; i++)
         {
+            if (!item.IsRecipeUnlocked(i))
+            {
+                continue;
+            }
+
             if (CanCraftRecipeRightNow(item, i))
             {
                 return true;
@@ -425,6 +438,11 @@ public class INV_Crafting : MonoBehaviour
     public bool CanCraftRecipeRightNow(INV_Item item, int recipeIndex)
     {
         if (item == null || inventory == null)
+        {
+            return false;
+        }
+
+        if (!item.IsRecipeUnlocked(recipeIndex))
         {
             return false;
         }
@@ -472,7 +490,7 @@ public class INV_Crafting : MonoBehaviour
             }
         }
 
-        return 0;
+        return item.GetFirstUnlockedRecipeIndex();
     }
 
     public string BuildRequirementText(INV_Item item, int recipeIndex)
@@ -480,6 +498,11 @@ public class INV_Crafting : MonoBehaviour
         if (item == null)
         {
             return string.Empty;
+        }
+
+        if (!item.IsRecipeUnlocked(recipeIndex))
+        {
+            return "Recipe locked";
         }
 
         if (!item.CanCraftAnywhere && !openedFromCraftingStation)
@@ -495,7 +518,7 @@ public class INV_Crafting : MonoBehaviour
 
         List<string> lines = new List<string>();
 
-        if (item.RecipeCount > 1)
+        if (item.UnlockedRecipeCount > 1)
         {
             lines.Add(item.Unlocked == true ? item.GetRecipeName(recipeIndex) : "???");
         }
@@ -509,7 +532,10 @@ public class INV_Crafting : MonoBehaviour
             }
 
             int currentAmount = inventory != null ? inventory.GetItemCount(req.item.ItemID) : 0;
-            lines.Add($"{(req.item.Unlocked ? req.item.Name : "???")} {currentAmount}/{(req.item.Unlocked ? req.amount : "???")}");
+            string requirementName = req.item.Unlocked ? req.item.Name : "???";
+            string requirementAmount = req.item.Unlocked ? req.amount.ToString() : "???";
+
+            lines.Add($"{requirementName} {currentAmount}/{requirementAmount}");
         }
 
         return string.Join("\n", lines);
