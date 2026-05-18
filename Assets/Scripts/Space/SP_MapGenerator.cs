@@ -13,6 +13,8 @@ public class SP_MapGenerator : MonoBehaviour
     public Texture2D positionData;
     private int spawned = 0;
     private VisualEffect effect;
+    [SerializeField] private Transform shipMesh;
+    [SerializeField] private RS_Move ship;
 
     [Serializable]
     public struct Biome
@@ -67,14 +69,23 @@ public class SP_MapGenerator : MonoBehaviour
         clusters = GenerateMap(biomes[0]);
     }
 
-    private void FixedUpdate()
-    { 
+    private void Start()
+    {
         UpdateTextureData();
+        ship = FindFirstObjectByType<RS_Move>();
         //if (save)
         //{
         //    File.WriteAllBytes("Assets/Shaders/Untitled.png", positionData.EncodeToPNG());
         //    save = false;
         //}
+    }
+
+    private void Update()
+    {
+        
+        Debug.Log(ship.worldPosition + "HEOP");
+        shipMesh.position = ClampVector(ship.worldDirection, mapSize);
+        shipMesh.rotation = Quaternion.LookRotation(ship.worldDirectionNetworked.Value);
     }
 
     private void UpdateTextureData()
@@ -97,6 +108,16 @@ public class SP_MapGenerator : MonoBehaviour
         positionData = newPositionData;
         effect.SetTexture("_positionData", positionData);
         effect.SetInt("_spawnCount", spawned);
+    }
+
+    private Vector3 ClampVector(Vector3 position, Vector3 bounds)
+    {
+        Vector3 newPosition = new Vector3(
+            position.x / bounds.x,
+            position.y / bounds.y,
+            position.z / bounds.z
+            );
+        return newPosition;
     }
 
     private Color PositionToColour(Vector3 position, Vector3 bounds) 
