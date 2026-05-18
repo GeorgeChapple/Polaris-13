@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,6 +15,16 @@ public class LoadingScreen : MonoBehaviour
 
     string loadingScene;
     bool registered = false;
+
+    private void Start()
+    {
+        LoadingScreen[] objs = FindObjectsByType<LoadingScreen>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (objs.Length > 1 && objs.Contains(this))
+        {
+            Destroy(this);
+        }
+        else { DontDestroyOnLoad(this); }
+    }
 
     private void OnDestroy()
     {
@@ -51,7 +62,7 @@ public class LoadingScreen : MonoBehaviour
 
     private IEnumerator UpdateProgress()
     {
-        AsyncOperation asyncOp = SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().name);
+        AsyncOperation asyncOp = SceneManager.LoadSceneAsync(loadingScene);
         asyncOp.allowSceneActivation = false;
 
         while (!asyncOp.isDone)
