@@ -18,20 +18,20 @@ public class LoadingScreen : MonoBehaviour
 
     private void Start()
     {
-        LoadingScreen[] objs = FindObjectsByType<LoadingScreen>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        if (objs.Length > 1 && objs.Contains(this))
-        {
-            Destroy(this);
-        }
-        else { DontDestroyOnLoad(this); }
+        //LoadingScreen[] objs = FindObjectsByType<LoadingScreen>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        //if (objs.Length > 1 && objs.Contains(this))
+        //{
+        //    Destroy(this);
+        //}
+        //else { DontDestroyOnLoad(this); }
     }
 
     private void OnDestroy()
     {
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
-        }
+        //if (NetworkManager.Singleton != null)
+        //{
+        //    NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+        //}
     }
 
     private void OnSceneEvent(SceneEvent sceneEvent)
@@ -76,15 +76,19 @@ public class LoadingScreen : MonoBehaviour
 
     public void HostLoadScene(string sceneName)
     {
-        loadingScene = sceneName;
+        //loadingScene = sceneName;
+        //if (NetworkManager.Singleton.IsServer)
+        //{
+        //    if (!registered)
+        //    {
+        //        // subscribe to scene events
+        //        NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
+        //        registered = true;
+        //    }
+        //    NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+        //}
         if (NetworkManager.Singleton.IsServer)
         {
-            if (!registered)
-            {
-                // subscribe to scene events
-                NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
-                registered = true;
-            }
             NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
         }
     }
