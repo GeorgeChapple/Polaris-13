@@ -42,6 +42,11 @@ public class INV_Chest : NetworkBehaviour
     [SerializeField] private bool clearBeforeEditorPopulate = true;
     [SerializeField] private List<INV_Item> itemsToSpawnInChest = new List<INV_Item>();
 
+    [Header("Animator")]
+    [SerializeField] private string animatorOpen = "Open";
+    [SerializeField] private string animatorClose = "Close";
+    [SerializeField] private NET_AnimatorSync netAnimSync;
+
     [Header("Debug")]
     [SerializeField] private bool logChest;
 
@@ -68,6 +73,21 @@ public class INV_Chest : NetworkBehaviour
         }
 
         PopulateChest_Server();
+    }
+
+    private void FixedUpdate()
+    {
+        if (netAnimSync == null) { return; }
+        if (viewingClientIds.Count > 0)
+        {
+            netAnimSync.SetTrigger(animatorOpen);
+            netAnimSync.ResetTrigger(animatorClose);
+        }
+        else
+        {
+            netAnimSync.SetTrigger(animatorClose);
+            netAnimSync.ResetTrigger(animatorOpen);
+        }
     }
 
     public void SetupEverything(GameObject player)
