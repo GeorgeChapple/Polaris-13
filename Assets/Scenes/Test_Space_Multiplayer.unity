@@ -4039,6 +4039,62 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8234501986701429706, guid: 263f86f85f7ef4e44b2caf836ef40aac, type: 3}
   m_PrefabInstance: {fileID: 189379568}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &189769854
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 189769855}
+  - component: {fileID: 189769856}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (10)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &189769855
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 189769854}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.70710707, y: 0.00000014314948, z: 0.00000017295189, w: 0.7071066}
+  m_LocalPosition: {x: 7.976, y: 9.626, z: -2.448}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 90, y: 360, z: -360}
+--- !u!114 &189769856
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 189769854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: a7e97b036e65c724fb2bb1c40b387006, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 1
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.5}
+  m_Size: {x: 1.5, y: 2, z: 1}
+  m_FadeFactor: 1
 --- !u!1001 &195088368
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10398,15 +10454,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2231738714890029096, guid: 09bc350afc5fdd94c8a7a322ed174d7d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -11.89
+      value: -11.891
       objectReference: {fileID: 0}
     - target: {fileID: 2231738714890029096, guid: 09bc350afc5fdd94c8a7a322ed174d7d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 12.630002
+      value: 12.469
       objectReference: {fileID: 0}
     - target: {fileID: 2231738714890029096, guid: 09bc350afc5fdd94c8a7a322ed174d7d, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.1399984
+      value: -1.14
       objectReference: {fileID: 0}
     - target: {fileID: 2231738714890029096, guid: 09bc350afc5fdd94c8a7a322ed174d7d, type: 3}
       propertyPath: m_LocalRotation.w
@@ -12363,6 +12419,62 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 3390558720134950976, guid: fe93784f20e89214eb39a052f488a309, type: 3}
+--- !u!1 &757751122
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 757751123}
+  - component: {fileID: 757751124}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (18)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &757751123
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 757751122}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.5000003, y: -0.4999997, z: -0.5, w: -0.50000006}
+  m_LocalPosition: {x: 11.59, y: 2.67, z: 5.12}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 0, y: 450, z: -630}
+--- !u!114 &757751124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 757751122}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: fd8e7c598cba76b429f186e0b324f4b7, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.5}
+  m_Size: {x: 1.5, y: 2, z: 1}
+  m_FadeFactor: 1
 --- !u!64 &758433554
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -18620,6 +18732,33 @@ PrefabInstance:
       addedObject: {fileID: 500840785}
     - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       insertIndex: -1
+      addedObject: {fileID: 189769855}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1155936302}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 836997965}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 915045132}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 887878298}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1367409576}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 757751123}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1291686297}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1995321367}
+    - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
       addedObject: {fileID: 305502882}
     - targetCorrespondingSourceObject: {fileID: 7812714584007181999, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       insertIndex: -1
@@ -20663,7 +20802,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5424293723586376766, guid: 9ddfb8d1df103ba4e84182a05d528b9b, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -14.28
+      value: -14.09
       objectReference: {fileID: 0}
     - target: {fileID: 5424293723586376766, guid: 9ddfb8d1df103ba4e84182a05d528b9b, type: 3}
       propertyPath: m_LocalRotation.w
@@ -21480,6 +21619,62 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6239881831769578202, guid: fe93784f20e89214eb39a052f488a309, type: 3}
+--- !u!1 &836997964
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 836997965}
+  - component: {fileID: 836997966}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (15)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &836997965
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836997964}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.5877225, y: 0.3931696, z: 0.39317003, w: 0.5877221}
+  m_LocalPosition: {x: 13.14, y: -32.74, z: 0.52}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 157.563, y: 270, z: -450}
+--- !u!114 &836997966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 836997964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: a7e97b036e65c724fb2bb1c40b387006, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 1
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.5}
+  m_Size: {x: 1.5, y: 2, z: 1}
+  m_FadeFactor: 1
 --- !u!64 &837221963
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -22316,6 +22511,62 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6239881831769578202, guid: fe93784f20e89214eb39a052f488a309, type: 3}
+--- !u!1 &887878297
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 887878298}
+  - component: {fileID: 887878299}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (12)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &887878298
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 887878297}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.50000036, y: -0.4999997, z: -0.5, w: 0.5}
+  m_LocalPosition: {x: -11.799, y: 12.458, z: -2.77}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 0, y: 270, z: -450}
+--- !u!114 &887878299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 887878297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: a7e97b036e65c724fb2bb1c40b387006, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 1
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.5}
+  m_Size: {x: 1.5, y: 2, z: 1}
+  m_FadeFactor: 1
 --- !u!64 &889325042
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -22743,6 +22994,62 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ad68e24082dc91b449c16f1d77a201a6, type: 3}
+--- !u!1 &915045131
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 915045132}
+  - component: {fileID: 915045133}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (16)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &915045132
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 915045131}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.3872857, y: 0.5916161, z: 0.5916166, w: 0.38728553}
+  m_LocalPosition: {x: -3.8, y: -29.043, z: 0.52}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 203.581, y: 270, z: -450}
+--- !u!114 &915045133
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 915045131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: a7e97b036e65c724fb2bb1c40b387006, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 1
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.115}
+  m_Size: {x: 1.5, y: 2, z: 0.23}
+  m_FadeFactor: 1
 --- !u!1001 &923448582
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26572,6 +26879,62 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6239881831769578202, guid: fe93784f20e89214eb39a052f488a309, type: 3}
+--- !u!1 &1155936301
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1155936302}
+  - component: {fileID: 1155936303}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (17)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &1155936302
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1155936301}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.5000003, y: 0.49999973, z: 0.5000001, w: 0.49999994}
+  m_LocalPosition: {x: 11.2, y: 10.98, z: 5.12}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 0, y: 450, z: -270}
+--- !u!114 &1155936303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1155936301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: a7e97b036e65c724fb2bb1c40b387006, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 1
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.5}
+  m_Size: {x: 1.5, y: 2, z: 1}
+  m_FadeFactor: 1
 --- !u!64 &1162237904
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -28436,6 +28799,62 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6239881831769578202, guid: fe93784f20e89214eb39a052f488a309, type: 3}
+--- !u!1 &1291686296
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1291686297}
+  - component: {fileID: 1291686298}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (13)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &1291686297
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1291686296}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.39319932, y: 0.5877025, z: 0.5877029, w: -0.3931991}
+  m_LocalPosition: {x: 3.582, y: -28.677, z: 0.503}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 202.431, y: 450, z: -630}
+--- !u!114 &1291686298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1291686296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: fd8e7c598cba76b429f186e0b324f4b7, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.125}
+  m_Size: {x: 1.5, y: 2, z: 0.25}
+  m_FadeFactor: 1
 --- !u!1001 &1294807602
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -31655,6 +32074,62 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6239881831769578202, guid: fe93784f20e89214eb39a052f488a309, type: 3}
+--- !u!1 &1367409575
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1367409576}
+  - component: {fileID: 1367409577}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (11)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &1367409576
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1367409575}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.000000006172284, y: -0.7071066, z: -0.70710707, w: -0.00000003597456}
+  m_LocalPosition: {x: 7.9761395, y: 15.34, z: -2.45}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: -90, y: 360, z: -540}
+--- !u!114 &1367409577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1367409575}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: fd8e7c598cba76b429f186e0b324f4b7, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.5}
+  m_Size: {x: 1.5, y: 2, z: 1}
+  m_FadeFactor: 1
 --- !u!1001 &1369596751
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -40451,6 +40926,62 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!1 &1995321366
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1995321367}
+  - component: {fileID: 1995321368}
+  m_Layer: 0
+  m_Name: ShipHull_Decals Ship Logo (14)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &1995321367
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1995321366}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.58762246, y: -0.39331922, z: -0.39331946, w: 0.5876221}
+  m_LocalPosition: {x: -13.59, y: -33.087, z: 0.5}
+  m_LocalScale: {x: -1, y: -1, z: -1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 602552032}
+  m_LocalEulerAnglesHint: {x: 517.592, y: 450, z: -630}
+--- !u!114 &1995321368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1995321366}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0777d029ed3dffa4692f417d4aba19ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 2100000, guid: fd8e7c598cba76b429f186e0b324f4b7, type: 2}
+  m_DrawDistance: 1000
+  m_FadeScale: 0.9
+  m_StartAngleFade: 180
+  m_EndAngleFade: 180
+  m_UVScale: {x: 1, y: 1}
+  m_UVBias: {x: 0, y: 0}
+  m_DecalLayerMask: 1
+  m_ScaleMode: 0
+  m_Offset: {x: 0, y: 0, z: 0.125}
+  m_Size: {x: 1.5, y: 2, z: 0.25}
+  m_FadeFactor: 1
 --- !u!64 &1999068815
 MeshCollider:
   m_ObjectHideFlags: 0
