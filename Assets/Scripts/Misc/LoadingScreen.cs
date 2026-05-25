@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,26 +11,31 @@ public class LoadingScreen : MonoBehaviour
     public GameObject loadingPanel;
     public Image progressBar;
     public TextMeshProUGUI progressText;
+    public TextMeshProUGUI progressStateText;
 
-    string loadingScene;
-    bool registered = false;
+    private Coroutine progressCoroutine;
+    private bool registered = false;
 
     private void Start()
     {
-        //LoadingScreen[] objs = FindObjectsByType<LoadingScreen>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        //if (objs.Length > 1 && objs.Contains(this))
-        //{
-        //    Destroy(this);
-        //}
-        //else { DontDestroyOnLoad(this); }
+        TryRegisterSceneEvents();
+        if (loadingPanel != null) { loadingPanel.SetActive(false); }
     }
 
     private void OnDestroy()
     {
-        //if (NetworkManager.Singleton != null)
-        //{
-        //    NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
-        //}
+        if (registered && NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+        }
+    }
+
+    private void TryRegisterSceneEvents()
+    {
+        if (registered) { return; }
+        if (NetworkManager.Singleton == null) { return; }
+        NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
+        registered = true;
     }
 
     private void OnSceneEvent(SceneEvent sceneEvent)
@@ -39,57 +43,66 @@ public class LoadingScreen : MonoBehaviour
         switch (sceneEvent.SceneEventType)
         {
             case SceneEventType.Load:
-                ShowLoadingUI();
+                ShowLoadingUI(sceneEvent);
                 break;
 
             case SceneEventType.LoadComplete:
+            case SceneEventType.LoadEventCompleted:
                 HideLoadingUI();
                 break;
         }
     }
 
-    private void ShowLoadingUI()
+    private void ShowLoadingUI(SceneEvent sceneEvent)
     {
-        loadingPanel.SetActive(true);
-        StartCoroutine(UpdateProgress());
+        if (loadingPanel != null) { loadingPanel.SetActive(true); }
+        if (progressCoroutine != null) { StopCoroutine(progressCoroutine); }
+
+        progressCoroutine = StartCoroutine(UpdateProgress(sceneEvent));
     }
 
     private void HideLoadingUI()
     {
-        loadingPanel.SetActive(false);
-        StopAllCoroutines();
+        if (progressCoroutine != null)
+        {
+            StopCoroutine(progressCoroutine);
+            progressCoroutine = null;
+        }
+
+        if (loadingPanel != null) { loadingPanel.SetActive(false); }
     }
 
-    private IEnumerator UpdateProgress()
+    private IEnumerator UpdateProgress(SceneEvent sceneEvent)
     {
-        AsyncOperation asyncOp = SceneManager.LoadSceneAsync(loadingScene);
-        asyncOp.allowSceneActivation = false;
-
-        while (!asyncOp.isDone)
+        if (sceneEvent.AsyncOperation == null)
         {
-            progressBar.fillAmount = Mathf.Clamp01(asyncOp.progress / 0.9f);
-            progressText.text = Mathf.RoundToInt(asyncOp.progress * 100) + "%";
-            Debug.Log("Loading: " + Mathf.RoundToInt(asyncOp.progress * 100) + "%");
+            SetProgress(0f, sceneEvent.SceneEventType);
+            yield break;
+        }
+
+        while (!sceneEvent.AsyncOperation.isDone)
+        {
+            float progress = Mathf.Clamp01(sceneEvent.AsyncOperation.progress / 0.9f);
+            SetProgress(progress, sceneEvent.SceneEventType);
+
             yield return null;
         }
+
+        SetProgress(1f, sceneEvent.SceneEventType);
+    }
+
+    private void SetProgress(float progress, SceneEventType sceneEventType)
+    {
+        if (progressBar != null) { progressBar.fillAmount = progress; }
+        if (progressText != null) { progressText.SetText(Mathf.RoundToInt(progress * 100f) + "%"); }
+        if (progressStateText != null) { progressStateText.SetText(sceneEventType.ToString()); }
     }
 
     public void HostLoadScene(string sceneName)
     {
-        //loadingScene = sceneName;
-        //if (NetworkManager.Singleton.IsServer)
-        //{
-        //    if (!registered)
-        //    {
-        //        // subscribe to scene events
-        //        NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
-        //        registered = true;
-        //    }
-        //    NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-        //}
-        if (NetworkManager.Singleton.IsServer)
-        {
-            NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
-        }
+        TryRegisterSceneEvents();
+        if (NetworkManager.Singleton == null) { return; }
+        if (!NetworkManager.Singleton.IsServer) { return; }
+        NetworkManager.Singleton.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
     }
 }
