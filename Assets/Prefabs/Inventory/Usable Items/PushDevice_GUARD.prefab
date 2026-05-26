@@ -178,7 +178,7 @@ MonoBehaviour:
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
-  m_FillAmount: 1
+  m_FillAmount: 0
   m_FillClockwise: 1
   m_FillOrigin: 2
   m_UseSpriteMesh: 0
@@ -275,8 +275,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 0.08
-  m_fontSizeBase: 0.08
+  m_fontSize: 0.06
+  m_fontSizeBase: 0.06
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -843,6 +843,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7421702887637888549}
+    - targetCorrespondingSourceObject: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2737872188278887016}
+    - targetCorrespondingSourceObject: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -1772473381468875577}
   m_SourcePrefab: {fileID: 100100000, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
 --- !u!4 &3226349631935603936 stripped
 Transform:
@@ -871,9 +877,71 @@ MonoBehaviour:
   pushVolumeForwardOffset: 0
   maxPushForce: 3000
   torqueForce: 1
-  chargeTime: 2
-  cooldown: 0.5
+  chargeTime: 2.5
+  cooldown: 5
   ignoreSelf: 1
   uIChargeImage: {fileID: 5918205431766141469}
   uIChargeText: {fileID: 4565784703015204067}
   minimumFill: 0.27
+  sfx: {fileID: 2737872188278887016}
+  sfxChime: {fileID: -1772473381468875577}
+--- !u!114 &2737872188278887016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5739193541798090591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43141b504e23a714189cdeca698376f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sounds:
+  - soundName: Charge
+    audioClip: {fileID: 8300000, guid: 505f056fb515a4047b0bf2611eadf1fa, type: 3}
+    loop: 0
+    volume: 0.2
+    playNextSound: 1
+  - soundName: Idle
+    audioClip: {fileID: 8300000, guid: cc1a9a316c2c5b64eb5c3b813a9aaf3b, type: 3}
+    loop: 1
+    volume: 0.2
+    playNextSound: 0
+  - soundName: Blast
+    audioClip: {fileID: 8300000, guid: 65b30fc8763ca23488b3d8d7740ca245, type: 3}
+    loop: 0
+    volume: 0.2
+    playNextSound: 0
+  audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
+  playAs3D: 0
+  useLocalAudioSource: 1
+  useRandomPitch: 0
+  minPitch: 0.9
+  maxPitch: 1.1
+  spawnAtThisObject: 1
+--- !u!114 &-1772473381468875577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5739193541798090591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43141b504e23a714189cdeca698376f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sounds:
+  - soundName: Chime
+    audioClip: {fileID: 8300000, guid: 1445a5c5f2280d94496aa56cc06bae66, type: 3}
+    loop: 0
+    volume: 0.25
+    playNextSound: 0
+  audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
+  playAs3D: 0
+  useLocalAudioSource: 0
+  useRandomPitch: 0
+  minPitch: 0.9
+  maxPitch: 1.1
+  spawnAtThisObject: 1

@@ -19,6 +19,8 @@ public class IT_PushDevice : CC_INV_UsableItems
     [SerializeField] private Image uIChargeImage;
     [SerializeField] private TextMeshProUGUI uIChargeText;
     [SerializeField] private float minimumFill;
+    [SerializeField] private AUD_SFX sfx;
+    [SerializeField] private AUD_SFX sfxChime;
 
     private float pushForce = 0f;
     private float chargingTimer = 0f;
@@ -28,9 +30,11 @@ public class IT_PushDevice : CC_INV_UsableItems
     private float chargingTimerLocal = 0f;
     private float cooldownTimerLocal = 0f;
 
+    private bool hasPlayedChargeSound = false;
+    private bool hasPlayedChimeSound = false;
+
     private NetworkObject playerWhoSent;
 
-    
     public override void SendItemId(string ItemId)
     {
         itemId = ItemId;
@@ -41,22 +45,47 @@ public class IT_PushDevice : CC_INV_UsableItems
         playerWhoSent = netObj;
     }
 
-    public override void OnUseHeldLocally(NetworkObjectReference netObjRef) 
+    public override void OnUseHeldLocally(NetworkObjectReference netObjRef)
     {
         if (muzzlePoint == null)
         {
             return;
         }
 
-        if (cooldownTimer <= 0f)
+        if (cooldownTimerLocal <= 0f)
         {
+            if (!hasPlayedChargeSound)
+            {
+                if (sfx != null)
+                {
+                    sfx.PlaySound("Charge");
+                }
+
+                hasPlayedChargeSound = true;
+            }
+
             chargingTimerLocal += Time.deltaTime;
             chargingTimerLocal = Mathf.Clamp(chargingTimerLocal, 0f, Mathf.Max(0.001f, chargeTime));
+
+            if (chargingTimerLocal >= chargeTime && !hasPlayedChimeSound)
+            {
+                if (sfxChime != null)
+                {
+                    sfxChime.PlaySound(0);
+                }
+
+                hasPlayedChimeSound = true;
+            }
 
             float safeChargeTime = Mathf.Max(0.001f, chargeTime);
             pushForceLocal = Mathf.Lerp(0f, maxPushForce, Mathf.Clamp(chargingTimerLocal, 0f, safeChargeTime) / safeChargeTime);
         }
+        else
+        {
+            hasPlayedChargeSound = false;
+        }
     }
+
     public override void OnUseHeld(NetworkObjectReference netObjRef)
     {
         if (muzzlePoint == null)
@@ -74,36 +103,58 @@ public class IT_PushDevice : CC_INV_UsableItems
         }
     }
 
-    public override void OnUseReleased(NetworkObjectReference netObjRef) {
+    public override void OnUseReleased(NetworkObjectReference netObjRef)
+    {
+        if (cooldownTimer > 0f)
+        {
+            return;
+        }
+
         cooldownTimer = cooldown;
+
         Collider[] colliders = Physics.OverlapBox(muzzlePoint.transform.position + (pushVolumeForwardOffset + pushVolumeBounds.z / 2) * muzzlePoint.forward, pushVolumeBounds / 2, Quaternion.LookRotation(muzzlePoint.forward));
+
         foreach (Collider collider in colliders)
         {
             if (collider.GetComponent<CC_Movement>())
             {
-                PushPlayerRpc(collider, playerWhoSent); 
+                PushPlayerRpc(collider, playerWhoSent);
             }
             else
             {
                 PushObject(collider);
             }
         }
-        pushForce = 0;
-        chargingTimer = 0;
+
+        pushForce = 0f;
+        chargingTimer = 0f;
     }
 
     public override void OnUseReleasedLocally(NetworkObjectReference netObjRef)
     {
+        if (cooldownTimerLocal > 0f)
+        {
+            return;
+        }
+
+        if (sfx != null)
+        {
+            sfx.PlaySound("Blast");
+        }
+
         cooldownTimerLocal = cooldown;
-        pushForceLocal = 0;
-        chargingTimerLocal = 0;
+        pushForceLocal = 0f;
+        chargingTimerLocal = 0f;
+        hasPlayedChargeSound = false;
+        hasPlayedChimeSound = false;
     }
 
     private void PushObject(Collider col)
     {
         Rigidbody rb = col.GetComponent<Rigidbody>();
+
         if (rb != null)
-        { 
+        {
             rb.AddForce(muzzlePoint.forward * pushForce);
             rb.AddTorque(Vector3.one * Random.Range(-torqueForce, torqueForce));
         }
@@ -113,8 +164,9 @@ public class IT_PushDevice : CC_INV_UsableItems
     private void PushPlayerRpc(Collider col, NetworkObjectReference us)
     {
         if (us.TryGet(out NetworkObject usNetObj) && (col.GetComponent<CC_Movement>() != usNetObj.GetComponent<CC_Movement>() || !ignoreSelf))
-        { 
+        {
             CC_Movement player = col.GetComponent<CC_Movement>();
+
             if (player != null)
             {
                 player.PushSelf(muzzlePoint.forward * pushForce);
@@ -125,17 +177,62 @@ public class IT_PushDevice : CC_INV_UsableItems
     private void Update()
     {
         cooldownTimer -= Time.deltaTime;
-        float chargetimerPercentage = Mathf.Max(minimumFill, chargingTimer) / chargeTime;
-        uIChargeImage.fillAmount = chargetimerPercentage / (1 - minimumFill);
-        uIChargeText.SetText($"{Mathf.Round(chargingTimer * 100) / 100}/{chargeTime}");
+        cooldownTimerLocal -= Time.deltaTime;
+
+        cooldownTimer = Mathf.Max(0f, cooldownTimer);
+        cooldownTimerLocal = Mathf.Max(0f, cooldownTimerLocal);
+
+        UpdateChargeUI(chargingTimer, cooldownTimer);
 
         if (!NetworkManager.Singleton.IsHost)
         {
-            cooldownTimerLocal -= Time.deltaTime;
-            chargetimerPercentage = Mathf.Max(minimumFill, chargingTimerLocal) / chargeTime;
-            uIChargeImage.fillAmount = chargetimerPercentage / (1 - minimumFill);
-            uIChargeText.SetText($"{Mathf.Round(chargingTimerLocal * 100) / 100}/{chargeTime}");
+            UpdateChargeUI(chargingTimerLocal, cooldownTimerLocal);
         }
+    }
+
+    private void UpdateChargeUI(float currentChargingTimer, float currentCooldownTimer)
+    {
+        if (uIChargeImage == null) { return; }
+        if (uIChargeText == null) { return; }
+
+        uIChargeImage.fillAmount = GetChargeFill(currentChargingTimer, currentCooldownTimer);
+
+        if (currentCooldownTimer > 0f)
+        {
+            uIChargeText.SetText("Cooling");
+            return;
+        }
+
+        if (currentChargingTimer >= chargeTime)
+        {
+            uIChargeText.SetText("Charged");
+            return;
+        }
+
+        if (currentCooldownTimer <= 0f && currentChargingTimer <= 0f)
+        {
+            uIChargeText.SetText("Ready");
+            return;
+        }
+
+        float roundedChargeTimer = Mathf.Round(currentChargingTimer * 100f) / 100f;
+        uIChargeText.SetText($"{roundedChargeTimer}/{chargeTime}");
+    }
+
+    private float GetChargeFill(float currentChargingTimer, float currentCooldownTimer)
+    {
+        float safeMinimumFill = Mathf.Clamp01(minimumFill);
+        float safeChargeTime = Mathf.Max(0.001f, chargeTime);
+        float safeCooldown = Mathf.Max(0.001f, cooldown);
+
+        if (currentCooldownTimer > 0f)
+        {
+            float cooldownPercentage = Mathf.Clamp01(currentCooldownTimer / safeCooldown);
+            return Mathf.Lerp(safeMinimumFill, 1f, cooldownPercentage);
+        }
+
+        float chargePercentage = Mathf.Clamp01(currentChargingTimer / safeChargeTime);
+        return Mathf.Lerp(safeMinimumFill, 1f, chargePercentage);
     }
 
     private void OnDrawGizmos()
