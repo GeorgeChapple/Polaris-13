@@ -264,6 +264,37 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &6431984941862476531
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 842872003371558712}
+  m_Layer: 0
+  m_Name: RightHandSnapPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &842872003371558712
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6431984941862476531}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.5, y: 0.5, z: 0.5, w: -0.5}
+  m_LocalPosition: {x: 0.0541, y: 0.018, z: 0.0705}
+  m_LocalScale: {x: 0.40824157, y: 0.40824157, z: 0.8614277}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4505164207885933743}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 90}
 --- !u!1 &8729131221356819479
 GameObject:
   m_ObjectHideFlags: 0
@@ -412,6 +443,10 @@ PrefabInstance:
       propertyPath: visualRoot
       value: 
       objectReference: {fileID: 4505164207885933743}
+    - target: {fileID: 3610155980932866396, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+      propertyPath: rightHandSnapPoint
+      value: 
+      objectReference: {fileID: 842872003371558712}
     - target: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_Name
       value: Scanner
@@ -430,15 +465,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.00029934
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.0012984
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.041276
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalRotation.w
@@ -577,27 +612,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalScale.x
-      value: 2.44953
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.1608635
+      value: 0.7108692
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalScale.z
-      value: 2.44953
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.0016154
+      value: -0.14
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.049092
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.093
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalRotation.w
@@ -637,6 +672,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6844406688742108121}
+    - targetCorrespondingSourceObject: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 842872003371558712}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
 --- !u!4 &4505164207885933743 stripped

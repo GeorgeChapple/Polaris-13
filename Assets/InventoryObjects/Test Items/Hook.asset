@@ -22,6 +22,7 @@ MonoBehaviour:
   hungerDrainDelay: 5
   thirstReplenish: 5
   thirstDrainDelay: 0
+  unlocked: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
@@ -30,7 +31,7 @@ MonoBehaviour:
   biomeProbabilities: []
   stackable: 1
   maxStack: 3
-  craftable: 1
+  craftable: 0
   canCraftAnywhere: 1
   craftingRequirements:
   - item: {fileID: 11400000, guid: 6969b1a448f6d844dab9db5bedc20ad5, type: 2}
@@ -43,6 +44,7 @@ MonoBehaviour:
     - item: {fileID: 11400000, guid: 855f6c5dff7711244bb2d75cf852567b, type: 2}
       amount: 1
     amountGiven: 1
+    unlocked: 0
   - recipeName: TestItem 1
     requirements:
     - item: {fileID: 11400000, guid: 6969b1a448f6d844dab9db5bedc20ad5, type: 2}
@@ -50,6 +52,7 @@ MonoBehaviour:
     - item: {fileID: 11400000, guid: 8c42545ce6ccc5843b9f3b1c45235ae1, type: 2}
       amount: 1
     amountGiven: 1
+    unlocked: 1
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: ebb9c42232027ec409eeb4c521814ea4, type: 2}
@@ -59,6 +62,9 @@ MonoBehaviour:
   inventoryMeshOffset: {x: 0, y: 0, z: -20}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
   inventoryMeshScale: 80
+  hotbarMestOffset: {x: 0, y: 0, z: 0}
+  hotbarMeshRotation: {x: 0, y: 0, z: 0}
+  hotbarMeshScale: 1
   dropMeshScale: 1
   equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 0, y: 0, z: 0}
