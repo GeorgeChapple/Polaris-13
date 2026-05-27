@@ -20,6 +20,8 @@ GameObject:
   - component: {fileID: 4043289975837125573}
   - component: {fileID: -5068223315693377172}
   - component: {fileID: 8125151144193780619}
+  - component: {fileID: -8685877586269666714}
+  - component: {fileID: 4777909367696245790}
   m_Layer: 8
   m_Name: DebrisItem
   m_TagString: Debris
@@ -200,7 +202,10 @@ MonoBehaviour:
   junkRotation: {x: 0, y: 0, z: 0, w: 0}
   junkRotationRate: {x: 0, y: 0, z: 0}
   spawner: {fileID: 0}
+  canTeleport: 1
+  randomTorque: {x: -10, y: 10}
   scaleSpeed: 1
+  destroyOnRocket: 1
   destroyVFX: {fileID: 2014236133279003091, guid: 15c8a3da0cfce7b4b9e9f863de2984b1, type: 3}
 --- !u!114 &3900855838033875786
 MonoBehaviour:
@@ -218,6 +223,7 @@ MonoBehaviour:
   item: {fileID: 11400000, guid: 9e427fbdaae830842ae1e35bd89158f2, type: 2}
   useMeshCollider: 1
   renameToItemName: 1
+  setUpWithoutNetworkID: 0
 --- !u!114 &4043289975837125573
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -331,3 +337,51 @@ MonoBehaviour:
   UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &-8685877586269666714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2353747757295221720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43141b504e23a714189cdeca698376f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sounds:
+  - soundName: Metal Collision 1
+    audioClip: {fileID: 8300000, guid: 6cecdb635578c3c4a9727de5f4b1fc35, type: 3}
+    loop: 0
+    volume: 0.4
+  - soundName: Metal Collision 2
+    audioClip: {fileID: 8300000, guid: 02fb3fa1571e12a41aa434c0c59c9a2d, type: 3}
+    loop: 0
+    volume: 0.4
+  - soundName: Metal Collision 3
+    audioClip: {fileID: 8300000, guid: 465759fb61686be4da122b29dc0a87c3, type: 3}
+    loop: 0
+    volume: 0.4
+  audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
+  playAs3D: 1
+  useLocalAudioSource: 1
+  useRandomPitch: 1
+  minPitch: 0.9
+  maxPitch: 1.1
+  spawnAtThisObject: 1
+--- !u!114 &4777909367696245790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2353747757295221720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44a23beb8358b6344b35223a36a7b5df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  triggerLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  sfx: {fileID: -8685877586269666714}

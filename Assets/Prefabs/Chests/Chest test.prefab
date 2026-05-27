@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3264754577128500386}
   - component: {fileID: 1284251772280196216}
   - component: {fileID: 1565316689346146043}
+  - component: {fileID: -3499228636417490734}
   m_Layer: 8
   m_Name: Chest test
   m_TagString: Untagged
@@ -121,6 +122,8 @@ MonoBehaviour:
     rewireInteractListenersOnNetworkSpawn: 1
     invokeLegacyInteractEvent: 0
   oneShot: 0
+  pushGunInteractable: 0
+  cannotInteractNormally: 0
   requiresHold: 0
   holdTime: 0
   onStartHold:
@@ -194,14 +197,14 @@ MonoBehaviour:
     Layer: 0
     OriginatingState: 325688434
     DestinationState: -1780880874
-    TransitionDuration: 0.25
+    TransitionDuration: 0
     TriggerNameHash: -759124288
     TransitionIndex: 0
   - IsCrossFadeExit: 0
     Layer: 0
     OriginatingState: -2101498192
     DestinationState: 89089327
-    TransitionDuration: 0.25
+    TransitionDuration: 0
     TriggerNameHash: 71445658
     TransitionIndex: 0
   AnimatorParameterEntries:
@@ -229,6 +232,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   networkAnimator: {fileID: 1284251772280196216}
+--- !u!114 &-3499228636417490734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1487493251592894513}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e1535f31a4056449a26d288c0bed6e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &3180091733671932263
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -61,7 +61,9 @@ public class CC_Interaction : NetworkBehaviour
             // also means interact block layers needs to include the interact layer otherwise the raycast doesnt hit it.
             if (((1 << hit.collider.gameObject.layer) & interactLayers.value) != 0)
             {
-                return hit.collider.GetComponentInParent<InteractableObject>();
+                InteractableObject intObj = hit.collider.GetComponentInParent<InteractableObject>();
+                if (intObj.cannotInteractNormally) { return null; }
+                return intObj;
             }
 
             return null;
