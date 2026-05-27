@@ -22,6 +22,7 @@ MonoBehaviour:
   hungerDrainDelay: 0
   thirstReplenish: 100
   thirstDrainDelay: 300
+  unlocked: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 20
@@ -39,14 +40,17 @@ MonoBehaviour:
     - item: {fileID: 11400000, guid: dd1f89ba5df137243ba168d669088b45, type: 2}
       amount: 1
     amountGiven: 1
+    unlocked: 0
   - recipeName: Water
     requirements:
     - item: {fileID: 11400000, guid: aa73f5fe20121a0418f4c08a876dc621, type: 2}
       amount: 1
     amountGiven: 3
+    unlocked: 0
   icon: {fileID: 0}
   mesh: {fileID: -2128599272216676504, guid: edeb9f0d9d108324ba56d7dd8c1a8c4b, type: 3}
   material: {fileID: 2100000, guid: 5e2db0b4424e54742bd4f07493f585df, type: 2}
+  twoHanded: 0
   equippedPrefab: {fileID: 5739193541798090591, guid: 0e74196ecdd2abd44ada4afe36adaed9, type: 3}
   applyEquippedPrefabVisuals: 1
   forwardAxisRot: 0
