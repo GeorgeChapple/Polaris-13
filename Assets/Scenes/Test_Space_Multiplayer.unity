@@ -1542,6 +1542,8 @@ MonoBehaviour:
     rewireInteractListenersOnNetworkSpawn: 0
     invokeLegacyInteractEvent: 1
   oneShot: 0
+  pushGunInteractable: 0
+  cannotInteractNormally: 0
   requiresHold: 0
   holdTime: 0
   onStartHold:
@@ -10785,6 +10787,8 @@ MonoBehaviour:
     rewireInteractListenersOnNetworkSpawn: 1
     invokeLegacyInteractEvent: 0
   oneShot: 0
+  pushGunInteractable: 0
+  cannotInteractNormally: 0
   requiresHold: 0
   holdTime: 0
   onStartHold:
@@ -33454,12 +33458,20 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3264754577128500386, guid: a36ba3f9416d72949877f2534deb31c9, type: 3}
       propertyPath: itemsToSpawnInChest.Array.size
-      value: 1
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 3264754577128500386, guid: a36ba3f9416d72949877f2534deb31c9, type: 3}
       propertyPath: 'itemsToSpawnInChest.Array.data[0]'
       value: 
       objectReference: {fileID: 11400000, guid: 4d517a15a1976224fafcb704ee656e4c, type: 2}
+    - target: {fileID: 3264754577128500386, guid: a36ba3f9416d72949877f2534deb31c9, type: 3}
+      propertyPath: 'itemsToSpawnInChest.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 2c066f48628094a4c983552960f2893e, type: 2}
+    - target: {fileID: 3264754577128500386, guid: a36ba3f9416d72949877f2534deb31c9, type: 3}
+      propertyPath: 'itemsToSpawnInChest.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 2092c4c68ae503e41a6df83e9b52f92d, type: 2}
     - target: {fileID: 4349366218124902237, guid: a36ba3f9416d72949877f2534deb31c9, type: 3}
       propertyPath: m_LocalPosition.x
       value: 5.59

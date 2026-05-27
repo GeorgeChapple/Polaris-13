@@ -29,6 +29,8 @@ public class AUD_SFX : MonoBehaviour
     [Tooltip("All sounds this script can play.")]
     [SerializeField] private List<Sound> sounds = new List<Sound>();
 
+    [SerializeField] private bool playFirstSoundOnAwake = false;
+
     [Tooltip("Prefab that has an AudioSource on it.")]
     [SerializeField] private GameObject audioSourcePrefab;
 
@@ -62,6 +64,7 @@ public class AUD_SFX : MonoBehaviour
     private void Awake()
     {
         InitialiseComponents();
+        if (playFirstSoundOnAwake) { PlaySound(0); }
     }
 
     private void Update()
