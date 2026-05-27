@@ -57,6 +57,12 @@ public class InteractableObject : NetworkBehaviour
     [Tooltip("Optional, If true, object can only be interacted with once.")]
     public bool oneShot;
 
+    [Tooltip("If true, this can be interacted with using a push gun blast. Keep in mind this will only activate the first interact action.")]
+    public bool pushGunInteractable = false;
+
+    [Tooltip("If true, this cannot be interacted with using the interact key.")]
+    public bool cannotInteractNormally = false;
+
     [Header("Hold Interaction")]
     [Tooltip("If true, this interactable requires holding the interact key.")]
     public bool requiresHold = false;

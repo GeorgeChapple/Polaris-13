@@ -120,6 +120,17 @@ public class IT_PushDevice : CC_INV_UsableItems
             {
                 PushPlayerRpc(collider, playerWhoSent);
             }
+            else if (collider.TryGetComponent<InteractableObject>(out InteractableObject obj))
+            {
+                if (obj.pushGunInteractable)
+                {
+                    obj.Interact(netObjRef);
+                }
+                else
+                {
+                    PushObject(collider);
+                }
+            }
             else
             {
                 PushObject(collider);
