@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using System.IO;
+using UnityEngine;
+using UnityEngine.InputSystem.HID;
 using UnityEngine.VFX;
 
 public class SP_MapGenerator : MonoBehaviour
@@ -12,8 +13,8 @@ public class SP_MapGenerator : MonoBehaviour
     public List<ClusterManager> clusters = new List<ClusterManager>();
     public Texture2D positionData;
     private int spawned = 0;
-    private VisualEffect effect;
-    [SerializeField] private Transform shipMesh;
+    private VisualEffect mapEffect;
+    [SerializeField] private VisualEffect shipEffect;
     [SerializeField] private RS_Move ship;
 
     [Serializable]
@@ -64,7 +65,7 @@ public class SP_MapGenerator : MonoBehaviour
 
     private void Awake()
     {
-        effect = GetComponent<VisualEffect>();
+        mapEffect = GetComponent<VisualEffect>();
         UnityEngine.Random.InitState(seed);
         clusters = GenerateMap(biomes[0]);
     }
@@ -72,7 +73,6 @@ public class SP_MapGenerator : MonoBehaviour
     private void Start()
     {
         UpdateTextureData();
-        ship = FindFirstObjectByType<RS_Move>();
         //if (save)
         //{
         //    File.WriteAllBytes("Assets/Shaders/Untitled.png", positionData.EncodeToPNG());
@@ -82,10 +82,8 @@ public class SP_MapGenerator : MonoBehaviour
 
     private void Update()
     {
-        
-        Debug.Log(ship.worldPosition + "HEOP");
-        shipMesh.position = ClampVector(ship.worldDirection, mapSize);
-        shipMesh.rotation = Quaternion.LookRotation(ship.worldDirectionNetworked.Value);
+        Debug.Log("CLAMP POSITION : " + ClampVector(ship.worldPosition, mapSize));
+        shipEffect.SetVector3("_position", ClampVector(ship.worldPosition, mapSize));
     }
 
     private void UpdateTextureData()
@@ -106,8 +104,8 @@ public class SP_MapGenerator : MonoBehaviour
         }
         newPositionData.Apply();
         positionData = newPositionData;
-        effect.SetTexture("_positionData", positionData);
-        effect.SetInt("_spawnCount", spawned);
+        mapEffect.SetTexture("_positionData", positionData);
+        mapEffect.SetInt("_spawnCount", spawned);
     }
 
     private Vector3 ClampVector(Vector3 position, Vector3 bounds)
