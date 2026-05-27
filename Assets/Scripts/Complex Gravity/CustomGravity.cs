@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public static class CustomGravity
 {
 
-    static List<GravitySource> sources = new List<GravitySource>();
+    static readonly List<GravitySource> sources = new List<GravitySource>();
 
     public static void Register(GravitySource source)
     {
@@ -41,7 +41,28 @@ public static class CustomGravity
         {
             g += sources[i].GetGravity(position);
         }
-        upAxis = -g.normalized;
+
+        upAxis = g.sqrMagnitude > 0.0001f ? -g.normalized : Vector3.up;
+        return g;
+    }
+
+    public static Vector3 GetGravityAndOxygen(Vector3 position, out Vector3 upAxis, out bool providesOxygen)
+    {
+        Vector3 g = Vector3.zero;
+        providesOxygen = false;
+
+        for (int i = 0; i < sources.Count; i++)
+        {
+            bool sourceProvidesOxygen;
+            g += sources[i].GetGravityAndOxygen(position, out sourceProvidesOxygen);
+
+            if (sourceProvidesOxygen)
+            {
+                providesOxygen = true;
+            }
+        }
+
+        upAxis = g.sqrMagnitude > 0.0001f ? -g.normalized : Vector3.up;
         return g;
     }
 
@@ -52,7 +73,8 @@ public static class CustomGravity
         {
             g += sources[i].GetGravity(position);
         }
-        return -g.normalized;
+
+        return g.sqrMagnitude > 0.0001f ? -g.normalized : Vector3.up;
     }
 
     public static bool ProvidesOxygen(Vector3 position)

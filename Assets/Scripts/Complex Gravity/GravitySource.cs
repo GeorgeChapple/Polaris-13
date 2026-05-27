@@ -1,21 +1,31 @@
 ﻿using UnityEngine;
 
-public class GravitySource : MonoBehaviour {
+public class GravitySource : MonoBehaviour
+{
 
-	public virtual Vector3 GetGravity (Vector3 position) {
-		return Physics.gravity;
-	}
+    public virtual Vector3 GetGravity(Vector3 position)
+    {
+        return Physics.gravity;
+    }
 
     public virtual bool ProvidesOxygen(Vector3 position)
     {
         return false;
     }
 
-    void OnEnable () {
-		CustomGravity.Register(this);
-	}
+    public virtual Vector3 GetGravityAndOxygen(Vector3 position, out bool providesOxygen)
+    {
+        providesOxygen = ProvidesOxygen(position);
+        return GetGravity(position);
+    }
 
-	void OnDisable () {
-		CustomGravity.Unregister(this);
-	}
+    void OnEnable()
+    {
+        CustomGravity.Register(this);
+    }
+
+    void OnDisable()
+    {
+        CustomGravity.Unregister(this);
+    }
 }

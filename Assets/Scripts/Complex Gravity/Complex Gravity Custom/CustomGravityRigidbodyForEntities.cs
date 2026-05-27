@@ -11,6 +11,8 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 {
     [Header("Refs")]
     [SerializeField] private CC_Movement movement;
+    private SP_SpaceManager spaceManager;
+    private RS_Move rocket;
 
     [Header("Gravity Reference")]
     [Tooltip("Transform to use for gravity sampling instead of the rigidbody position.")]
@@ -56,7 +58,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     public bool Grounded => grounded;
     public Vector3 UpAxis => upAxis;
     public Vector3 CurrentGravity => currentGravity;
-    public bool HasGravity => currentGravity.magnitude > zeroGravityThreshold;
+    public bool HasGravity => currentGravity.sqrMagnitude > zeroGravityThreshold * zeroGravityThreshold;
     public LayerMask GroundLayers => groundLayers;
     public Vector3 GroundNormal => hasGroundHit ? groundHit.normal : upAxis;
     public float GroundDistance => hasGroundHit ? groundHit.distance : float.PositiveInfinity;
@@ -72,8 +74,10 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     private RaycastHit groundHit;
     private bool hasGroundHit;
 
-    SP_SpaceManager spaceManager;
-    RS_Move rocket;
+    private bool previousUseGravity;
+    private bool hasPreviousUseGravity;
+
+    private readonly Vector3[] groundRayOrigins = new Vector3[5];
 
     private void Start()
     {
@@ -92,9 +96,11 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     protected override void FixedUpdate()
     {
         if (!IsOwner) { return; }
+
         Vector3 gravitySamplePosition = GetGravitySamplePosition();
-        currentGravity = CustomGravity.GetGravity(gravitySamplePosition, out upAxis);
-        oxygenProvided = CustomGravity.ProvidesOxygen(gravitySamplePosition);
+
+        // getting both gravity and oxygen from the same check so mesh volumes don't get checked twice
+        currentGravity = CustomGravity.GetGravityAndOxygen(gravitySamplePosition, out upAxis, out oxygenProvided);
 
         if (groundedIgnoreTimer > 0f)
         {
@@ -116,7 +122,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         if (HandleFloatToSleep()) { return; }
 
         // only apply gravity if we actually have usable gravity and are not grounded
-        if (!grounded && currentGravity.magnitude > 0.0001f)
+        if (!grounded && currentGravity.sqrMagnitude > 0.00000001f)
         {
             useGravity = true;
             body.AddForce(currentGravity, ForceMode.Acceleration);
@@ -129,11 +135,13 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         {
             useGravity = false;
         }
+
         if (forceGravity) // this is for when we want to not be added to global space move
         {
             useGravity = true;
         }
-        ToggleGravity();
+
+        ToggleGravityIfChanged();
     }
 
     private Vector3 GetGravitySamplePosition()
@@ -191,7 +199,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
             return;
         }
 
-        if (currentGravity.magnitude <= zeroGravityThreshold)
+        if (currentGravity.sqrMagnitude <= zeroGravityThreshold * zeroGravityThreshold)
         {
             grounded = false;
             groundedLoseTimer = 0f;
@@ -252,23 +260,21 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         float offsetDist = groundedRayRadius;
 
         // using multiple ray casts because I had a lot of trouble getting a sphere check to accurately check ground hit for slopes
-        Vector3[] origins = new Vector3[5];
-        origins[0] = origin;
-        origins[1] = origin + (forward * offsetDist);
-        origins[2] = origin - (forward * offsetDist);
-        origins[3] = origin + (right * offsetDist);
-        origins[4] = origin - (right * offsetDist);
+        groundRayOrigins[0] = origin;
+        groundRayOrigins[1] = origin + (forward * offsetDist);
+        groundRayOrigins[2] = origin - (forward * offsetDist);
+        groundRayOrigins[3] = origin + (right * offsetDist);
+        groundRayOrigins[4] = origin - (right * offsetDist);
 
         bool foundAny = false;
         float bestDistance = float.PositiveInfinity;
 
-        for (int i = 0; i < origins.Length; i++)
+        for (int i = 0; i < groundRayOrigins.Length; i++)
         {
-            RaycastHit hit;
             if (Physics.Raycast(
-                origins[i],
+                groundRayOrigins[i],
                 down,
-                out hit,
+                out RaycastHit hit,
                 rayLength,
                 groundLayers,
                 QueryTriggerInteraction.Ignore))
@@ -331,6 +337,16 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         body.position += moveDelta;
     }
 
+    private void ToggleGravityIfChanged()
+    {
+        if (!hasPreviousUseGravity || previousUseGravity != useGravity)
+        {
+            ToggleGravity();
+            previousUseGravity = useGravity;
+            hasPreviousUseGravity = true;
+        }
+    }
+
     private void ToggleGravity()
     {
         if (useGravity)
@@ -341,7 +357,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
             }
             else
             {
-                if (spaceManager.debris.ContainsKey(gameObject))
+                if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject))
                 {
                     spaceManager.debris.Remove(gameObject);
                 }
@@ -352,11 +368,15 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
             if (movement != null)
             {
                 movement.drift.Value = true;
-                movement.referenceDirection.Value = rocket.worldDirectionNetworked.Value;
+
+                if (rocket != null)
+                {
+                    movement.referenceDirection.Value = rocket.worldDirectionNetworked.Value;
+                }
             }
             else
             {
-                if (!spaceManager.debris.ContainsKey(gameObject))
+                if (spaceManager != null && rocket != null && !spaceManager.debris.ContainsKey(gameObject))
                 {
                     spaceManager.debris.Add(gameObject, rocket.worldDirectionNetworked.Value);
                 }

@@ -30,6 +30,7 @@ public class CustomGravityRigidbody : NetworkBehaviour
 
     protected virtual void FixedUpdate()
     {
+        if (!IsOwner) { return; } // realistically this should only ever even try to run on the server host cus it'll just get replicated for its positions
         if (useGravity)
         {
             if (HandleFloatToSleep()) { return; }
@@ -50,7 +51,7 @@ public class CustomGravityRigidbody : NetworkBehaviour
 
         if (body.linearVelocity.sqrMagnitude < 0.0001f)
         {
-            floatDelay += Time.deltaTime;
+            floatDelay += Time.fixedDeltaTime;
             if (floatDelay >= 1f)
             {
                 return true;

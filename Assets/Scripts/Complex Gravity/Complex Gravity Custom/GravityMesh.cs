@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 // Made by: Jason Lodge
@@ -30,6 +29,24 @@ public class GravityMesh : GravitySource
     [SerializeField] private bool drawWireMesh = false;
     [SerializeField] private bool drawRay = false;
 
+    private Mesh cachedMesh;
+    private Vector3[] cachedVertices;
+    private int[] cachedTriangles;
+    private Bounds cachedBounds;
+    private Vector3 cachedGravityDirection;
+
+    private static readonly Vector3 insideCheckDirection = new Vector3(1f, 0.131f, 0.253f).normalized;
+
+    private void Awake()
+    {
+        CacheMeshData();
+    }
+
+    private void OnValidate()
+    {
+        CacheMeshData();
+    }
+
     public override Vector3 GetGravity(Vector3 position)
     {
         if (!IsInsideMesh(position))
@@ -37,21 +54,40 @@ public class GravityMesh : GravitySource
             return Vector3.zero;
         }
 
+        return GetGravityFromInsidePosition(position);
+    }
+
+    public override bool ProvidesOxygen(Vector3 position)
+    {
+        if (!provideOxygen) { return false; }
+        return IsInsideMesh(position);
+    }
+
+    public override Vector3 GetGravityAndOxygen(Vector3 position, out bool providesOxygen)
+    {
+        bool inside = IsInsideMesh(position);
+
+        providesOxygen = provideOxygen && inside;
+
+        if (!inside)
+        {
+            return Vector3.zero;
+        }
+
+        return GetGravityFromInsidePosition(position);
+    }
+
+    private Vector3 GetGravityFromInsidePosition(Vector3 position)
+    {
         // directional gravity mode
         if (directionalGravity)
         {
-            Vector3 dir = gravityDirection.normalized;
-            if (dir.sqrMagnitude < 0.0001f)
-            {
-                dir = Vector3.down;
-            }
-
-            return transform.rotation * dir * gravity;
+            return transform.rotation * cachedGravityDirection * gravity;
         }
 
         // center pull mode
         Vector3 local = transform.InverseTransformPoint(position);
-        Vector3 toCenter = volumeMesh.bounds.center - local;
+        Vector3 toCenter = cachedBounds.center - local;
 
         if (toCenter.sqrMagnitude < 0.0001f)
         {
@@ -61,46 +97,35 @@ public class GravityMesh : GravitySource
         return transform.TransformDirection(toCenter.normalized) * gravity;
     }
 
-    public override bool ProvidesOxygen(Vector3 position)
-    {
-        if (!provideOxygen) { return false; }
-
-        // oxygen uses the same mesh volume as gravity
-        return IsInsideMesh(position);
-    }
-
     private bool IsInsideMesh(Vector3 position)
     {
-        Mesh mesh = GetVolumeMesh();
-        if (mesh == null) { return false; }
+        if (cachedMesh == null) { return false; }
+        if (cachedVertices == null) { return false; }
+        if (cachedTriangles == null) { return false; }
 
         Vector3 localPoint = transform.InverseTransformPoint(position);
 
         // quick bounds check first because triangle checks are more expensive
-        if (!mesh.bounds.Contains(localPoint))
+        if (!cachedBounds.Contains(localPoint))
         {
             return false;
         }
 
-
-        Vector3[] vertices = mesh.vertices;
-        int[] triangles = mesh.triangles;
-
         // just need to choose a direction, doesnt really matter but may hit triangle edges so just slightly off should do
-        Vector3 rayDirection = new Vector3(1f, 0.131f, 0.253f).normalized;
+        Vector3 rayDirection = insideCheckDirection;
 
         // small offset so we don't start on a surface
         Vector3 rayOrigin = localPoint + (rayDirection * insideCheckOffset);
 
-        if (drawRay) { Debug.DrawRay(rayOrigin, rayDirection); }
+        if (drawRay) { Debug.DrawRay(transform.TransformPoint(rayOrigin), transform.TransformDirection(rayDirection)); }
 
         int hitCount = 0;
 
-        for (int i = 0; i < triangles.Length; i += 3)
+        for (int i = 0; i < cachedTriangles.Length; i += 3)
         {
-            Vector3 a = vertices[triangles[i]];
-            Vector3 b = vertices[triangles[i + 1]];
-            Vector3 c = vertices[triangles[i + 2]];
+            Vector3 a = cachedVertices[cachedTriangles[i]];
+            Vector3 b = cachedVertices[cachedTriangles[i + 1]];
+            Vector3 c = cachedVertices[cachedTriangles[i + 2]];
 
             if (RayIntersectsTriangle(rayOrigin, rayDirection, a, b, c))
             {
@@ -109,7 +134,7 @@ public class GravityMesh : GravitySource
         }
 
         // odd number of hits means inside
-        return (hitCount % 2) == 1;
+        return (hitCount & 1) == 1;
     }
 
     private bool RayIntersectsTriangle(Vector3 origin, Vector3 direction, Vector3 a, Vector3 b, Vector3 c)
@@ -148,6 +173,26 @@ public class GravityMesh : GravitySource
         return t > insideCheckOffset;
     }
 
+    private void CacheMeshData()
+    {
+        cachedMesh = GetVolumeMesh();
+
+        if (cachedMesh == null)
+        {
+            cachedVertices = null;
+            cachedTriangles = null;
+            cachedBounds = default;
+            cachedGravityDirection = Vector3.down;
+            return;
+        }
+
+        cachedVertices = cachedMesh.vertices;
+        cachedTriangles = cachedMesh.triangles;
+        cachedBounds = cachedMesh.bounds;
+
+        cachedGravityDirection = gravityDirection.sqrMagnitude > 0.0001f ? gravityDirection.normalized : Vector3.down;
+    }
+
     private Mesh GetVolumeMesh()
     {
         if (volumeMesh != null)
@@ -167,6 +212,7 @@ public class GravityMesh : GravitySource
     void OnDrawGizmos()
     {
         if (!drawWireMesh) { return; }
+
         Mesh mesh = GetVolumeMesh();
         if (mesh == null) { return; }
 
