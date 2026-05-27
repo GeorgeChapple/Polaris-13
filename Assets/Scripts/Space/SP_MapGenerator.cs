@@ -82,8 +82,8 @@ public class SP_MapGenerator : MonoBehaviour
 
     private void Update()
     {
-        Debug.Log("CLAMP POSITION : " + ClampVector(ship.worldPosition, mapSize));
         shipEffect.SetVector3("_position", ClampVector(ship.worldPosition, mapSize));
+        shipEffect.SetVector3("_rotation", Quaternion.LookRotation(ship.worldDirectionNetworked.Value).eulerAngles + new Vector3(-90, 0, 0));
     }
 
     private void UpdateTextureData()
