@@ -14174,8 +14174,8 @@ GameObject:
   - component: {fileID: 4827758710393173946}
   - component: {fileID: 1099956702930179794}
   - component: {fileID: 1150310761559614167}
-  - component: {fileID: 7581093040414068935}
   - component: {fileID: 4320378714285178058}
+  - component: {fileID: 7581093040414068935}
   - component: {fileID: 7551441598572158637}
   - component: {fileID: 5227167947949383337}
   - component: {fileID: 3347161341480813503}
@@ -14268,39 +14268,6 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 3
---- !u!114 &7581093040414068935
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6189470309648960028}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 864e9b1ff0be02a41999144c392f58c6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  floatToSleep: 0
-  useGravity: 0
-  triggered: 0
-  movement: {fileID: 3347161341480813503}
-  gravitySampleObj: {fileID: 4116074879981026337}
-  useGroundedCheck: 1
-  groundedCheckObj: {fileID: 3637123821088872404}
-  groundedOrientationObj: {fileID: 4116074879981026337}
-  groundedRayLength: 1
-  groundedRayRadius: 0.5
-  groundLayers:
-    serializedVersion: 2
-    m_Bits: 503
-  zeroGravityThreshold: 0.25
-  groundedHoverHeight: 0.95
-  groundedLoseGraceTime: 0.08
-  stopDownwardVelocityWhenGrounded: 1
-  groundedSnapSharpness: 18
-  groundedSnapMaxSpeed: 10
-  groundedSnapDeadZone: 0.5
-  forceGravity: 0
 --- !u!114 &4320378714285178058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14326,6 +14293,40 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 1
+--- !u!114 &7581093040414068935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6189470309648960028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 864e9b1ff0be02a41999144c392f58c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  floatToSleep: 0
+  useGravity: 0
+  triggered: 0
+  movement: {fileID: 3347161341480813503}
+  gravitySampleObj: {fileID: 4116074879981026337}
+  useGroundedCheck: 1
+  groundedCheckObj: {fileID: 3637123821088872404}
+  groundedOrientationObj: {fileID: 4116074879981026337}
+  groundedRayLength: 1
+  groundedRayRadius: 0.5
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 503
+  zeroGravityThreshold: 0.25
+  groundedHoverHeight: 0.95
+  groundedLoseGraceTime: 0.08
+  stopDownwardVelocityWhenGrounded: 1
+  groundedSnapSharpness: 18
+  groundedSnapMaxSpeed: 10
+  groundedSnapDeadZone: 0.5
+  forceGravity: 0
 --- !u!114 &7551441598572158637
 MonoBehaviour:
   m_ObjectHideFlags: 0

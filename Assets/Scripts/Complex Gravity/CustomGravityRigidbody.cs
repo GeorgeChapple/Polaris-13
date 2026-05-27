@@ -1,8 +1,9 @@
-﻿using Unity.VisualScripting;
+﻿using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class CustomGravityRigidbody : MonoBehaviour
+public class CustomGravityRigidbody : NetworkBehaviour
 {
     [SerializeField]
     protected bool floatToSleep = false;

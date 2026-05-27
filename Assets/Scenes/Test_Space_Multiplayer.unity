@@ -1538,6 +1538,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   floatToSleep: 0
   useGravity: 1
   triggered: 0
@@ -10321,6 +10322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   floatToSleep: 0
   useGravity: 1
   triggered: 0
@@ -14511,7 +14513,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  maxDebris: 300
+  maxDebris: 50
   rocket: {fileID: 0}
   spawnerSettings:
   - {fileID: 11400000, guid: 618e5ee6909c13a47a595d6359a40e5c, type: 2}
@@ -15108,6 +15110,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   floatToSleep: 0
   useGravity: 1
   triggered: 0
@@ -17107,11 +17110,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1942511349711832385, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071068
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1942511349711832385, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.7071068
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1942511349711832385, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       propertyPath: m_LocalRotation.y
@@ -17123,7 +17126,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1942511349711832385, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 90
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1942511349711832385, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -21665,7 +21668,8 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3804394775016920314, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
     m_RemovedGameObjects:
     - {fileID: 560604672043688766, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
     - {fileID: 9007405849505949860, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
@@ -23707,6 +23711,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8929787321622130000, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 122753349}
+    - targetCorrespondingSourceObject: {fileID: 5369596672935719892, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 772088481}
   m_SourcePrefab: {fileID: 100100000, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
 --- !u!1 &772088477 stripped
 GameObject:
@@ -23762,6 +23769,31 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7307090342003834910, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
   m_PrefabInstance: {fileID: 772088476}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &772088480 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5369596672935719892, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+  m_PrefabInstance: {fileID: 772088476}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &772088481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772088480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26690723677c94e4386e2061423902e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  provideOxygen: 1
+  gravity: 9.81
+  volumeMesh: {fileID: 4962652220395390676, guid: 5f7ec7a5ef3e9414cb8f7d29b9f7236c, type: 3}
+  directionalGravity: 1
+  gravityDirection: {x: 0, y: 0, z: -1}
+  insideCheckOffset: 0.0001
+  drawWireMesh: 1
+  drawRay: 0
 --- !u!1 &772088484 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2935343145431358528, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
@@ -25786,6 +25818,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   floatToSleep: 0
   useGravity: 1
   triggered: 0
@@ -50349,6 +50382,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15201e96e607e8249a6ca054a46992aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   floatToSleep: 0
   useGravity: 1
   triggered: 0

@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 // Made by: Jason Lodge
 // Original by: CatLikeCoding Available at:https://catlikecoding.com/unity/tutorials/movement/complex-gravity/
@@ -90,6 +91,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
 
     protected override void FixedUpdate()
     {
+        if (!IsOwner) { return; }
         Vector3 gravitySamplePosition = GetGravitySamplePosition();
         currentGravity = CustomGravity.GetGravity(gravitySamplePosition, out upAxis);
         oxygenProvided = CustomGravity.ProvidesOxygen(gravitySamplePosition);
