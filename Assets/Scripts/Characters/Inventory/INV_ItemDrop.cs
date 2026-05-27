@@ -21,6 +21,10 @@ public class INV_ItemDrop : NetworkBehaviour
     [Tooltip("If true, we set up the object from the inputted item data rather than network ID.")]
     [SerializeField] private bool setUpWithoutNetworkID = false;
 
+    [Header("SFX")]
+    [SerializeField] private AUD_SFX sfx;
+    [SerializeField] private bool playPickUpSound = true;
+
     public INV_Item Item => item;
 
     private MeshFilter mf;
@@ -172,6 +176,8 @@ public class INV_ItemDrop : NetworkBehaviour
             Debug.LogError("Interactor is not a GameObject!", this);
             return;
         }
+
+        if (sfx != null && playPickUpSound) { sfx.PlaySound("PickUp"); }
 
         if (IsServer)
         {

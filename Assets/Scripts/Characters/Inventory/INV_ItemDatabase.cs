@@ -64,6 +64,25 @@ public class INV_ItemDatabase : ScriptableObject
         }
     }
 
+    // hides all items other than the items in the itemsToShow list
+    public void HideItems(List<INV_Item> itemsToShow, bool hide)
+    {
+        foreach (INV_Item item in items)
+        {
+            bool shouldStayVisible = itemsToShow != null && itemsToShow.Contains(item);
+
+            item.HideItem(shouldStayVisible ? false : hide);
+        }
+    }
+
+    public void ResetHidden()
+    {
+        foreach(INV_Item item in items)
+        {
+            item.HideItem(false);
+        }
+    }
+
     public INV_Item GetItemById(string itemId)
     {
         if (string.IsNullOrWhiteSpace(itemId))
@@ -208,6 +227,13 @@ public class INV_ItemDatabaseEditor : Editor
     {
         INV_ItemDatabase database = AssetDatabase.LoadAssetAtPath<INV_ItemDatabase>(DatabaseAssetPath);
         database.ResetItemsUnlocked();
+    }
+
+    [MenuItem("Inventory/Reset All Items Hidden")]
+    public static void ResetHiddenItems()
+    {
+        INV_ItemDatabase database = AssetDatabase.LoadAssetAtPath<INV_ItemDatabase>(DatabaseAssetPath);
+        database.ResetHidden();
     }
 
     private static void EnsureFolders()

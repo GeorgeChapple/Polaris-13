@@ -24,6 +24,8 @@ MonoBehaviour:
   hungerDrainDelay: 5
   thirstReplenish: 5
   thirstDrainDelay: 0
+  unlocked: 1
+  hidden: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
@@ -43,9 +45,11 @@ MonoBehaviour:
     - item: {fileID: 11400000, guid: 7706ef987409a2040b335a94929d90ff, type: 2}
       amount: 2
     amountGiven: 1
+    unlocked: 0
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 1375436555846179411, guid: 38bace38e5341c84b8944ac14739eeb1, type: 3}
-  material: {fileID: 2100000, guid: 0b6182d223b1d834094e501121887da3, type: 2}
+  material: {fileID: 2100000, guid: 87aa8629ab71ed4408f2d424ad75cbef, type: 2}
+  twoHanded: 1
   equippedPrefab: {fileID: 5739193541798090591, guid: 477a7d20586d9e341adf6b4bbd661434, type: 3}
   applyEquippedPrefabVisuals: 0
   forwardAxisRot: 2
@@ -56,7 +60,7 @@ MonoBehaviour:
   hotbarMeshRotation: {x: 0, y: 0, z: 90}
   hotbarMeshScale: 48
   dropMeshScale: 1
-  equippedMeshOffset: {x: -0.1, y: 0, z: 0}
+  equippedMeshOffset: {x: 0, y: 0, z: 0}
   equippedMeshRotation: {x: 270, y: 0, z: 0}
   equippedMeshScale: 0.4
   craftingMeshOffset: {x: 15, y: 5, z: -20}

@@ -34,6 +34,9 @@ public class INV_Item : ScriptableObject
     [Tooltip("Whether the item has been seen by the player, dictates whether any crafting recipes this item is in shows its name.")]
     [SerializeField] private bool unlocked = false;
 
+    [Tooltip("Whether the item is hidden in the crafting menu.")]
+    [SerializeField] private bool hidden = false;
+
     [Header("Shop")]
     [SerializeField] private int retailPrice;
     [SerializeField] private Vector2 shopMultiplierRange = new Vector2(0.75f, 2f);
@@ -89,6 +92,7 @@ public class INV_Item : ScriptableObject
     [SerializeField] private Sprite icon;
     [SerializeField] private Mesh mesh;
     [SerializeField] private Material material;
+    [SerializeField] private bool twoHanded;
 
     [Header("Equipped Prefab")]
     [Tooltip("Prefab used when this item is equipped.")]
@@ -165,6 +169,7 @@ public class INV_Item : ScriptableObject
     public float ThirstReplenish => thirstReplenish;
     public float ThirstDrainDelay => thirstDrainDelay;
     public bool Unlocked => unlocked;
+    public bool Hidden => hidden;
 
     public int RetailPrice => retailPrice;
     public Vector2 ShopMultiplierRange => shopMultiplierRange;
@@ -186,6 +191,7 @@ public class INV_Item : ScriptableObject
     public Sprite Icon => icon;
     public Mesh Mesh => mesh;
     public Material Material => material;
+    public bool TwoHanded => twoHanded;
 
     public ForwardAxisRot ForwardAxisRotVal => forwardAxisRot;
 
@@ -230,6 +236,24 @@ public class INV_Item : ScriptableObject
         }
     }
 
+    public int UnlockedRecipeCount
+    {
+        get
+        {
+            int count = 0;
+
+            for (int i = 0; i < RecipeCount; i++)
+            {
+                if (IsRecipeUnlocked(i))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
     // utility
     public Vector2Int ItemGridSize // forces a minimum size of 1,1
     {
@@ -268,6 +292,106 @@ public class INV_Item : ScriptableObject
         return null;
     }
 
+    public bool IsRecipeUnlocked(int recipeIndex)
+    {
+        if (craftingRecipes != null && craftingRecipes.Count > 0)
+        {
+            if (recipeIndex >= 0 && recipeIndex < craftingRecipes.Count)
+            {
+                CraftingRecipe recipe = craftingRecipes[recipeIndex];
+                return recipe != null && recipe.unlocked;
+            }
+
+            return false;
+        }
+        return false;
+    }
+
+    public int GetFirstUnlockedRecipeIndex()
+    {
+        for (int i = 0; i < RecipeCount; i++)
+        {
+            if (IsRecipeUnlocked(i))
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    public int GetNextUnlockedRecipeIndex(int currentRecipeIndex)
+    {
+        if (RecipeCount <= 0)
+        {
+            return 0;
+        }
+
+        for (int i = 1; i <= RecipeCount; i++)
+        {
+            int index = currentRecipeIndex + i;
+
+            if (index >= RecipeCount)
+            {
+                index = 0;
+            }
+
+            if (IsRecipeUnlocked(index))
+            {
+                return index;
+            }
+        }
+
+        return Mathf.Clamp(currentRecipeIndex, 0, RecipeCount - 1);
+    }
+
+    public int GetPreviousUnlockedRecipeIndex(int currentRecipeIndex)
+    {
+        if (RecipeCount <= 0)
+        {
+            return 0;
+        }
+
+        for (int i = 1; i <= RecipeCount; i++)
+        {
+            int index = currentRecipeIndex - i;
+
+            if (index < 0)
+            {
+                index = RecipeCount - 1;
+            }
+
+            if (IsRecipeUnlocked(index))
+            {
+                return index;
+            }
+        }
+
+        return Mathf.Clamp(currentRecipeIndex, 0, RecipeCount - 1);
+    }
+
+    public int GetUnlockedRecipeDisplayNumber(int recipeIndex)
+    {
+        int displayNumber = 0;
+
+        for (int i = 0; i < RecipeCount; i++)
+        {
+            if (!IsRecipeUnlocked(i))
+            {
+                continue;
+            }
+
+            displayNumber++;
+
+            if (i == recipeIndex)
+            {
+                return displayNumber;
+            }
+        }
+
+        return 0;
+    }
+
     public void ResetUnlocked()
     {
         unlocked = false;
@@ -295,6 +419,11 @@ public class INV_Item : ScriptableObject
                 }
             }
         }
+    }
+
+    public void HideItem(bool hide)
+    {
+        hidden = hide;
     }
 
     public string GetRecipeName(int recipeIndex)

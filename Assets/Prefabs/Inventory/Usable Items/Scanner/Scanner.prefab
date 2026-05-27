@@ -264,6 +264,37 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &6431984941862476531
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 842872003371558712}
+  m_Layer: 0
+  m_Name: RightHandSnapPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &842872003371558712
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6431984941862476531}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.5, y: 0.5, z: 0.5, w: -0.5}
+  m_LocalPosition: {x: 0.0541, y: 0.018, z: 0.0705}
+  m_LocalScale: {x: 0.40824157, y: 0.40824157, z: 0.8614277}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4505164207885933743}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 90}
 --- !u!1 &8729131221356819479
 GameObject:
   m_ObjectHideFlags: 0
@@ -412,6 +443,10 @@ PrefabInstance:
       propertyPath: visualRoot
       value: 
       objectReference: {fileID: 4505164207885933743}
+    - target: {fileID: 3610155980932866396, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+      propertyPath: rightHandSnapPoint
+      value: 
+      objectReference: {fileID: 842872003371558712}
     - target: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_Name
       value: Scanner
@@ -430,15 +465,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.00029934
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.0012984
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.041276
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       propertyPath: m_LocalRotation.w
@@ -526,6 +561,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
       insertIndex: -1
       addedObject: {fileID: -6054073481955044463}
+    - targetCorrespondingSourceObject: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1829668214824692106}
   m_SourcePrefab: {fileID: 100100000, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
 --- !u!1 &4273330193058555729 stripped
 GameObject:
@@ -546,18 +584,66 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   scannerOverlay: {fileID: 0}
   scannerWorldText: {fileID: 6034000283640613922}
+  sfx: {fileID: 1829668214824692106}
+  scanningSoundDelay: 1
   scanRange: 25
   scanConeAngle: 80
   obstructionMask:
     serializedVersion: 2
     m_Bits: 767
   requireLineOfSight: 1
-  scanAnalysisDelay: 0.5
+  scanAnalysisDelay: 3
   scanResultVisibleTime: 2
   scanCooldown: 5
   scanSweepDuration: 1.25
   scannerVisualRenderer: {fileID: 5559529662952862972}
   scanProgressProperty: _ScanProgress
+--- !u!114 &1829668214824692106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4273330193058555729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43141b504e23a714189cdeca698376f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sounds:
+  - soundName: Equip
+    audioClip: {fileID: 8300000, guid: e32f69af123ec77498717f4d21bffd5a, type: 3}
+    loop: 0
+    volume: 0.3
+    playNextSound: 0
+  - soundName: Found
+    audioClip: {fileID: 8300000, guid: 52aaca17eed482e4ba8a4ff4b6384317, type: 3}
+    loop: 0
+    volume: 0.3
+    playNextSound: 0
+  - soundName: Nothing
+    audioClip: {fileID: 8300000, guid: 587196a764e655a48ac2c5effdcf9622, type: 3}
+    loop: 0
+    volume: 0.3
+    playNextSound: 0
+  - soundName: Scanning
+    audioClip: {fileID: 8300000, guid: c1656bcdd6b1ea54cb5a6acd8110967e, type: 3}
+    loop: 0
+    volume: 0.3
+    playNextSound: 0
+  - soundName: CannotScan
+    audioClip: {fileID: 8300000, guid: 1c7782c0b84c68141b68dd890b72d457, type: 3}
+    loop: 0
+    volume: 0.3
+    playNextSound: 0
+  playFirstSoundOnAwake: 1
+  audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
+  playAs3D: 0
+  useLocalAudioSource: 0
+  useRandomPitch: 0
+  minPitch: 0.9
+  maxPitch: 1.1
+  spawnAtThisObject: 1
 --- !u!4 &5018194491259698542 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5196456600200482764, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
@@ -577,27 +663,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalScale.x
-      value: 2.44953
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.1608635
+      value: 0.7108692
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalScale.z
-      value: 2.44953
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.0016154
+      value: -0.14
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.049092
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.093
       objectReference: {fileID: 0}
     - target: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       propertyPath: m_LocalRotation.w
@@ -637,6 +723,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6844406688742108121}
+    - targetCorrespondingSourceObject: {fileID: 1013606830794832854, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 842872003371558712}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0472496c11c696a4fa99c2b5112b0b43, type: 3}
 --- !u!4 &4505164207885933743 stripped

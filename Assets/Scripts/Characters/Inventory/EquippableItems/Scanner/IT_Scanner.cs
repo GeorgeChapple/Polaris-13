@@ -16,6 +16,13 @@ public class IT_Scanner : CC_INV_UsableItems
     [SerializeField] private UI_ScannerOverlay scannerOverlay;
     [SerializeField] private TextMeshProUGUI scannerWorldText;
 
+    [Header("SFX")]
+    [Tooltip("SFX script used for scanner sounds.")]
+    [SerializeField] private AUD_SFX sfx;
+
+    [Tooltip("Delay between scanning sounds while analysing.")]
+    [SerializeField] private float scanningSoundDelay = 1f;
+
     [Header("Scan")]
     [SerializeField] private float scanRange = 25f;
     [SerializeField, Range(1f, 179f)] private float scanConeAngle = 50f;
@@ -48,6 +55,7 @@ public class IT_Scanner : CC_INV_UsableItems
     private float resultsTimer;
     private float cooldownTimer;
     private float scanVisualTimer;
+    private float scanningSoundTimer;
 
     private CC_CharacterPlayerController cachedPlayer;
     private Camera cachedCamera;
@@ -96,6 +104,7 @@ public class IT_Scanner : CC_INV_UsableItems
         {
             analysisTimer -= Time.deltaTime;
             TickScannerVisual();
+            TickScanningSound();
 
             UpdateWorldText();
 
@@ -144,9 +153,23 @@ public class IT_Scanner : CC_INV_UsableItems
 
         if (scannerOverlay == null) { return; }
 
-        if (cooldownTimer > 0f) { return; }
-        if (isAnalysing) { return; }
-        if (showingResults) { return; }
+        if (cooldownTimer > 0f)
+        {
+            PlayCannotScanSound();
+            return;
+        }
+
+        if (isAnalysing)
+        {
+            PlayCannotScanSound();
+            return;
+        }
+
+        if (showingResults)
+        {
+            PlayCannotScanSound();
+            return;
+        }
 
         cachedCamera = ResolveCamera(player);
         if (cachedCamera == null) { return; }
@@ -159,9 +182,12 @@ public class IT_Scanner : CC_INV_UsableItems
         resultsTimer = 0f;
         cooldownTimer = scanCooldown;
         scanVisualTimer = 0f;
+        scanningSoundTimer = 0f;
 
         SetScanShaderProgress(0f);
         scannerOverlay.SetScannerActive(true);
+
+        PlayScanningSound();
 
         UpdateWorldText();
     }
@@ -199,6 +225,15 @@ public class IT_Scanner : CC_INV_UsableItems
             scannerOverlay.SetTrackedItems(cachedCamera, trackedItems);
         }
 
+        if (trackedItems.Count > 0)
+        {
+            PlayFoundSound();
+        }
+        else
+        {
+            PlayNothingSound();
+        }
+
         UpdateWorldText();
     }
 
@@ -210,6 +245,7 @@ public class IT_Scanner : CC_INV_UsableItems
         analysisTimer = 0f;
         resultsTimer = 0f;
         scanVisualTimer = 0f;
+        scanningSoundTimer = 0f;
 
         trackedItems.Clear();
 
@@ -232,6 +268,7 @@ public class IT_Scanner : CC_INV_UsableItems
         resultsTimer = 0f;
         cooldownTimer = 0f;
         scanVisualTimer = 0f;
+        scanningSoundTimer = 0f;
 
         trackedItems.Clear();
 
@@ -313,6 +350,48 @@ public class IT_Scanner : CC_INV_UsableItems
         if (t > 1f) { t = 1f; }
 
         SetScanShaderProgress(t);
+    }
+
+    private void TickScanningSound()
+    {
+        scanningSoundTimer -= Time.deltaTime;
+
+        if (scanningSoundTimer > 0f)
+        {
+            return;
+        }
+
+        PlayScanningSound();
+    }
+
+    private void PlayFoundSound()
+    {
+        if (sfx == null) { return; }
+
+        sfx.PlaySound("Found");
+    }
+
+    private void PlayNothingSound()
+    {
+        if (sfx == null) { return; }
+
+        sfx.PlaySound("Nothing");
+    }
+
+    private void PlayScanningSound()
+    {
+        if (sfx == null) { return; }
+
+        sfx.PlaySound("Scanning");
+        scanningSoundTimer = scanningSoundDelay;
+    }
+
+    private void PlayCannotScanSound()
+    {
+        if (sfx != null)
+        {
+            sfx.PlaySound("CannotScan");
+        }
     }
 
     private void CacheScannerVisualMaterial()
