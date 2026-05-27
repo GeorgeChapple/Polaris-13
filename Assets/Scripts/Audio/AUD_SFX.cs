@@ -29,6 +29,8 @@ public class AUD_SFX : MonoBehaviour
     [Tooltip("All sounds this script can play.")]
     [SerializeField] private List<Sound> sounds = new List<Sound>();
 
+    [SerializeField] private bool playFirstSoundOnAwake = false;
+
     [Tooltip("Prefab that has an AudioSource on it.")]
     [SerializeField] private GameObject audioSourcePrefab;
 
@@ -62,6 +64,7 @@ public class AUD_SFX : MonoBehaviour
     private void Awake()
     {
         InitialiseComponents();
+        if (playFirstSoundOnAwake) { PlaySound(0); }
     }
 
     private void Update()
@@ -330,12 +333,6 @@ public class AUD_SFX : MonoBehaviour
 
         private void Update()
         {
-            if (sfxScript == null)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
             if (audioSource == null)
             {
                 Destroy(gameObject);
@@ -345,7 +342,7 @@ public class AUD_SFX : MonoBehaviour
             // if the spawned sound finished naturally, try to play the next sound before destroying this object
             if (wasPlayingLastFrame && !audioSource.isPlaying && audioSource.clip != null)
             {
-                sfxScript.TryPlayNextSound(soundIndex);
+                if (sfxScript != null) { sfxScript.TryPlayNextSound(soundIndex); }
                 Destroy(gameObject);
                 return;
             }

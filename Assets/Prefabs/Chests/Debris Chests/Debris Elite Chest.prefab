@@ -22,6 +22,8 @@ GameObject:
   - component: {fileID: 1256450582746990153}
   - component: {fileID: 5358555770932007063}
   - component: {fileID: -8456962347391752280}
+  - component: {fileID: 551203350234687120}
+  - component: {fileID: 2105785298868121656}
   m_Layer: 8
   m_Name: Debris Elite Chest
   m_TagString: Untagged
@@ -376,6 +378,55 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &551203350234687120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766809813825591996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44a23beb8358b6344b35223a36a7b5df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sfx: {fileID: 2105785298868121656}
+--- !u!114 &2105785298868121656
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766809813825591996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43141b504e23a714189cdeca698376f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sounds:
+  - soundName: Metal Collision 1
+    audioClip: {fileID: 8300000, guid: 6cecdb635578c3c4a9727de5f4b1fc35, type: 3}
+    loop: 0
+    volume: 0.4
+    playNextSound: 0
+  - soundName: Metal Collision 2
+    audioClip: {fileID: 8300000, guid: 02fb3fa1571e12a41aa434c0c59c9a2d, type: 3}
+    loop: 0
+    volume: 0.4
+    playNextSound: 0
+  - soundName: Metal Collision 3
+    audioClip: {fileID: 8300000, guid: 465759fb61686be4da122b29dc0a87c3, type: 3}
+    loop: 0
+    volume: 0.4
+    playNextSound: 0
+  playFirstSoundOnAwake: 0
+  audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
+  playAs3D: 1
+  useLocalAudioSource: 1
+  useRandomPitch: 1
+  minPitch: 0.9
+  maxPitch: 1.1
+  spawnAtThisObject: 1
 --- !u!1001 &6645212894116819977
 PrefabInstance:
   m_ObjectHideFlags: 0
