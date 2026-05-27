@@ -28,6 +28,9 @@ public class MS_SessionEnder : MonoBehaviour
     {
         endingSession = true;
 
+        INV_ItemDatabase.Instance.ResetHidden();
+        INV_ItemDatabase.Instance.ResetItemsUnlocked();
+
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.Shutdown(true);

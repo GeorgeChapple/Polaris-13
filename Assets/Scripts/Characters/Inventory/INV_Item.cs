@@ -34,6 +34,9 @@ public class INV_Item : ScriptableObject
     [Tooltip("Whether the item has been seen by the player, dictates whether any crafting recipes this item is in shows its name.")]
     [SerializeField] private bool unlocked = false;
 
+    [Tooltip("Whether the item is hidden in the crafting menu.")]
+    [SerializeField] private bool hidden = false;
+
     [Header("Shop")]
     [SerializeField] private int retailPrice;
     [SerializeField] private Vector2 shopMultiplierRange = new Vector2(0.75f, 2f);
@@ -166,6 +169,7 @@ public class INV_Item : ScriptableObject
     public float ThirstReplenish => thirstReplenish;
     public float ThirstDrainDelay => thirstDrainDelay;
     public bool Unlocked => unlocked;
+    public bool Hidden => hidden;
 
     public int RetailPrice => retailPrice;
     public Vector2 ShopMultiplierRange => shopMultiplierRange;
@@ -415,6 +419,11 @@ public class INV_Item : ScriptableObject
                 }
             }
         }
+    }
+
+    public void HideItem(bool hide)
+    {
+        hidden = hide;
     }
 
     public string GetRecipeName(int recipeIndex)

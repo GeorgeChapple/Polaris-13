@@ -122,6 +122,11 @@ public class INV_Crafting : MonoBehaviour
                 continue;
             }
 
+            if (item.Hidden)
+            {
+                continue;
+            }
+
             if (item.UnlockedRecipeCount <= 0)
             {
                 continue;

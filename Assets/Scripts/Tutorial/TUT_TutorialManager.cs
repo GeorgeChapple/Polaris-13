@@ -67,6 +67,7 @@ public class TUT_TutorialManager : MonoBehaviour
     [SerializeField] private bool hideMarkerWhenBehindCamera = true;
     [SerializeField] private float edgePadding = 32f;
     [SerializeField] private string sessionCodeObjectTag = "SessionCode";
+    [SerializeField] private List<INV_Item> itemsToShow = new List<INV_Item>();
 
     private UI_TutorialObjectiveMarker currentMarker;
     private int currentStepIndex = -1;
@@ -199,6 +200,8 @@ public class TUT_TutorialManager : MonoBehaviour
     {
         CachePlayerRefs();
 
+        INV_ItemDatabase.Instance.HideItems(itemsToShow, true);
+
         if (!HasPlayerRefs())
         {
             StartCoroutine(WaitForPlayerRefs());
@@ -266,6 +269,8 @@ public class TUT_TutorialManager : MonoBehaviour
         tutorialRunning = false;
         tutorialFinished = true;
         currentStepIndex = -1;
+
+        INV_ItemDatabase.Instance.ResetHidden();
 
         ClearObjectiveUI();
         ClearObjectiveMarker();
