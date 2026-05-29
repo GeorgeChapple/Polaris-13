@@ -108,6 +108,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
     }
 
+    // check whether this object should respond to local input.
     private bool IsLocallyControlled()
     {
         return movement != null && movement.IsLocallyControlled();
@@ -154,6 +155,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         }
     }
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();

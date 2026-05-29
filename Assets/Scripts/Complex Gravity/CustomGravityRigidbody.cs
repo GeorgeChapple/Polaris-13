@@ -65,6 +65,7 @@ public class CustomGravityRigidbody : NetworkBehaviour
         return false;
     }
 
+    // apply custom gravity as acceleration.
     protected virtual void ApplyGravity()
     {
         body.AddForce(

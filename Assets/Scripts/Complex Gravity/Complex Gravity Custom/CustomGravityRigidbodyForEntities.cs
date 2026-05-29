@@ -85,6 +85,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         rocket = FindFirstObjectByType<RS_Move>();
     }
 
+    // temporarily disable grounding after jumps or pushes.
     public void IgnoreGrounding(float duration)
     {
         groundedIgnoreTimer = Mathf.Max(groundedIgnoreTimer, duration);
@@ -144,6 +145,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         ToggleGravityIfChanged();
     }
 
+    // choose the best point to sample gravity from.
     private Vector3 GetGravitySamplePosition()
     {
         if (gravitySampleObj != null)
@@ -159,6 +161,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         return body.position;
     }
 
+    // choose the transform used to spread grounded raycasts.
     private Transform GetGroundOrientationTransform()
     {
         if (groundedOrientationObj != null)
@@ -174,6 +177,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         return transform;
     }
 
+    // raycast for ground and keep a short grace period.
     private void UpdateGroundedState()
     {
         hasGroundHit = false;
@@ -226,6 +230,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         grounded = false;
     }
 
+    // use multiple rays to get a more stable ground hit on slopes.
     private bool FindBestGroundHit(float rayLength, out RaycastHit bestHit)
     {
         bestHit = default;
@@ -291,6 +296,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         return foundAny;
     }
 
+    // remove velocity that would push the body into the ground.
     private void StopGroundPushThroughVelocity()
     {
         Vector3 vel = body.linearVelocity;
@@ -308,6 +314,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         }
     }
 
+    // keep the body resting at the wanted hover height.
     private void SnapBodyToGround()
     {
         if (!hasGroundHit) { return; }
@@ -337,6 +344,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         body.position += moveDelta;
     }
 
+    // only toggle drift state when gravity state changes.
     private void ToggleGravityIfChanged()
     {
         if (!hasPreviousUseGravity || previousUseGravity != useGravity)
@@ -347,6 +355,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         }
     }
 
+    // swap between local gravity movement and ship/debris drift.
     private void ToggleGravity()
     {
         if (useGravity)
@@ -384,6 +393,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
         }
     }
 
+    // draw grounded rays in the editor for debugging.
     private void OnDrawGizmosSelected()
     {
         if (groundedCheckObj == null) { return; }

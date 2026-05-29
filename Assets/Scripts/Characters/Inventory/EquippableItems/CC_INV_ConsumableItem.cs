@@ -1,6 +1,8 @@
 using Unity.Netcode;
 using UnityEngine;
 
+// Made By: Jason Lodge
+// Summary: Handles using consumable items from the inventory.
 public class CC_INV_ConsumableItem : CC_INV_UsableItems
 {
     private string itemId;

@@ -59,6 +59,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         CacheObserverEquippedRoot();
     }
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -67,6 +68,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RebuildEquippedVisuals(equippedItemId.Value.ToString());
     }
 
+    // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         equippedItemId.OnValueChanged -= OnEquippedItemIdChanged;
@@ -78,6 +80,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     private void LateUpdate()
     {
+        // update visuals after movement and camera changes.
         FollowEquippedRoot();
         SnapHandTargetsToItem();
     }
@@ -453,6 +456,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestTakeChestItemQuickRpc(new NetworkObjectReference(chestNetObj), chestItemUniqueId, takeStack);
     }
 
+    // ask the server to equip an item.
     public void RequestEquipItem(string itemId, string inventoryItemUniqueId = null)
     {
         if (string.IsNullOrWhiteSpace(itemId))
@@ -672,6 +676,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         RequestUseItemInInventoryRpc(inventoryItemUniqueId, itemId);
     }
 
+    // ask the server to craft an item.
     public void RequestCraftItem(string itemId, int recipeIndex)
     {
         if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
@@ -982,6 +987,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         return chest != null;
     }
 
+    // resolve an item id into the matching item asset.
     private INV_Item GetItemById(string itemId)
     {
         return INV_ItemDatabase.Instance != null ? INV_ItemDatabase.Instance.GetItemById(itemId) : null;

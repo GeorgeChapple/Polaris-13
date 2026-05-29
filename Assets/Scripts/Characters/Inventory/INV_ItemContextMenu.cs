@@ -60,6 +60,7 @@ public class INV_ItemContextMenu : MonoBehaviour
         yield return null;
     }
 
+    // setup this UI element with its target data.
     public void Init(INV_Inventory inventoryRef)
     {
         inventory = inventoryRef;
@@ -125,6 +126,7 @@ public class INV_ItemContextMenu : MonoBehaviour
         }
     }
 
+    // remove old crafting buttons before rebuilding the view.
     private void ClearButtons()
     {
         for (int i = spawnedButtons.Count - 1; i >= 0; i--)

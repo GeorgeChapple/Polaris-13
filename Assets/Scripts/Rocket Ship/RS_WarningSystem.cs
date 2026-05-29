@@ -28,6 +28,7 @@ public class RS_WarningSystem : NetworkBehaviour
         public bool active;
     }
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -52,6 +53,7 @@ public class RS_WarningSystem : NetworkBehaviour
         TickWarningLights();
     }
 
+    // setup this UI element with its target data.
     private void Init()
     {
         warningTimers = new float[warnings.Length];

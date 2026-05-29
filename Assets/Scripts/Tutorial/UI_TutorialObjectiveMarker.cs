@@ -29,6 +29,7 @@ public class UI_TutorialObjectiveMarker : MonoBehaviour
         rt.position = newPosition;
     }
 
+    // move this marker to a screen position.
     public void SetScreenPosition(Vector2 screenPosition)
     {
         RectTransform rt = Root;

@@ -18,6 +18,7 @@ public class UI_WarningSystem : NetworkBehaviour
     private float[] warningTimers; // runtime refs to tick timers
     private RS_WarningSystem ship; // runtime ref to ship warning system
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -42,6 +43,7 @@ public class UI_WarningSystem : NetworkBehaviour
         }
     }
 
+    // setup this UI element with its target data.
     private void Init()
     {
         warningUIs = new Image[warnings.Length];

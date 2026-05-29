@@ -270,6 +270,7 @@ public class INV_ItemUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         return false;
     }
 
+    // apply the item mesh/material setup for this crafting entry.
     private void ApplyMeshVisuals()
     {
         if (meshVisualRoot == null) { return; }

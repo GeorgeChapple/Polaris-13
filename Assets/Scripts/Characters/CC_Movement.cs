@@ -229,11 +229,13 @@ public class CC_Movement : NetworkBehaviour
         }
     }
 
+    // check whether this object should respond to local input.
     public bool IsLocallyControlled()
     {
         return singlePlayer || (IsSpawned && IsOwner);
     }
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -253,6 +255,7 @@ public class CC_Movement : NetworkBehaviour
         StartCoroutine(WaitSpawn(true));
     }
 
+    // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         replicatedVisualBodyLocalPosition.OnValueChanged -= OnReplicatedVisualBodyLocalPositionChanged;

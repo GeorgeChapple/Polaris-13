@@ -272,6 +272,7 @@ public class INV_Item : ScriptableObject
         }
     }
 
+    // return the selected recipe or fall back to the old single recipe list.
     public List<CraftingStack> GetRecipeRequirements(int recipeIndex)
     {
         if (craftingRecipes != null && craftingRecipes.Count > 0)
@@ -292,6 +293,7 @@ public class INV_Item : ScriptableObject
         return null;
     }
 
+    // check whether a recipe can currently be shown/used.
     public bool IsRecipeUnlocked(int recipeIndex)
     {
         if (craftingRecipes != null && craftingRecipes.Count > 0)
@@ -307,6 +309,7 @@ public class INV_Item : ScriptableObject
         return false;
     }
 
+    // find the first recipe the player has unlocked.
     public int GetFirstUnlockedRecipeIndex()
     {
         for (int i = 0; i < RecipeCount; i++)
@@ -320,6 +323,7 @@ public class INV_Item : ScriptableObject
         return 0;
     }
 
+    // cycle forwards through unlocked recipes only.
     public int GetNextUnlockedRecipeIndex(int currentRecipeIndex)
     {
         if (RecipeCount <= 0)
@@ -345,6 +349,7 @@ public class INV_Item : ScriptableObject
         return Mathf.Clamp(currentRecipeIndex, 0, RecipeCount - 1);
     }
 
+    // cycle backwards through unlocked recipes only.
     public int GetPreviousUnlockedRecipeIndex(int currentRecipeIndex)
     {
         if (RecipeCount <= 0)
@@ -370,6 +375,7 @@ public class INV_Item : ScriptableObject
         return Mathf.Clamp(currentRecipeIndex, 0, RecipeCount - 1);
     }
 
+    // convert the real recipe index into the visible unlocked recipe number.
     public int GetUnlockedRecipeDisplayNumber(int recipeIndex)
     {
         int displayNumber = 0;
@@ -392,6 +398,7 @@ public class INV_Item : ScriptableObject
         return 0;
     }
 
+    // reset item and recipe unlock states as editor playmode saves scriptable object assets when edited, build won't.
     public void ResetUnlocked()
     {
         unlocked = false;
@@ -401,12 +408,14 @@ public class INV_Item : ScriptableObject
         }
     }
 
+    // unlock this item and reveal recipes that depend on it.
     public void UnlockItem()
     {
         unlocked = true;
         INV_ItemDatabase.Instance.UnlockRecipesByItem(this);
     }
 
+    // unlock any recipe that uses the newly found item.
     public void UnlockRecipeByItem(INV_Item item)
     {
         for (int i = 0; i < craftingRecipes.Count; i++)
@@ -524,6 +533,8 @@ public class INV_Item : ScriptableObject
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_Item))]
 [CanEditMultipleObjects]
+// Made By: Jason Lodge
+// Summary: Custom inspector tools for normalising item inventory shapes.
 public class INV_ItemEditor : Editor
 {
     public override void OnInspectorGUI()

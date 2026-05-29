@@ -106,6 +106,7 @@ public class TUT_TutorialManager : MonoBehaviour
         UpdateObjectiveMarker();
     }
 
+    // wait until the local player inventory and camera exist.
     private IEnumerator WaitForPlayerRefs()
     {
         if (findingRefs) { yield break; }
@@ -131,6 +132,7 @@ public class TUT_TutorialManager : MonoBehaviour
         }
     }
 
+    // find the local player refs needed by tutorial UI.
     private void CachePlayerRefs()
     {
         if (playerInventory == null)
@@ -155,6 +157,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return playerInventory != null && playerCamera != null;
     }
 
+    // find the inventory owned by the local player.
     private INV_Inventory FindLocalInventory()
     {
         INV_Inventory[] inventories = FindObjectsByType<INV_Inventory>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
@@ -173,6 +176,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return null;
     }
 
+    // find the camera attached to the local player.
     private Camera FindLocalCamera()
     {
         CC_CameraController[] controllers = FindObjectsByType<CC_CameraController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
@@ -196,6 +200,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return null;
     }
 
+    // reset tutorial state and begin at the first step.
     public void StartTutorial()
     {
         CachePlayerRefs();
@@ -229,6 +234,7 @@ public class TUT_TutorialManager : MonoBehaviour
         SetStep(0);
     }
 
+    // mark the current step done and move to the next one.
     public void CompleteCurrentStep()
     {
         TutorialStep step = GetCurrentStep();
@@ -241,6 +247,7 @@ public class TUT_TutorialManager : MonoBehaviour
         SetStep(currentStepIndex + 1);
     }
 
+    // switch tutorial state to a specific step.
     private void SetStep(int stepIndex)
     {
         if (stepIndex < 0 || steps == null || stepIndex >= steps.Count)
@@ -264,6 +271,7 @@ public class TUT_TutorialManager : MonoBehaviour
         step.onStepStarted?.Invoke();
     }
 
+    // clean up tutorial UI and restore hidden items.
     private void FinishTutorial()
     {
         tutorialRunning = false;
@@ -284,6 +292,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return steps[currentStepIndex];
     }
 
+    // check the player has all items needed for this step.
     private bool HasRequiredItems(TutorialStep step)
     {
         if (step == null) { return false; }
@@ -312,6 +321,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return true;
     }
 
+    // show the current tutorial objective text.
     private void RefreshObjectiveUI(TutorialStep step)
     {
         if (objectiveTitleText != null)
@@ -352,6 +362,7 @@ public class TUT_TutorialManager : MonoBehaviour
         marker.gameObject.SetActive(true);
     }
 
+    // move the objective marker to the target screen position.
     private void UpdateObjectiveMarker()
     {
         if (!tutorialRunning || tutorialFinished) { return; }
@@ -389,6 +400,7 @@ public class TUT_TutorialManager : MonoBehaviour
         marker.SetScreenPosition(screenPos);
     }
 
+    // reuse the current marker or spawn one if needed.
     private UI_TutorialObjectiveMarker GetOrCreateMarker()
     {
         if (currentMarker != null) { return currentMarker; }
@@ -398,6 +410,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return currentMarker;
     }
 
+    // remove the active tutorial marker.
     private void ClearObjectiveMarker()
     {
         if (currentMarker != null)

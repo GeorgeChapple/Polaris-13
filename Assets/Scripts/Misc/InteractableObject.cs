@@ -91,6 +91,7 @@ public class InteractableObject : NetworkBehaviour
 
     bool used;
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -157,6 +158,7 @@ public class InteractableObject : NetworkBehaviour
         Interact(0, interactor);
     }
 
+    // run the selected interaction.
     public void Interact(int actionIndex, GameObject interactor)
     {
         if (!CanInteract()) { return; }

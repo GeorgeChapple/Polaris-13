@@ -42,6 +42,7 @@ public class GravityMesh : GravitySource
         CacheMeshData();
     }
 
+    // keep editor data valid when values change in inspector.
     private void OnValidate()
     {
         CacheMeshData();

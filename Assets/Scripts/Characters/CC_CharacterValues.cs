@@ -34,6 +34,7 @@ public class CC_CharacterValues : MonoBehaviour
         float currentAlpha = 1f;
         bool isShowing;
 
+        // setup this UI element with its target data.
         public void Init(float f01)
         {
             if (img == null) { return; }
@@ -448,37 +449,37 @@ public class CC_CharacterValues : MonoBehaviour
 
         if (healthUI != null)
         {
-            for (int i = 0; i < healthUI.Length; i++) 
+            for (int i = 0; i < healthUI.Length; i++)
             {
-                if (healthUI[i] != null) 
-                { 
+                if (healthUI[i] != null)
+                {
                     healthUI[i].SetFill(h01, triggerAppear);
                     healthUI[i].SetText(maxHealth, health);
-                } 
+                }
             }
         }
 
         if (hungerUI != null)
         {
             for (int i = 0; i < hungerUI.Length; i++)
-            { 
-                if (hungerUI[i] != null) 
-                { 
+            {
+                if (hungerUI[i] != null)
+                {
                     hungerUI[i].SetFill(hu01, triggerAppear);
                     hungerUI[i].SetText(maxHunger, hunger);
-                } 
+                }
             }
         }
 
         if (thirstUI != null)
         {
-            for (int i = 0; i < thirstUI.Length; i++) 
+            for (int i = 0; i < thirstUI.Length; i++)
             {
-                if (thirstUI[i] != null) 
-                { 
+                if (thirstUI[i] != null)
+                {
                     thirstUI[i].SetFill(t01, triggerAppear);
                     thirstUI[i].SetText(maxThirst, thirst);
-                } 
+                }
             }
         }
 
@@ -496,9 +497,9 @@ public class CC_CharacterValues : MonoBehaviour
 
         if (oxygenUI != null)
         {
-            for (int i = 0; i < oxygenUI.Length; i++) 
+            for (int i = 0; i < oxygenUI.Length; i++)
             {
-                if (oxygenUI[i] != null)                                    
+                if (oxygenUI[i] != null)
                 {
                     oxygenUI[i].SetFill(o01, triggerAppear);
                     oxygenUI[i].SetText(maxOxygen, oxygen);

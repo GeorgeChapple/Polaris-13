@@ -25,6 +25,7 @@ public class CC_INV_EquippedItem : MonoBehaviour
     public Transform RightHandSnapPoint => rightHandSnapPoint;
     public Transform LeftHandSnapPoint => leftHandSnapPoint;
 
+    // setup this UI element with its target data.
     public void Init(INV_Item newItem, bool newIsOwnerVisual)
     {
         item = newItem;

@@ -545,6 +545,7 @@ public class INV_Inventory : MonoBehaviour
         return true;
     }
 
+    // check whether the inventory has space for this item.
     public bool CanAddItem(INV_Item item)
     {
         EnsureGrid(false);
@@ -591,6 +592,7 @@ public class INV_Inventory : MonoBehaviour
         return LookForOccupyableSpace(playerRuntime, playerGrid, temp, out foundCell);
     }
 
+    // check whether the inventory has space for this item, checking quantity too.
     public bool CanAddItem(INV_Item item, int quantity)
     {
         EnsureGrid(false);
@@ -2297,6 +2299,7 @@ public class INV_Inventory : MonoBehaviour
         return total;
     }
 
+    // check if the inventory contains enough of an item.
     public bool HasItemAmount(string itemId, int amount)
     {
         if (string.IsNullOrWhiteSpace(itemId))

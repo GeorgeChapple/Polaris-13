@@ -44,6 +44,7 @@ public class UI_ScannerTrackedItem : MonoBehaviour
         }
     }
 
+    // moves this marker to a screen position.
     public void SetScreenPosition(Vector2 screenPosition)
     {
         RectTransform rt = Root;

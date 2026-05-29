@@ -318,6 +318,7 @@ public class CC_CameraController : NetworkBehaviour
         return movement != null && movement.IsLocallyControlled();
     }
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -331,6 +332,7 @@ public class CC_CameraController : NetworkBehaviour
         ApplyReplicatedCameraDirection();
     }
 
+    // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         replicatedCameraLocalPosition.OnValueChanged -= OnReplicatedCameraLocalPositionChanged;
@@ -367,7 +369,7 @@ public class CC_CameraController : NetworkBehaviour
             return;
         }
 
-        // In single player, always act like a local owner
+        // in single player, always act like a local owner
         if (movement != null && movement.SinglePlayer)
         {
             isOwnerNow = true;

@@ -59,6 +59,7 @@ public class INV_Chest : NetworkBehaviour
     public int GridHeight => chestGridMaxHeight;
     public int GridWidth => chestGridMaxWidth;
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -90,6 +91,7 @@ public class INV_Chest : NetworkBehaviour
         }
     }
 
+    // rebuild crafting UI for inventory or crafting station use.
     public void SetupEverything(GameObject player)
     {
         if (player == null) { return; }
@@ -194,6 +196,7 @@ public class INV_Chest : NetworkBehaviour
         return false;
     }
 
+    // find the inventory owned by the local player.
     private INV_Inventory FindLocalInventory()
     {
         INV_PlayerInventoryNet[] nets = FindObjectsByType<INV_PlayerInventoryNet>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);

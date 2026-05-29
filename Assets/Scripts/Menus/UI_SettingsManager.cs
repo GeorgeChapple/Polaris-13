@@ -65,6 +65,7 @@ public class UI_SettingsManager : MonoBehaviour
         LoadSettings();
     }
 
+    // setup this UI element with its target data.
     private void Init()
     {
         if (hasInit) { return; }
@@ -156,6 +157,7 @@ public class UI_SettingsManager : MonoBehaviour
         RefreshUI(masterVolume, musicVolume, sfxVolume, fullscreen, quality, width, height, mouseSensitivity, invertY);
     }
 
+    // redraw the inventory UI after data changes.
     private void RefreshUI(float masterVolume, float musicVolume, float sfxVolume, bool fullscreen, int quality, int width, int height, float mouseSensitivity, bool invertY)
     {
         if (masterVolumeSlider != null) { masterVolumeSlider.value = masterVolume; }

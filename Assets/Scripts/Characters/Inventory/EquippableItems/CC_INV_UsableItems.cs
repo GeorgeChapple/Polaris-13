@@ -1,6 +1,8 @@
 using Unity.Netcode;
 using UnityEngine;
 
+// Made By: Jason Lodge
+// Summary: Base behaviour for usable equipped items.
 public abstract class CC_INV_UsableItems : MonoBehaviour
 {
     public virtual void SendItemId(string itemId) { }

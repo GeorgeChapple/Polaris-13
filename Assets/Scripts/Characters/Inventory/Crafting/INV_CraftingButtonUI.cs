@@ -30,6 +30,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
     private bool itemInteractable;
     private RectTransform maskRect;
 
+    // setup this UI element with its target data.
     public void Init(INV_Crafting craftingRef, INV_Item itemRef, bool interactable, int startingRecipeIndex)
     {
         crafting = craftingRef;
@@ -50,6 +51,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         UpdateMeshRendererVisibility();
     }
 
+    // disable item mesh rendering when it is outside the scroll mask.
     private void UpdateMeshRendererVisibility()
     {
         if (meshRenderer == null || maskRect == null)
@@ -91,6 +93,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         return bounds;
     }
 
+    // hook up button listeners without stacking old ones.
     private void WireButtons()
     {
         if (button != null)
@@ -112,6 +115,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         }
     }
 
+    // make sure the selected recipe is one the player can see.
     private void SnapToUnlockedRecipe()
     {
         if (item == null || item.RecipeCount <= 0)
@@ -128,6 +132,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         selectedRecipeIndex = item.GetFirstUnlockedRecipeIndex();
     }
 
+    // refresh text, buttons and recipe state for this entry.
     private void RefreshVisuals()
     {
         if (item == null)
@@ -173,6 +178,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         }
     }
 
+    // write item name and recipe requirements to the UI.
     private void ApplyText(string requirementString)
     {
         if (itemNameText != null)
@@ -186,6 +192,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         }
     }
 
+    // show recipe cycling UI only when there are multiple options.
     private void ApplyRecipeUi()
     {
         int unlockedRecipeCount = item != null ? item.UnlockedRecipeCount : 0;
@@ -217,6 +224,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         }
     }
 
+    // apply the item mesh/material setup for this crafting entry.
     private void ApplyMeshVisuals()
     {
         if (meshFilter != null)
@@ -243,6 +251,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         meshRenderer.transform.localScale = Vector3.one * Mathf.Max(0f, item.CraftingMeshScale);
     }
 
+    // move to the next unlocked recipe.
     public void NextRecipe()
     {
         if (item == null || item.UnlockedRecipeCount <= 1)
@@ -255,6 +264,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         RefreshVisuals();
     }
 
+    // move to the previous unlocked recipe.
     public void PreviousRecipe()
     {
         if (item == null || item.UnlockedRecipeCount <= 1)
@@ -267,6 +277,7 @@ public class INV_CraftingButtonUI : MonoBehaviour
         RefreshVisuals();
     }
 
+    // try to craft the currently selected recipe.
     private void OnPressed()
     {
         if (crafting == null || item == null)

@@ -77,12 +77,13 @@ public class INV_ItemDatabase : ScriptableObject
 
     public void ResetHidden()
     {
-        foreach(INV_Item item in items)
+        foreach (INV_Item item in items)
         {
             item.HideItem(false);
         }
     }
 
+    // resolve an item id into the matching item asset.
     public INV_Item GetItemById(string itemId)
     {
         if (string.IsNullOrWhiteSpace(itemId))
@@ -113,16 +114,19 @@ public class INV_ItemDatabase : ScriptableObject
         return GetItemById(itemId) != null;
     }
 
+    // subscribe to events while this object is enabled.
     private void OnEnable()
     {
         BuildLookup();
     }
 
+    // keep editor data valid when values change in inspector.
     private void OnValidate()
     {
         BuildLookup();
     }
 
+    // rebuild the id lookup so networked systems can find items quickly.
     private void BuildLookup()
     {
         if (itemsById == null)
@@ -166,11 +170,14 @@ public class INV_ItemDatabase : ScriptableObject
 
 #if UNITY_EDITOR
 [CustomEditor(typeof(INV_ItemDatabase))]
+// Made By: Jason Lodge
+// Summary: Editor menu tools for rebuilding and resetting the item database.
 public class INV_ItemDatabaseEditor : Editor
 {
     private const string DatabaseAssetPath = "Assets/Resources/Inventory/INV_ItemDatabase.asset";
 
     [MenuItem("Inventory/Rebuild Item Database")]
+    // find all item assets and rebuild the database from them.
     public static void RebuildDatabase()
     {
         EnsureFolders();
@@ -208,6 +215,7 @@ public class INV_ItemDatabaseEditor : Editor
     }
 
     [MenuItem("Inventory/Select Item Database")]
+    // select the item database asset in the editor.
     public static void SelectDatabase()
     {
         INV_ItemDatabase database = AssetDatabase.LoadAssetAtPath<INV_ItemDatabase>(DatabaseAssetPath);
@@ -223,6 +231,7 @@ public class INV_ItemDatabaseEditor : Editor
     }
 
     [MenuItem("Inventory/Reset All Items and Recipes Unlocked")]
+    // reset item and recipe unlock states for testing.
     public static void ResetUnlocked()
     {
         INV_ItemDatabase database = AssetDatabase.LoadAssetAtPath<INV_ItemDatabase>(DatabaseAssetPath);
@@ -230,6 +239,7 @@ public class INV_ItemDatabaseEditor : Editor
     }
 
     [MenuItem("Inventory/Reset All Items Hidden")]
+    // reset hidden item states for testing.
     public static void ResetHiddenItems()
     {
         INV_ItemDatabase database = AssetDatabase.LoadAssetAtPath<INV_ItemDatabase>(DatabaseAssetPath);

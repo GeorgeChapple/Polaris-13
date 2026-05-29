@@ -70,6 +70,7 @@ public class INV_Crafting : MonoBehaviour
         }
     }
 
+    // subscribe to events while this object is enabled.
     private void OnEnable()
     {
         if (inventoryNet != null)
@@ -78,6 +79,7 @@ public class INV_Crafting : MonoBehaviour
         }
     }
 
+    // unsubscribe so disabled objects do not keep receiving events.
     private void OnDisable()
     {
         if (inventoryNet != null)
@@ -99,12 +101,14 @@ public class INV_Crafting : MonoBehaviour
         }
     }
 
+    // refresh craftable lists and their buttons.
     public void RebuildCraftingView()
     {
         SetupCraftingLists();
         SetupCraftingButtons();
     }
 
+    // split unlocked recipes into craftable and non-craftable lists.
     public void SetupCraftingLists()
     {
         craftables.Clear();
@@ -151,6 +155,7 @@ public class INV_Crafting : MonoBehaviour
         SortCraftingList(nonCraftables);
     }
 
+    // spawn UI buttons for all visible crafting entries.
     public void SetupCraftingButtons()
     {
         ClearButtons();
@@ -236,6 +241,7 @@ public class INV_Crafting : MonoBehaviour
         RebuildCraftingView();
     }
 
+    // apply name/type/craftable filters to the crafting list.
     private bool PassesFilter(INV_Item item)
     {
         if (item == null)
@@ -321,6 +327,7 @@ public class INV_Crafting : MonoBehaviour
         return false;
     }
 
+    // sort crafting entries so the UI is easier to read.
     private void SortCraftingList(List<INV_Item> items)
     {
         items.Sort((a, b) =>
@@ -352,6 +359,7 @@ public class INV_Crafting : MonoBehaviour
         }
     }
 
+    // spawn and initialise a single crafting button.
     private void CreateButton(INV_Item item, bool interactable)
     {
         if (item == null || craftingContentRoot == null || craftingButtonPrefab == null)
@@ -374,6 +382,7 @@ public class INV_Crafting : MonoBehaviour
         spawnedButtons.Add(buttonUi);
     }
 
+    // remove old crafting buttons before rebuilding the view.
     private void ClearButtons()
     {
         for (int i = spawnedButtons.Count - 1; i >= 0; i--)
@@ -397,6 +406,7 @@ public class INV_Crafting : MonoBehaviour
         }
     }
 
+    // send a craft request through the network layer.
     public void TryCraftItem(INV_Item item, int recipeIndex)
     {
         if (item == null || inventoryNet == null)
@@ -417,6 +427,7 @@ public class INV_Crafting : MonoBehaviour
         RebuildCraftingView();
     }
 
+    // check whether any unlocked recipe can be crafted now.
     public bool CanCraftItemRightNow(INV_Item item)
     {
         if (item == null)
@@ -440,6 +451,7 @@ public class INV_Crafting : MonoBehaviour
         return false;
     }
 
+    // check resources, station requirements and inventory space for a recipe.
     public bool CanCraftRecipeRightNow(INV_Item item, int recipeIndex)
     {
         if (item == null || inventory == null)
@@ -480,6 +492,7 @@ public class INV_Crafting : MonoBehaviour
         return inventory.CanAddItem(item, item.GetRecipeReturnAmount(recipeIndex));
     }
 
+    // prefer a craftable recipe, otherwise fall back to the first unlocked one.
     public int GetBestRecipeIndex(INV_Item item)
     {
         if (item == null || item.RecipeCount <= 0)
@@ -498,6 +511,7 @@ public class INV_Crafting : MonoBehaviour
         return item.GetFirstUnlockedRecipeIndex();
     }
 
+    // build the text shown under a crafting entry.
     public string BuildRequirementText(INV_Item item, int recipeIndex)
     {
         if (item == null)

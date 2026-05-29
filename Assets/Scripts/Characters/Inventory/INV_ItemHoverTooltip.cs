@@ -74,7 +74,7 @@ public class INV_ItemHoverTooltip : MonoBehaviour
         }
     }
 
-    public KeyValuePair<string,Color> GetRarityLabel(INV_Item.ItemRarity action)
+    public KeyValuePair<string, Color> GetRarityLabel(INV_Item.ItemRarity action)
     {
         switch (action)
         {

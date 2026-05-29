@@ -95,6 +95,7 @@ public class UI_ScannerOverlay : MonoBehaviour
         RemoveUnusedMarkers(usedIds);
     }
 
+    // reuse the current marker or spawn one if needed.
     private UI_ScannerTrackedItem GetOrCreateMarker(ulong netId)
     {
         if (activeMarkers.TryGetValue(netId, out UI_ScannerTrackedItem existing) && existing != null)

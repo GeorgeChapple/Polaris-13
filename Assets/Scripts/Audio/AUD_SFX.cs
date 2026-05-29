@@ -82,6 +82,7 @@ public class AUD_SFX : MonoBehaviour
         localSoundWasPlayingLastFrame = localAudioSource.isPlaying;
     }
 
+    // cache refs before runtime logic starts.
     private void InitialiseComponents()
     {
         if (!useLocalAudioSource) { return; }

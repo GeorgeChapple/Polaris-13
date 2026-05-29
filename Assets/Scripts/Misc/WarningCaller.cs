@@ -10,6 +10,7 @@ public class WarningCaller : NetworkBehaviour
     private RS_WarningSystem ship;
     private UI_WarningSystem[] players;
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -17,6 +18,7 @@ public class WarningCaller : NetworkBehaviour
         Init();
     }
 
+    // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
@@ -24,6 +26,7 @@ public class WarningCaller : NetworkBehaviour
         End();
     }
 
+    // setup this UI element with its target data.
     private void Init()
     {
         ship = FindFirstObjectByType<RS_WarningSystem>();

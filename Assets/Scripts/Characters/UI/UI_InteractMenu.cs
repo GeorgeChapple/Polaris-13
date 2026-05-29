@@ -114,14 +114,14 @@ public class UI_InteractMenu : MonoBehaviour
             int actionIndex = i;
 
             button.Setup(action, () =>
+            {
+                if (currentInteractable != null)
                 {
-                    if (currentInteractable != null)
-                    {
-                        currentInteractable.Interact(actionIndex, currentInteractor);
-                    }
-
-                    CloseMenu();
+                    currentInteractable.Interact(actionIndex, currentInteractor);
                 }
+
+                CloseMenu();
+            }
             );
 
             spawnedButtons.Add(button);

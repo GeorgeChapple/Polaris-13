@@ -33,6 +33,7 @@ public class CC_CharacterValuesNet : NetworkBehaviour
         }
     }
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -62,6 +63,7 @@ public class CC_CharacterValuesNet : NetworkBehaviour
         }
     }
 
+    // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         health.OnValueChanged -= OnAnyValueChanged;
@@ -84,6 +86,7 @@ public class CC_CharacterValuesNet : NetworkBehaviour
 
     private void LateUpdate()
     {
+        // update visuals after movement and camera changes.
         if (!IsSpawned || characterValues == null)
         {
             return;

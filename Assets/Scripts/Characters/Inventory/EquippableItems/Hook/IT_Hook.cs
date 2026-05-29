@@ -1,6 +1,8 @@
 using Unity.Netcode;
 using UnityEngine;
 
+// Made By: Jason Lodge
+// Summary: Equippable hook tool behaviour.
 public class IT_Hook : CC_INV_UsableItems
 {
     private string itemId;

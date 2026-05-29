@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+// Made By: Jason Lodge
+// Summary: Loading screen controller.
 public class LoadingScreen : MonoBehaviour
 {
     [Header("UI Elements")]

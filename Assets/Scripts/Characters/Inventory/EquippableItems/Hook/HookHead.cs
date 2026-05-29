@@ -4,6 +4,8 @@ using UnityEngine;
 
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(Rigidbody))]
+// Made By: Jason Lodge
+// Summary: Projectile head used by the hook item.
 public class HookHead : NetworkBehaviour
 {
     private enum HookState
@@ -78,6 +80,7 @@ public class HookHead : NetworkBehaviour
         if (rb == null) { rb = GetComponent<Rigidbody>(); }
     }
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -85,6 +88,7 @@ public class HookHead : NetworkBehaviour
         if (!activeHooks.Contains(this)) { activeHooks.Add(this); }
     }
 
+    // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         ClearShooterAnchor();

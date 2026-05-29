@@ -36,6 +36,7 @@ public class INV_ItemDrop : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    // setup network state once the object has spawned.
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -47,6 +48,7 @@ public class INV_ItemDrop : NetworkBehaviour
         if (setUpWithoutNetworkID) { Init(item); }
     }
 
+    // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         networkItemId.OnValueChanged -= OnNetworkItemIdChanged;

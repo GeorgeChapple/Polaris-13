@@ -2,6 +2,8 @@ using Unity.Netcode;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
+// Made By: Jason Lodge
+// Summary: Draws the hook rope between the player and hook head.
 public class HookLineRenderer : MonoBehaviour
 {
     [Header("Refs")]
@@ -76,6 +78,7 @@ public class HookLineRenderer : MonoBehaviour
         existingHook.BeginReturn(throwPoint);
     }
 
+    // update visuals after movement and camera changes.
     private void UpdateLine()
     {
         if (line == null || throwPoint == null) { return; }
