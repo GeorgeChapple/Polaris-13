@@ -12,9 +12,6 @@ public class INV_ItemDrop : NetworkBehaviour
     [SerializeField] private INV_Item item;
 
     [Header("Auto Setup")]
-    [Tooltip("If true, uses MeshCollider. If false, uses BoxCollider.")]
-    [SerializeField] private bool useMeshCollider = false;
-
     [Tooltip("If true, renames the drop object to include the item name.")]
     [SerializeField] private bool renameToItemName = true;
 
@@ -134,32 +131,71 @@ public class INV_ItemDrop : NetworkBehaviour
         Vector3 vec = new Vector3(item.DropMeshScale, item.DropMeshScale, item.DropMeshScale);
         gameObject.transform.localScale = vec;
 
-        SetupColliderFromMesh(mf.sharedMesh);
+        SetupColliderFromItem(mf.sharedMesh);
     }
 
-    private void SetupColliderFromMesh(Mesh mesh)
+    private void SetupColliderFromItem(Mesh mesh)
     {
+        if (item == null) { return; }
         if (mesh == null) { return; }
 
         MeshCollider mc = GetComponent<MeshCollider>();
         BoxCollider bc = GetComponent<BoxCollider>();
+        SphereCollider sc = GetComponent<SphereCollider>();
 
-        if (useMeshCollider)
+        if (item.DropColliderVal == INV_Item.DropCollider.MeshCollider)
         {
             if (bc != null) { Destroy(bc); }
+            if (sc != null) { Destroy(sc); }
 
             if (mc == null) { mc = gameObject.AddComponent<MeshCollider>(); }
+
             mc.sharedMesh = null; // force refresh
             mc.sharedMesh = mesh;
             mc.convex = true;
+
+            return;
         }
-        else
+
+        if (item.DropColliderVal == INV_Item.DropCollider.BoxCollider)
         {
             if (mc != null) { Destroy(mc); }
+            if (sc != null) { Destroy(sc); }
 
             if (bc == null) { bc = gameObject.AddComponent<BoxCollider>(); }
-            bc.center = mesh.bounds.center;
-            bc.size = mesh.bounds.size;
+
+            if (item.AutoColliderScale)
+            {
+                bc.center = mesh.bounds.center;
+                bc.size = mesh.bounds.size;
+            }
+            else
+            {
+                bc.center = mesh.bounds.center;
+                bc.size = Vector3.one * item.ColliderScale;
+            }
+
+            return;
+        }
+
+        if (item.DropColliderVal == INV_Item.DropCollider.SphereCollider)
+        {
+            if (mc != null) { Destroy(mc); }
+            if (bc != null) { Destroy(bc); }
+
+            if (sc == null) { sc = gameObject.AddComponent<SphereCollider>(); }
+
+            sc.center = mesh.bounds.center;
+
+            if (item.AutoColliderScale)
+            {
+                Vector3 extents = mesh.bounds.extents;
+                sc.radius = Mathf.Max(extents.x, extents.y, extents.z);
+            }
+            else
+            {
+                sc.radius = item.ColliderScale;
+            }
         }
     }
 

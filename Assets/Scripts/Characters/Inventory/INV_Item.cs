@@ -94,6 +94,16 @@ public class INV_Item : ScriptableObject
     [SerializeField] private Material material;
     [SerializeField] private bool twoHanded;
 
+    public enum DropCollider { MeshCollider, BoxCollider, SphereCollider }
+    [Tooltip("What Collider to use when setting up the item drop.")]
+    [SerializeField] private DropCollider dropCollider = DropCollider.MeshCollider;
+
+    [Tooltip("If true, automatically sets scale of collider using bounds check.")]
+    [SerializeField] private bool autoColliderScale = true;
+
+    [Tooltip("Only changes collider scale if autoColliderScale is false.")]
+    [SerializeField] private float colliderScale = 1f;
+
     [Header("Equipped Prefab")]
     [Tooltip("Prefab used when this item is equipped.")]
     [SerializeField] private GameObject equippedPrefab;
@@ -192,6 +202,10 @@ public class INV_Item : ScriptableObject
     public Mesh Mesh => mesh;
     public Material Material => material;
     public bool TwoHanded => twoHanded;
+
+    public DropCollider DropColliderVal => dropCollider;
+    public bool AutoColliderScale => autoColliderScale;
+    public float ColliderScale => Mathf.Max(0.01f, colliderScale);
 
     public ForwardAxisRot ForwardAxisRotVal => forwardAxisRot;
 
