@@ -140,6 +140,7 @@ public class CC_Movement : NetworkBehaviour
 
     bool initialised;
     bool deathRespawnRunning;
+    private Coroutine moveDebrisRoutine;
 
     // hook movement
     private bool hookMoveActive;
@@ -227,6 +228,8 @@ public class CC_Movement : NetworkBehaviour
             capsuleBaseHeight = bodyCapsule.height;
             capsuleBaseCenter = bodyCapsule.center;
         }
+
+        StartMoveDebrisRoutine();
     }
 
     // check whether this object should respond to local input.
@@ -241,6 +244,7 @@ public class CC_Movement : NetworkBehaviour
         base.OnNetworkSpawn();
 
         InitialiseComponents();
+        StartMoveDebrisRoutine();
 
         if (playerText != null && !singlePlayer)
         {
@@ -258,6 +262,8 @@ public class CC_Movement : NetworkBehaviour
     // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
+        StopMoveDebrisRoutine();
+
         replicatedVisualBodyLocalPosition.OnValueChanged -= OnReplicatedVisualBodyLocalPositionChanged;
         replicatedVisualBodyLocalRotation.OnValueChanged -= OnReplicatedVisualBodyLocalRotationChanged;
 
@@ -418,7 +424,6 @@ public class CC_Movement : NetworkBehaviour
         else
         {
             SpaceThrusters(moveInput, jumpInput, crouchInput, stabiliseInput);
-            ApplySpaceDrift();
         }
 
         ApplyHookMovement();
@@ -1138,17 +1143,47 @@ public class CC_Movement : NetworkBehaviour
         groundedForward.Normalize();
     }
 
-    protected void ApplySpaceDrift()
+    private void StartMoveDebrisRoutine()
     {
-        if (rocket == null) { return; }
-        if (IsOxygenProvided()) { return; }
-        if (drift.Value)
+        if (moveDebrisRoutine != null) { return; }
+
+        moveDebrisRoutine = StartCoroutine(MoveDebris());
+    }
+
+    private void StopMoveDebrisRoutine()
+    {
+        if (moveDebrisRoutine == null) { return; }
+
+        StopCoroutine(moveDebrisRoutine);
+        moveDebrisRoutine = null;
+    }
+
+    private IEnumerator MoveDebris()
+    {
+        while (true)
         {
-            Vector3 refDir = referenceDirection.Value;
-            Vector3 wldDir = rocket.worldDirectionNetworked.Value;
-            float speed = rocket.speed.Value;
-            Vector3 objDirection = (Vector3.back + refDir - wldDir).normalized * speed;
-            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+            if (rb != null)
+            {
+                UpdateGravity();
+            }
+
+            if (IsLocallyControlled() &&
+                rb != null &&
+                rocket != null &&
+                !HasUsableGravity() &&
+                !IsOxygenProvided() && // may aswell check oxygen here, no oxygen should ever be provided in space
+                drift.Value
+            )
+            {
+                Vector3 refDir = referenceDirection.Value;
+                Vector3 wldDir = rocket.worldDirectionNetworked.Value;
+                float speed = rocket.speed.Value;
+
+                Vector3 objDirection = (Vector3.back + refDir - wldDir).normalized * speed;
+                rb.MovePosition(rb.position + objDirection * Time.fixedDeltaTime);
+            }
+
+            yield return new WaitForFixedUpdate();
         }
     }
 
