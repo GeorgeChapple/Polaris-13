@@ -13,6 +13,7 @@ public class CC_Movement : NetworkBehaviour
 {
     [Header("References")]
     public CC_CharacterValues values;
+    public CC_CharacterValuesNet valuesNet;
     public CC_CameraController cameraController;
     public RS_Move rocket;
 
@@ -1085,9 +1086,9 @@ public class CC_Movement : NetworkBehaviour
             RespawnAtSpawnPoint();
         }
 
-        if (values != null)
+        if (valuesNet != null)
         {
-            values.RespawnReset();
+            valuesNet.RequestRespawnReset();
         }
 
         grounded = false;
