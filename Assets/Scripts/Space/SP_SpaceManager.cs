@@ -17,12 +17,13 @@ public class SP_SpaceManager : NetworkBehaviour
     [HideInInspector] public RS_Move rocket; 
     public List<SP_SpawnSettings> spawnerSettings = new List<SP_SpawnSettings>();
     //[HideInInspector] public List<GameObject> foundObjects = new List<GameObject>();
-    public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
+    //public Dictionary<GameObject, Vector3> debris = new Dictionary<GameObject, Vector3>();
     public Dictionary<SP_Spawner, int> spawners = new Dictionary<SP_Spawner, int>();
     [HideInInspector] public List<Collider> cannotTeleport = new List<Collider>();
     public Vector3 spaceBounds = new Vector3(20, 20, 20);
     [HideInInspector] public bool maxDebrisReached;
     [SerializeField] private List<GameObject> debrisDebugList = new List<GameObject>();
+    [HideInInspector] public int debrisCount;
 
     private void Awake()
     {
@@ -61,7 +62,7 @@ public class SP_SpaceManager : NetworkBehaviour
         if (!IsServer) return;
         if (rocket == null) return;
 
-        if (debris.Count >= maxDebris)
+        if (debrisCount >= maxDebris)
         {
             maxDebrisReached = true;
         }
@@ -78,17 +79,17 @@ public class SP_SpaceManager : NetworkBehaviour
         //    foundObjects.Add(col.gameObject);
         //}
 
-        debrisDebugList.Clear();
-        foreach(GameObject obj in debris.Keys)
-        {
-            debrisDebugList.Add(obj);
-        }
+        //debrisDebugList.Clear();
+        //foreach(GameObject obj in debris.Keys)
+        //{
+        //    debrisDebugList.Add(obj);
+        //}
     }
 
-    private void FixedUpdate()
-    {
-        MoveDebris();
-    }
+    //private void FixedUpdate()
+    //{
+    //    MoveDebris();
+    //}
 
     private void OnTriggerExit(Collider col)
     {
@@ -217,37 +218,37 @@ public class SP_SpaceManager : NetworkBehaviour
         }
     }
 
-    private void MoveDebris()
-    {
-        List<GameObject> debrisObjects = new List<GameObject>(debris.Keys);
+    //private void MoveDebris()
+    //{
+    //    List<GameObject> debrisObjects = new List<GameObject>(debris.Keys);
 
-        foreach (GameObject obj in debrisObjects)
-        {
-            if (obj == null) continue;
+    //    foreach (GameObject obj in debrisObjects)
+    //    {
+    //        if (obj == null) continue;
 
-            CC_Movement player = obj.GetComponent<CC_Movement>();
-            Rigidbody rb = obj.GetComponent<Rigidbody>();
-            NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
+    //        CC_Movement player = obj.GetComponent<CC_Movement>();
+    //        Rigidbody rb = obj.GetComponent<Rigidbody>();
+    //        NetworkTransform netTransform = obj.GetComponent<NetworkTransform>();
 
-            Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
-            if (player != null)
-            {
-                NetworkObject netObj = obj.GetComponent<NetworkObject>();
-                if (netObj != null)
-                {
-                    PlayerMoveRpc(netObj, objDirection);
-                }
-            }
-            else if (rb != null)
-            { 
-                rb.MovePosition(rb.position + objDirection * Time.deltaTime);
-            } 
-            else
-            {
-                obj.transform.position = Vector3.Lerp(obj.transform.position, obj.transform.position + objDirection, Time.deltaTime);
-            }
-        }
-    }
+    //        Vector3 objDirection = (Vector3.back + debris[obj] - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
+    //        if (player != null)
+    //        {
+    //            NetworkObject netObj = obj.GetComponent<NetworkObject>();
+    //            if (netObj != null)
+    //            {
+    //                PlayerMoveRpc(netObj, objDirection);
+    //            }
+    //        }
+    //        else if (rb != null)
+    //        { 
+    //            rb.MovePosition(rb.position + objDirection * Time.deltaTime);
+    //        } 
+    //        else
+    //        {
+    //            obj.transform.position = Vector3.Lerp(obj.transform.position, obj.transform.position + objDirection, Time.deltaTime);
+    //        }
+    //    }
+    //}
 
     [Rpc(SendTo.Everyone)]
     private void PlayerMoveRpc(NetworkObjectReference targetRef, Vector3 objDirection)
@@ -266,10 +267,7 @@ public class SP_SpaceManager : NetworkBehaviour
     {
         if (obj == null) { return; }
 
-        if (debris.ContainsKey(obj))
-        {
-            debris.Remove(obj);
-        }
+        debrisCount--;
     }
 
     private void OnDrawGizmos()

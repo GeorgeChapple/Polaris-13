@@ -107,6 +107,8 @@ public class SP_Spawner : NetworkBehaviour
                         if (junkComponent != null)
                         {
                             junkComponent.spawner = this;
+                            junkComponent.originDirection = spaceManager.rocket.worldDirectionNetworked.Value;
+                            junkComponent.moveMult = 1;
                         }
 
                         newDebris.transform.rotation = prefab.transform.rotation;
@@ -124,7 +126,7 @@ public class SP_Spawner : NetworkBehaviour
                             itemDrop.Init(GetRandomDebrisItem());
                         }
 
-                        spaceManager.debris.Add(newDebris, spaceManager.rocket.worldDirectionNetworked.Value);
+                        spaceManager.debrisCount++;
                     }
 
                     timer = 0;

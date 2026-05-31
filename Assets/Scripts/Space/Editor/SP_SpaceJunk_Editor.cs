@@ -12,7 +12,7 @@ public class SP_SpaceManager_Editor : Editor
         SP_SpaceManager space = Selection.gameObjects[0].GetComponent<SP_SpaceManager>();
         if (space != null)
         {
-            GUILayout.Label("Space Junk Count : " + space.debris.Count);
+            GUILayout.Label("Space Junk Count : " + space.debrisCount);
             GUILayout.Space(5);
             foreach (SP_Spawner spawner in space.spawners.Keys)
             {

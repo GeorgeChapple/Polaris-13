@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Net.Sockets;
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -17,9 +18,12 @@ public class SP_SpaceJunk : NetworkBehaviour
     [SerializeField] private bool destroyOnRocket = true;
     [SerializeField] private GameObject destroyVFX;
     private SP_SpaceManager spaceManager;
+    private RS_Move rocket;
     private bool scaling = false;
     private bool destroyRequested = false;
     private Rigidbody rb;
+    public Vector3 originDirection;
+    public int moveMult = 0;
 
     private void Awake()
     {
@@ -34,7 +38,7 @@ public class SP_SpaceJunk : NetworkBehaviour
             return;
         }
 
-        if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject) && collision.gameObject.CompareTag("Rocket") && destroyOnRocket)
+        if (spaceManager != null && collision.gameObject.CompareTag("Rocket") && destroyOnRocket)
         {
             StartCoroutine(LerpScale(transform.localScale, Vector3.zero, scaleSpeed, true));
         }
@@ -50,6 +54,7 @@ public class SP_SpaceJunk : NetworkBehaviour
     {
         rb = GetComponent<Rigidbody>();
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
+        rocket = FindFirstObjectByType<RS_Move>();
     }
 
     private void Start()
@@ -63,6 +68,17 @@ public class SP_SpaceJunk : NetworkBehaviour
         { 
             spaceManager.spawners[spawner]++;
         }
+        StartCoroutine(MoveDebris());
+    }
+
+    private IEnumerator MoveDebris()
+    {
+        while (true)
+        {
+            Vector3 objDirection = (Vector3.back + originDirection - rocket.worldDirectionNetworked.Value).normalized * rocket.speed.Value;
+            rb.MovePosition(rb.position + (float)moveMult * objDirection * Time.deltaTime);
+            yield return null;
+        }
     }
 
     public void StartLerpScale(Vector3 start, Vector3 end, bool destroy)
@@ -74,9 +90,9 @@ public class SP_SpaceJunk : NetworkBehaviour
     {
         if (!scaling)
         {
-            if (destroy && spaceManager != null && spaceManager.debris.ContainsKey(this.gameObject))
+            if (destroy && spaceManager != null)
             {
-                spaceManager.debris.Remove(this.gameObject);
+                spaceManager.debrisCount--;
             }
 
             scaling = true;
@@ -149,6 +165,7 @@ public class SP_SpaceJunk : NetworkBehaviour
             return;
         }
 
+        spaceManager.debrisCount--;
         spaceManager.RemoveDebris(gameObject);
     }
 }

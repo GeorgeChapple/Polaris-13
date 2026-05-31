@@ -358,6 +358,7 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
     // swap between local gravity movement and ship/debris drift.
     private void ToggleGravity()
     {
+        SP_SpaceJunk debris = GetComponent<SP_SpaceJunk>();
         if (useGravity)
         {
             if (movement != null)
@@ -366,9 +367,9 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
             }
             else
             {
-                if (spaceManager != null && spaceManager.debris.ContainsKey(gameObject))
+                if (debris != false)
                 {
-                    spaceManager.debris.Remove(gameObject);
+                    debris.moveMult = 0;
                 }
             }
         }
@@ -385,9 +386,10 @@ public class CustomGravityRigidbodyForEntities : CustomGravityRigidbody
             }
             else
             {
-                if (spaceManager != null && rocket != null && !spaceManager.debris.ContainsKey(gameObject))
+                if (debris != false)
                 {
-                    spaceManager.debris.Add(gameObject, rocket.worldDirectionNetworked.Value);
+                    debris.originDirection = rocket.worldDirectionNetworked.Value;
+                    debris.moveMult = 1;
                 }
             }
         }

@@ -162,14 +162,19 @@ public class POI_Portal : NetworkBehaviour
             }
             else
             {
-                if (spaceManager.debris.ContainsKey(obj))
-                {
-                    spaceManager.debris.Remove(obj);
-                }
-                else
-                {
-                    spaceManager.debris.Add(obj, spaceManager.rocket.worldDirectionNetworked.Value);
-                    obj.GetComponent<CustomGravityRigidbody>().useGravity = false;
+                SP_SpaceJunk debris =  obj.GetComponent<SP_SpaceJunk>();
+                if (debris != null)
+                { 
+                    if (debris.moveMult == 1)
+                    {
+                        debris.moveMult = 0;
+                    }
+                    else
+                    {
+                        debris.originDirection = spaceManager.rocket.worldDirectionNetworked.Value;
+                        debris.moveMult = 1;
+                        obj.GetComponent<CustomGravityRigidbody>().useGravity = false;
+                    }
                 }
             }
         }

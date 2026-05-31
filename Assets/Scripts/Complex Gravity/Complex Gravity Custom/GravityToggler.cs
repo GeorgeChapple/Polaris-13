@@ -53,35 +53,52 @@ public class GravityToggler : NetworkBehaviour
             SP_SpaceManager spaceManager = FindFirstObjectByType<SP_SpaceManager>();
             RS_Move rocket = FindFirstObjectByType<RS_Move>();
             CC_Movement player = gravityBody.GetComponent<CC_Movement>();
+            SP_SpaceJunk debris = gravityBody.GetComponent<SP_SpaceJunk>();
+            
             if (gravityBody.useGravity)
             {
-                if (player != null)
+                if (debris != null)
                 {
-                    player.drift.Value = false;
-                }
-                else
-                {
-                    if (spaceManager.debris.ContainsKey(gravityBody.gameObject))
-                    {
-                        spaceManager.debris.Remove(gravityBody.gameObject);
-                    }
-                }
-            } 
-            else
-            {
-                if (player != null)
-                {
-                    player.drift.Value = true;
-                    player.referenceDirection.Value = rocket.worldDirectionNetworked.Value;
-                }
-                else
-                {
-                    if (!spaceManager.debris.ContainsKey(gravityBody.gameObject))
-                    {
-                        spaceManager.debris.Add(gravityBody.gameObject, rocket.worldDirectionNetworked.Value);
-                    } 
+                    debris.moveMult = 0;
                 }
             }
+            else
+            {
+                if (debris != null)
+                {
+                    debris.originDirection = rocket.worldDirectionNetworked.Value;
+                    debris.moveMult = 1;
+                }
+            }
+            //if (gravityBody.useGravity)
+            //{
+            //    if (player != null)
+            //    {
+            //        player.drift.Value = false;
+            //    }
+            //    else
+            //    {
+            //        if (spaceManager.debris.ContainsKey(gravityBody.gameObject))
+            //        {
+            //            spaceManager.debris.Remove(gravityBody.gameObject);
+            //        }
+            //    }
+            //} 
+            //else
+            //{
+            //    if (player != null)
+            //    {
+            //        player.drift.Value = true;
+            //        player.referenceDirection.Value = rocket.worldDirectionNetworked.Value;
+            //    }
+            //    else
+            //    {
+            //        if (!spaceManager.debris.ContainsKey(gravityBody.gameObject))
+            //        {
+            //            spaceManager.debris.Add(gravityBody.gameObject, rocket.worldDirectionNetworked.Value);
+            //        } 
+            //    }
+            //}
         }
     }
 }

@@ -14003,6 +14003,7 @@ MonoBehaviour:
   spaceBounds: {x: 1000, y: 1000, z: 400}
   maxDebrisReached: 0
   debrisDebugList: []
+  debrisCount: 0
 --- !u!65 &709164554
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -24488,6 +24489,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7516734992515275431}
     m_Modifications:
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: ship
+      value: 
+      objectReference: {fileID: 1444340299}
     - target: {fileID: 2891787427740602561, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: m_Name
       value: Map
@@ -39206,6 +39211,17 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6239881831769578202, guid: fe93784f20e89214eb39a052f488a309, type: 3}
+--- !u!114 &1444340299 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3220690983669835260, guid: dd6a5b4ce32eb3f4b9815139efefbf4e, type: 3}
+  m_PrefabInstance: {fileID: 772088476}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772088477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 351fe6b7aad4cac4aad20b92f176b8b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!64 &1444419076
 MeshCollider:
   m_ObjectHideFlags: 0
