@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -16,6 +15,32 @@ public class INV_CraftingInteract : NetworkBehaviour
 
     [SerializeField] private NET_AnimatorSync netAnimSync;
     [SerializeField] private AUD_SFX sfx;
+
+    [SerializeField] private Transform[] laserTips = new Transform[4];
+    [SerializeField] private Transform laserTarget;
+
+    [SerializeField] private LineRenderer[] lasers = new LineRenderer[4];
+
+    [SerializeField] private Animator animator;
+
+    private bool playingAnimation;
+
+    private void Update()
+    {
+        if (animator != null)
+        {
+            if (animator.GetCurrentAnimatorStateInfo(0).IsName("Fabricator Crafting")) { playingAnimation = true; }
+            else { playingAnimation = false; }
+        }
+
+        if (playingAnimation)
+        {
+            for (int i = 0; i < lasers.Length; i++)
+            {
+                lasers[i].SetPositions(new Vector3[2] { laserTarget.position, laserTips[i].position });
+            }
+        }
+    }
 
     public void OnInteractedWith(GameObject interactor)
     {
@@ -39,7 +64,7 @@ public class INV_CraftingInteract : NetworkBehaviour
 
     public void OnCraft()
     {
-        if (netAnimSync != null) 
+        if (netAnimSync != null)
         {
             netAnimSync.SetTrigger("Craft");
             StartCoroutine(WaitAndReset());
