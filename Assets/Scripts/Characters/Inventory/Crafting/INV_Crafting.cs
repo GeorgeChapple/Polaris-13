@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -49,6 +50,7 @@ public class INV_Crafting : MonoBehaviour
     private readonly List<INV_CraftingButtonUI> spawnedButtons = new List<INV_CraftingButtonUI>();
 
     private bool openedFromCraftingStation;
+    private INV_CraftingInteract lastInteractedCraftingStation;
 
     public RectTransform CraftingPanelRectMask => craftingPanelRectMask;
 
@@ -91,7 +93,14 @@ public class INV_Crafting : MonoBehaviour
     // Called by Player Controller (when opening the inventory) and the crafting interact bridge
     public void SetupEverything(bool fromCraftingStation)
     {
+        SetupEverything(fromCraftingStation, null);
+    }
+
+    // Called by crafting station interact bridge.
+    public void SetupEverything(bool fromCraftingStation, INV_CraftingInteract craftingStation)
+    {
         openedFromCraftingStation = fromCraftingStation;
+        lastInteractedCraftingStation = fromCraftingStation ? craftingStation : null;
 
         RebuildCraftingView();
 
@@ -419,7 +428,18 @@ public class INV_Crafting : MonoBehaviour
             return;
         }
 
-        inventoryNet.RequestCraftItem(item.ItemID, recipeIndex);
+        NetworkObjectReference craftingStationRef = default;
+
+        if (openedFromCraftingStation && lastInteractedCraftingStation != null)
+        {
+            NetworkObject stationNetObj = lastInteractedCraftingStation.GetComponent<NetworkObject>();
+            if (stationNetObj != null)
+            {
+                craftingStationRef = new NetworkObjectReference(stationNetObj);
+            }
+        }
+
+        inventoryNet.RequestCraftItem(item.ItemID, recipeIndex, craftingStationRef);
     }
 
     private void OnCraftRequestFinished(bool success, string craftedItemId)

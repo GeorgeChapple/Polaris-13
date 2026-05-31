@@ -677,7 +677,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     // ask the server to craft an item.
-    public void RequestCraftItem(string itemId, int recipeIndex)
+    public void RequestCraftItem(string itemId, int recipeIndex, NetworkObjectReference craftingStationRef = default)
     {
         if (!IsOwner || string.IsNullOrWhiteSpace(itemId))
         {
@@ -700,11 +700,11 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (IsServer)
         {
-            CraftItem_Server(itemId, recipeIndex);
+            CraftItem_Server(itemId, recipeIndex, craftingStationRef);
             return;
         }
 
-        RequestCraftItemRpc(itemId, recipeIndex);
+        RequestCraftItemRpc(itemId, recipeIndex, craftingStationRef);
     }
 
     // server rpc entry points
@@ -944,7 +944,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    private void RequestCraftItemRpc(string itemId, int recipeIndex, RpcParams rpcParams = default)
+    private void RequestCraftItemRpc(string itemId, int recipeIndex, NetworkObjectReference craftingStationRef, RpcParams rpcParams = default)
     {
         if (!IsSenderOwner(rpcParams) || string.IsNullOrWhiteSpace(itemId))
         {
@@ -962,11 +962,12 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         // trust the request path and let the owner apply the result locally through CraftResultLocalRpc.
         if (!IsOwner)
         {
+            TryPlayCraftingStationEffects_Server(craftingStationRef);
             NotifyCraftResult(true, itemId, recipeIndex);
             return;
         }
 
-        CraftItem_Server(itemId, recipeIndex);
+        CraftItem_Server(itemId, recipeIndex, craftingStationRef);
     }
 
     private bool IsSenderOwner(RpcParams rpcParams)
@@ -1702,7 +1703,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         characterValues.AddThirst(usedItem.ThirstReplenish);
     }
 
-    private void CraftItem_Server(string itemId, int recipeIndex)
+    private void CraftItem_Server(string itemId, int recipeIndex, NetworkObjectReference craftingStationRef = default)
     {
         if (!IsServer)
         {
@@ -1753,6 +1754,7 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         if (inventory.TryAddItem(craftedItem, returnAmount))
         {
+            TryPlayCraftingStationEffects_Server(craftingStationRef);
             NotifyCraftResult(true, itemId, recipeIndex);
             return;
         }
@@ -1870,6 +1872,27 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         }
 
         CraftResultLocalRpc(succeeded, craftedItemId, recipeIndex, RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
+    }
+
+    private void TryPlayCraftingStationEffects_Server(NetworkObjectReference craftingStationRef)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        if (!craftingStationRef.TryGet(out NetworkObject stationNetObj) || stationNetObj == null)
+        {
+            return;
+        }
+
+        INV_CraftingInteract craftingStation = stationNetObj.GetComponent<INV_CraftingInteract>();
+        if (craftingStation == null)
+        {
+            return;
+        }
+
+        craftingStation.OnCraft();
     }
 
     // chest

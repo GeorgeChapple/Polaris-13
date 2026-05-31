@@ -48,7 +48,7 @@ public class POI_Portal : NetworkBehaviour
     private void OnTriggerEnter(Collider col)
     {
         NetworkObject netObj = col.GetComponent<NetworkObject>();
-        if (netObj != null)
+        if (netObj != null && netObj.IsSpawned)
         { 
             BeginTeleportRpc(netObj);
         }
