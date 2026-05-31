@@ -26,7 +26,7 @@ public class LoadingScreen : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (registered && NetworkManager.Singleton != null)
+        if (registered && NetworkManager.Singleton == null && NetworkManager.Singleton.SceneManager == null)
         {
             NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
         }
@@ -35,7 +35,7 @@ public class LoadingScreen : MonoBehaviour
     private void TryRegisterSceneEvents()
     {
         if (registered) { return; }
-        if (NetworkManager.Singleton == null) { return; }
+        if (NetworkManager.Singleton == null && NetworkManager.Singleton.SceneManager == null) { return; }
         NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
         registered = true;
     }
@@ -50,7 +50,7 @@ public class LoadingScreen : MonoBehaviour
 
             case SceneEventType.LoadComplete:
             case SceneEventType.LoadEventCompleted:
-                HideLoadingUI();
+                //HideLoadingUI();
                 break;
         }
     }
@@ -63,16 +63,16 @@ public class LoadingScreen : MonoBehaviour
         progressCoroutine = StartCoroutine(UpdateProgress(sceneEvent));
     }
 
-    private void HideLoadingUI()
-    {
-        if (progressCoroutine != null)
-        {
-            StopCoroutine(progressCoroutine);
-            progressCoroutine = null;
-        }
+    //private void HideLoadingUI()
+    //{
+    //    if (progressCoroutine != null)
+    //    {
+    //        StopCoroutine(progressCoroutine);
+    //        progressCoroutine = null;
+    //    }
 
-        if (loadingPanel != null) { loadingPanel.SetActive(false); }
-    }
+    //    if (loadingPanel != null) { loadingPanel.SetActive(false); }
+    //}
 
     private IEnumerator UpdateProgress(SceneEvent sceneEvent)
     {

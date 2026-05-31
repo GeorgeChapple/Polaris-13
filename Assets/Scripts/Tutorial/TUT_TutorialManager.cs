@@ -50,6 +50,7 @@ public class TUT_TutorialManager : MonoBehaviour
     [Header("Runtime Refs")]
     [SerializeField] private INV_Inventory playerInventory;
     [SerializeField] private Camera playerCamera;
+    [SerializeField] private CC_CharacterValues playerCharacterValues;
 
     [Header("Objective UI")]
     [SerializeField] private TextMeshProUGUI objectiveTitleText;
@@ -145,6 +146,11 @@ public class TUT_TutorialManager : MonoBehaviour
             playerCamera = FindLocalCamera();
         }
 
+        if (playerCharacterValues == null)
+        {
+            playerCharacterValues = FindLocalCharacterValues();
+        }
+
         GameObject[] sessionCodeUI = GameObject.FindGameObjectsWithTag(sessionCodeObjectTag);
         foreach (GameObject obj in sessionCodeUI)
         {
@@ -167,7 +173,7 @@ public class TUT_TutorialManager : MonoBehaviour
             INV_Inventory inventory = inventories[i];
             if (inventory == null) { continue; }
 
-            CC_Movement movement = inventory.GetComponentInParent<CC_Movement>();
+            CC_Movement movement = inventory.GetComponent<CC_Movement>();
             if (movement != null && !movement.IsLocallyControlled()) { continue; }
 
             return inventory;
@@ -200,18 +206,39 @@ public class TUT_TutorialManager : MonoBehaviour
         return null;
     }
 
+    // find the character values attached to the local player.
+    private CC_CharacterValues FindLocalCharacterValues()
+    {
+        CC_CharacterValues[] characterValuesArr = FindObjectsByType<CC_CharacterValues>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+
+        for (int i = 0; i < characterValuesArr.Length; i++)
+        {
+            CC_CharacterValues characterValues = characterValuesArr[i];
+            if (characterValues == null) { continue; }
+
+            if (playerInventory == null) { FindLocalInventory(); return null; }
+            CC_Movement movement = playerInventory.GetComponent<CC_Movement>();
+            if (!movement.IsLocallyControlled()) { continue; }
+
+            return characterValues;
+        }
+
+        return null;
+    }
+
     // reset tutorial state and begin at the first step.
     public void StartTutorial()
     {
         CachePlayerRefs();
-
-        INV_ItemDatabase.Instance.HideItems(itemsToShow, true);
 
         if (!HasPlayerRefs())
         {
             StartCoroutine(WaitForPlayerRefs());
             return;
         }
+
+        INV_ItemDatabase.Instance.HideItems(itemsToShow, true);
+        if (playerCharacterValues != null) { playerCharacterValues.SetSurvivalToggles(false, false, false); }
 
         if (steps == null || steps.Count == 0)
         {

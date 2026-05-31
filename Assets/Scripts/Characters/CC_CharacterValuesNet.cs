@@ -25,6 +25,10 @@ public class CC_CharacterValuesNet : NetworkBehaviour
     private NetworkVariable<float> oxygen = new NetworkVariable<float>(0f);
     private NetworkVariable<float> maxOxygen = new NetworkVariable<float>(0f);
 
+    private NetworkVariable<bool> enableNoOxygenDeath = new NetworkVariable<bool>(true);
+    private NetworkVariable<bool> enableHunger = new NetworkVariable<bool>(true);
+    private NetworkVariable<bool> enableThirst = new NetworkVariable<bool>(true);
+
     private void Awake()
     {
         if (characterValues == null)
@@ -52,6 +56,10 @@ public class CC_CharacterValuesNet : NetworkBehaviour
 
         oxygen.OnValueChanged += OnAnyValueChanged;
         maxOxygen.OnValueChanged += OnAnyValueChanged;
+
+        enableNoOxygenDeath.OnValueChanged += OnAnyBoolValueChanged;
+        enableHunger.OnValueChanged += OnAnyBoolValueChanged;
+        enableThirst.OnValueChanged += OnAnyBoolValueChanged;
 
         if (IsServer)
         {
@@ -81,6 +89,10 @@ public class CC_CharacterValuesNet : NetworkBehaviour
         oxygen.OnValueChanged -= OnAnyValueChanged;
         maxOxygen.OnValueChanged -= OnAnyValueChanged;
 
+        enableNoOxygenDeath.OnValueChanged -= OnAnyBoolValueChanged;
+        enableHunger.OnValueChanged -= OnAnyBoolValueChanged;
+        enableThirst.OnValueChanged -= OnAnyBoolValueChanged;
+
         base.OnNetworkDespawn();
     }
 
@@ -108,7 +120,7 @@ public class CC_CharacterValuesNet : NetworkBehaviour
         ApplyToCharacterValues_Client();
     }
 
-    private void OnAnyIntValueChanged(int oldValue, int newValue)
+    private void OnAnyBoolValueChanged(bool oldValue, bool newValue)
     {
         if (IsServer)
         {
@@ -134,6 +146,10 @@ public class CC_CharacterValuesNet : NetworkBehaviour
 
         oxygen.Value = characterValues.Oxygen;
         maxOxygen.Value = characterValues.maxOxygen;
+
+        enableNoOxygenDeath.Value = characterValues.EnableNoOxygenDeath;
+        enableHunger.Value = characterValues.EnableHunger;
+        enableThirst.Value = characterValues.EnableThirst;
     }
 
     private void ApplyToCharacterValues_Client()
@@ -150,6 +166,13 @@ public class CC_CharacterValuesNet : NetworkBehaviour
             thirst.Value, maxThirst.Value,
             stamina.Value, maxStamina.Value,
             oxygen.Value, maxOxygen.Value
+        );
+
+        characterValues.SetSurvivalToggles
+        (
+            enableNoOxygenDeath.Value,
+            enableHunger.Value,
+            enableThirst.Value
         );
     }
 }

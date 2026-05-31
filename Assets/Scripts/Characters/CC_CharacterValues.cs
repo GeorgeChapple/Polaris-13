@@ -140,8 +140,13 @@ public class CC_CharacterValues : MonoBehaviour
         }
     }
 
-    [Header("Health")]
+    [Header("Survival Toggles")]
     [SerializeField] private bool invincible = false;
+    [SerializeField] private bool enableOxygenDeath = true;
+    [SerializeField] private bool enableHunger = true;
+    [SerializeField] private bool enableThirst = true;
+
+    [Header("Health")]
     public float maxHealth = 100f;
     [SerializeField] float health = 100f;
 
@@ -287,6 +292,10 @@ public class CC_CharacterValues : MonoBehaviour
     public UI_WarningSystem warningSystem;
 
     // Getters
+    public bool Invincible => invincible;
+    public bool EnableNoOxygenDeath => enableOxygenDeath;
+    public bool EnableHunger => enableHunger;
+    public bool EnableThirst => enableThirst;
     public float Health => health;
     public float Hunger => hunger;
     public float Thirst => thirst;
@@ -350,8 +359,8 @@ public class CC_CharacterValues : MonoBehaviour
         if (CanSimulateLocally())
         {
             TickDamage();
-            TickHunger();
-            TickThirst();
+            TickHunger(enableHunger);
+            TickThirst(enableThirst);
             TickEmptyValueDamage();
 
             // rudimentary death checks
@@ -682,9 +691,38 @@ public class CC_CharacterValues : MonoBehaviour
     {
         if (isDead) { return; }
 
-        TickHungerEmptyDamage();
-        TickThirstEmptyDamage();
-        TickOxygenEmptyDamage();
+        if (enableHunger)
+        {
+            TickHungerEmptyDamage();
+        }
+        else
+        {
+            hungerEmptyDamageDelayTimer = 0f;
+            hungerEmptyDamageTickTimer = 0f;
+            hungerEmptyDamageStarted = false;
+        }
+
+        if (enableThirst)
+        {
+            TickThirstEmptyDamage();
+        }
+        else
+        {
+            thirstEmptyDamageDelayTimer = 0f;
+            thirstEmptyDamageTickTimer = 0f;
+            thirstEmptyDamageStarted = false;
+        }
+
+        if (enableOxygenDeath)
+        {
+            TickOxygenEmptyDamage();
+        }
+        else
+        {
+            oxygenEmptyDamageDelayTimer = 0f;
+            oxygenEmptyDamageTickTimer = 0f;
+            oxygenEmptyDamageStarted = false;
+        }
     }
 
     void TickHungerEmptyDamage()
@@ -1234,5 +1272,33 @@ public class CC_CharacterValues : MonoBehaviour
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) { return true; }
 
         return NetworkManager.Singleton.IsServer;
+    }
+
+    public void SetSurvivalToggles(bool newEnableOxygenDeath, bool newEnableHunger, bool newEnableThirst)
+    {
+        enableOxygenDeath = newEnableOxygenDeath;
+        enableHunger = newEnableHunger;
+        enableThirst = newEnableThirst;
+
+        if (!enableHunger)
+        {
+            hungerEmptyDamageDelayTimer = 0f;
+            hungerEmptyDamageTickTimer = 0f;
+            hungerEmptyDamageStarted = false;
+        }
+
+        if (!enableThirst)
+        {
+            thirstEmptyDamageDelayTimer = 0f;
+            thirstEmptyDamageTickTimer = 0f;
+            thirstEmptyDamageStarted = false;
+        }
+
+        if (!enableOxygenDeath)
+        {
+            oxygenEmptyDamageDelayTimer = 0f;
+            oxygenEmptyDamageTickTimer = 0f;
+            oxygenEmptyDamageStarted = false;
+        }
     }
 }
