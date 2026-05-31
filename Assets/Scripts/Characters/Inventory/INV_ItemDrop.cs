@@ -18,6 +18,9 @@ public class INV_ItemDrop : NetworkBehaviour
     [Tooltip("If true, we set up the object from the inputted item data rather than network ID.")]
     [SerializeField] private bool setUpWithoutNetworkID = false;
 
+    [Tooltip("If true, will drop as a mesh collider instead of the item data's drop collider setting.")]
+    [SerializeField] private bool inventoryDrop = true;
+
     [Header("SFX")]
     [SerializeField] private AUD_SFX sfx;
     [SerializeField] private bool playPickUpSound = true;
@@ -142,6 +145,20 @@ public class INV_ItemDrop : NetworkBehaviour
         MeshCollider mc = GetComponent<MeshCollider>();
         BoxCollider bc = GetComponent<BoxCollider>();
         SphereCollider sc = GetComponent<SphereCollider>();
+
+        if (inventoryDrop && item.DropAsMeshCollider)
+        {
+            if (bc != null) { Destroy(bc); }
+            if (sc != null) { Destroy(sc); }
+
+            if (mc == null) { mc = gameObject.AddComponent<MeshCollider>(); }
+
+            mc.sharedMesh = null; // force refresh
+            mc.sharedMesh = mesh;
+            mc.convex = true;
+
+            return;
+        }
 
         if (item.DropColliderVal == INV_Item.DropCollider.MeshCollider)
         {

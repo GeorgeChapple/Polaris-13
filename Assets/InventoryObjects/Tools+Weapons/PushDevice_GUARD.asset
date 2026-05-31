@@ -24,7 +24,7 @@ MonoBehaviour:
   hungerDrainDelay: 5
   thirstReplenish: 5
   thirstDrainDelay: 0
-  unlocked: 1
+  unlocked: 0
   hidden: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
@@ -50,6 +50,10 @@ MonoBehaviour:
   mesh: {fileID: 1375436555846179411, guid: 38bace38e5341c84b8944ac14739eeb1, type: 3}
   material: {fileID: 2100000, guid: 87aa8629ab71ed4408f2d424ad75cbef, type: 2}
   twoHanded: 1
+  dropCollider: 0
+  autoColliderScale: 1
+  colliderScale: 1
+  dropAsMeshCollider: 1
   equippedPrefab: {fileID: 5739193541798090591, guid: 477a7d20586d9e341adf6b4bbd661434, type: 3}
   applyEquippedPrefabVisuals: 0
   forwardAxisRot: 2

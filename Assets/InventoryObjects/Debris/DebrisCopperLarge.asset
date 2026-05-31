@@ -29,9 +29,7 @@ MonoBehaviour:
   chanceOfSpawnInChest: 0
   amountSpawnedInChestRange: {x: 0, y: 0}
   chanceOfSpawnAsDebris: 5
-  biomeProbabilities:
-  - biomeType: 0
-    multiplier: 1.25
+  biomeProbabilities: []
   stackable: 0
   maxStack: 1
   craftable: 0
@@ -45,6 +43,7 @@ MonoBehaviour:
   dropCollider: 2
   autoColliderScale: 1
   colliderScale: 1
+  dropAsMeshCollider: 1
   equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
   applyEquippedPrefabVisuals: 1
   forwardAxisRot: 2

@@ -104,6 +104,9 @@ public class INV_Item : ScriptableObject
     [Tooltip("Only changes collider scale if autoColliderScale is false.")]
     [SerializeField] private float colliderScale = 1f;
 
+    [Tooltip("If true, will drop from inventory as a mesh collider.")]
+    [SerializeField] private bool dropAsMeshCollider = true;
+
     [Header("Equipped Prefab")]
     [Tooltip("Prefab used when this item is equipped.")]
     [SerializeField] private GameObject equippedPrefab;
@@ -206,6 +209,7 @@ public class INV_Item : ScriptableObject
     public DropCollider DropColliderVal => dropCollider;
     public bool AutoColliderScale => autoColliderScale;
     public float ColliderScale => Mathf.Max(0.01f, colliderScale);
+    public bool DropAsMeshCollider => dropAsMeshCollider;
 
     public ForwardAxisRot ForwardAxisRotVal => forwardAxisRot;
 

@@ -23,6 +23,7 @@ MonoBehaviour:
   thirstReplenish: 20
   thirstDrainDelay: 5
   unlocked: 0
+  hidden: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
@@ -46,6 +47,11 @@ MonoBehaviour:
   icon: {fileID: -577211665, guid: 5142ad4846ba47a42a2fae2428792efb, type: 3}
   mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
   material: {fileID: 2100000, guid: 0b6182d223b1d834094e501121887da3, type: 2}
+  twoHanded: 0
+  dropCollider: 0
+  autoColliderScale: 1
+  colliderScale: 1
+  dropAsMeshCollider: 1
   equippedPrefab: {fileID: 5739193541798090591, guid: 0e74196ecdd2abd44ada4afe36adaed9, type: 3}
   applyEquippedPrefabVisuals: 1
   forwardAxisRot: 2

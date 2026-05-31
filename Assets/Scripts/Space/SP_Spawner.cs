@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -14,7 +13,7 @@ public class SP_Spawner : NetworkBehaviour
     private float timer = 0;
     private int lifetimeSpawned = 0;
 
-    private Dictionary<INV_Item, float> sortedDebrisItemProbabilites = new Dictionary<INV_Item, float>();
+    private Dictionary<INV_Item, float> cahcedDebrisItemProbabilites = new Dictionary<INV_Item, float>();
 
     private void Awake()
     {
@@ -38,11 +37,17 @@ public class SP_Spawner : NetworkBehaviour
     private void InitialiseComponents()
     {
         spaceManager = FindFirstObjectByType<SP_SpaceManager>();
-        sortedDebrisItemProbabilites = SortItemProbabilites(false);
+        cahcedDebrisItemProbabilites = GetItemProbabilites();
+        timeLimit = GetRandomTimeLimit(settings);
     }
 
     private void Update()
     {
+        if (spaceManager == null) { return; }
+        if (spaceManager.rocket == null) { return; }
+        if (settings == null) { return; }
+        if (settings.spaceObjects == null || settings.spaceObjects.Count == 0) { return; }
+
         if (spaceManager.rocket.speed.Value > 0.1f)
         {
             if (timer < timeLimit)
@@ -77,6 +82,16 @@ public class SP_Spawner : NetworkBehaviour
                     Vector2 spawnPosition = GetRandomSpawnPosition(settings.spawnbounds);
                     int prefabIndex = GetRandomPrefabIndex(settings);
 
+                    if (prefabIndex < 0 || prefabIndex >= settings.spaceObjects.Count)
+                    {
+                        return;
+                    }
+
+                    if (settings.spaceObjects[prefabIndex].prefab == null)
+                    {
+                        return;
+                    }
+
                     List<GameObject> toSpawn = new List<GameObject>();
 
                     if (settings.spaceObjects[prefabIndex].prefab.CompareTag("RBPOI"))
@@ -93,6 +108,8 @@ public class SP_Spawner : NetworkBehaviour
 
                     foreach (GameObject prefab in toSpawn)
                     {
+                        if (prefab == null) { continue; }
+
                         GameObject newDebris = Instantiate(
                                     prefab,
                                     new Vector3(
@@ -142,67 +159,110 @@ public class SP_Spawner : NetworkBehaviour
 
     private float GetRandomTimeLimit(SP_SpawnSettings settings)
     {
+        if (settings == null) { return 0f; }
+
         return UnityEngine.Random.Range(settings.spawnTime.x, settings.spawnTime.y);
     }
 
     private int GetRandomPrefabIndex(SP_SpawnSettings settings)
     {
-        int maxValue = settings.spaceObjects[settings.spaceObjects.Count - 1].probability;
-        float percentage = (float)UnityEngine.Random.Range(0, maxValue + 1) / (float)maxValue;
-        int index = 0;
-        foreach (SP_SpawnSettings.SpaceObject obj in settings.spaceObjects)
+        if (settings == null) { return -1; }
+        if (settings.spaceObjects == null || settings.spaceObjects.Count == 0) { return -1; }
+
+        float totalWeight = 0f;
+
+        for (int i = 0; i < settings.spaceObjects.Count; i++)
         {
-            float threshold = (float)obj.probability / (float)maxValue;
-            if (percentage <= threshold)
+            if (settings.spaceObjects[i].prefab == null) { continue; }
+
+            totalWeight += Mathf.Max(0f, settings.spaceObjects[i].probability);
+        }
+
+        if (totalWeight <= 0f) { return 0; }
+
+        float randomValue = UnityEngine.Random.Range(0f, totalWeight);
+        float currentWeight = 0f;
+
+        for (int i = 0; i < settings.spaceObjects.Count; i++)
+        {
+            if (settings.spaceObjects[i].prefab == null) { continue; }
+
+            currentWeight += Mathf.Max(0f, settings.spaceObjects[i].probability);
+
+            if (randomValue <= currentWeight)
             {
-                break;
-            }
-            else
-            {
-                index++;
+                return i;
             }
         }
-        return index;
+
+        return settings.spaceObjects.Count - 1;
     }
 
-    private Dictionary<INV_Item, float> SortItemProbabilites(bool forChest)
+    private Dictionary<INV_Item, float> GetItemProbabilites()
     {
-        // sort all item probabilities
+        // get all item probabilities and skip any we don't need
         Dictionary<INV_Item, float> allItemProbabilities = new Dictionary<INV_Item, float>();
+
+        if (INV_ItemDatabase.Instance == null) { return allItemProbabilities; }
+        if (INV_ItemDatabase.Instance.Items == null) { return allItemProbabilities; }
 
         foreach (INV_Item item in INV_ItemDatabase.Instance.Items)
         {
-            float probability = forChest ? item.ChanceOfSpawnInChest : item.ChanceOfSpawnAsDebris;
+            if (item == null) { continue; }
+
+            float probability = item.ChanceOfSpawnAsDebris;
             if (probability <= 0) { continue; }
 
-            allItemProbabilities.Add(item, probability);
+            if (!allItemProbabilities.ContainsKey(item))
+            {
+                allItemProbabilities.Add(item, probability);
+            }
         }
 
-        return allItemProbabilities.OrderBy(entry => entry.Value).ToDictionary(entry => entry.Key, entry => entry.Value);
+        return allItemProbabilities;
     }
 
     private INV_Item GetRandomDebrisItem()
     {
-        return GetRandomItemFromTable(sortedDebrisItemProbabilites);
+        if (cahcedDebrisItemProbabilites == null || cahcedDebrisItemProbabilites.Count == 0)
+        {
+            cahcedDebrisItemProbabilites = GetItemProbabilites();
+        }
+
+        return GetRandomItemFromTable(cahcedDebrisItemProbabilites);
     }
 
     private INV_Item GetRandomItemFromTable(Dictionary<INV_Item, float> itemTable)
     {
         if (itemTable == null || itemTable.Count == 0) { return null; }
 
-        // get highest probability
-        float maxValue = itemTable.Last<KeyValuePair<INV_Item, float>>().Value;
-        float percentage = UnityEngine.Random.Range(0, maxValue + 1) / maxValue;
-        INV_Item itemToReturn = null;
+        float totalWeight = 0f;
 
         foreach (KeyValuePair<INV_Item, float> item in itemTable)
         {
-            float threshold = item.Value / maxValue;
-            itemToReturn = item.Key;
-            if (percentage <= threshold) { break; }
+            if (item.Key == null) { continue; }
+
+            totalWeight += Mathf.Max(0f, item.Value);
         }
 
-        return itemToReturn;
+        if (totalWeight <= 0f) { return null; }
+
+        float randomValue = UnityEngine.Random.Range(0f, totalWeight);
+        float currentWeight = 0f;
+
+        foreach (KeyValuePair<INV_Item, float> item in itemTable)
+        {
+            if (item.Key == null) { continue; }
+
+            currentWeight += Mathf.Max(0f, item.Value);
+
+            if (randomValue <= currentWeight)
+            {
+                return item.Key;
+            }
+        }
+
+        return null;
     }
 
     private Vector2 GetRandomSpawnPosition(Vector4 bounds)
