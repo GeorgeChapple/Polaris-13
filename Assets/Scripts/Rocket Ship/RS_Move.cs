@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 // Made by: George Chapple, Jason Lodge
@@ -6,100 +7,105 @@ using UnityEngine;
 
 public class RS_Move : NetworkBehaviour
 {
-    [Header("References")]
-    public GameObject globalParent;
-
     [Header("Global Values")]
     public Vector3 worldPosition;
     public NetworkVariable<Vector3> worldDirectionNetworked = new NetworkVariable<Vector3>();
     public Vector3 worldDirection;
     public Vector3 targetPosition;
     public NetworkVariable<float> speed = new NetworkVariable<float>();
-    public float targetSpeed;
-
-    public enum moveMode { Manual, Automatic, Deactivated }
-
-    public moveMode mode = moveMode.Manual;
+    public NetworkVariable<float> targetSpeed = new NetworkVariable<float>();
+    public NetworkVariable<float> health = new NetworkVariable<float>();
+    public NetworkVariable<float> fuel = new NetworkVariable<float>();
+    public NetworkVariable<float> oxygen = new NetworkVariable<float>();
 
     [Header("Settings")]
-    [SerializeField] private float speedChangeAmt = 5;
-    [SerializeField] private float directionChangeSpeedMax = 5;
-    [SerializeField] private float directionChangeSpeedMin = 5;
-    [SerializeField] private float directionChangeSpeedAuto = 5;
+    [SerializeField] private float speedChangeRate = 5;
+    [SerializeField] private float fuelDrainRate = 1;
+    [SerializeField] private float oxygenDrainRate = 1;
+    [SerializeField] private float maxSpeed = 20;
+    [SerializeField] private float maxHealth = 1000;
+    [SerializeField] private float maxFuel = 5000;
+    [SerializeField] private float maxOxygen = 5000;
 
-    [SerializeField] private Vector3 anchorPoint = Vector3.zero;
+    [Header("Meters")]
+    [SerializeField] private Renderer[] meters;
+    [SerializeField] private Vector2[] metersFills;
+    private Material[] metersMaterials = new Material[4];
 
-    private Vector2 controllerDir = Vector2.zero; // max of 1 on both axis positive and negative
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+    }
 
-        if (!IsServer)
+    private void Start()
+    {
+        health.Value = maxHealth;
+        fuel.Value = maxFuel;
+        oxygen.Value = maxOxygen;
+        for (int i = 0; i < meters.Length; ++i)
         {
-            enabled = false;
-            return;
+            metersMaterials[i] = meters[i].materials[1];
         }
     }
 
     void Update()
     {
-        if (mode != moveMode.Deactivated)
+        UpdateMeters();
+        if (!IsServer)
         {
-            UpdateDirection();
-            MoveShip();
+            return;
         }
+
+        Debug.Log("Oxygen drain : " + oxygenDrainRate * NetworkManager.ConnectedClientsList.Count);
+        Debug.Log("Fuel drain : " + fuelDrainRate * speed.Value);
+        UpdateDirection();
+        MoveShip();
+        TickOxygen();
+        TickFuel();
     }
 
-    void MoveShip()
+    private void MoveShip()
     {
-        if ((targetPosition - worldPosition).magnitude > targetSpeed)
+        if (fuel.Value > 0 && (targetPosition - worldPosition).magnitude > targetSpeed.Value)
         {
-            speed.Value = Mathf.Lerp(speed.Value, targetSpeed, Time.deltaTime);
+            speed.Value = Mathf.Lerp(speed.Value, targetSpeed.Value, Time.deltaTime * speedChangeRate);
         }
         else
         {
-            speed.Value = Mathf.Lerp(speed.Value, 0, Time.deltaTime);
+            speed.Value = Mathf.Lerp(speed.Value, 0, Time.deltaTime * speedChangeRate);
         }
-            worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed.Value), Time.deltaTime);
-        // lerp to target speed and clamp to target speed when close enough
-
-
-        // move ship in direction using speed value
-
-
+        worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed.Value), Time.deltaTime);
     }
 
-    void UpdateDirection()
+    private void UpdateDirection()
     {
-        if (mode == moveMode.Manual)
-        {
-            // change world direction based on distance of controller v2 from zero
-
-            // calculate percentage of vec2 controller from zero to max
-            // add to world direction using calculated speed value with max and min clamp
-        }
-        else if (mode == moveMode.Automatic)
-        {
-            Vector3 targetDirection = (targetPosition - worldPosition).normalized;
-            worldDirection = Vector3.Slerp(worldDirection, targetDirection, Time.deltaTime);
-            worldDirectionNetworked.Value = worldDirection;
-        }
-
+        Vector3 targetDirection = (targetPosition - worldPosition).normalized;
+        worldDirection = Vector3.Slerp(worldDirection, targetDirection, Time.deltaTime);
+        worldDirectionNetworked.Value = worldDirection;
     }
 
-    void ChangeSpeed(bool upOrDown, float amount, bool emergencyStop)
+    private void TickOxygen()
     {
-        if (emergencyStop) { targetSpeed = 0; return; }
+        if (oxygen.Value > 0)
+        {
+            oxygen.Value = Mathf.Lerp(oxygen.Value, oxygen.Value - oxygenDrainRate * NetworkManager.ConnectedClientsList.Count, Time.deltaTime);
+        }
+    }
 
-        if (upOrDown) // up
+    private void TickFuel()
+    {
+        if (fuel.Value > 0)
         {
-            targetSpeed += amount;
+            fuel.Value = Mathf.Lerp(fuel.Value, fuel.Value - fuelDrainRate * speed.Value, Time.deltaTime);
         }
-        else // down
-        {
-            targetSpeed -= amount;
-        }
-        // intervals of 5 i think
+    }
+
+    private void UpdateMeters()
+    {
+        metersMaterials[0].SetFloat("_FillAmount", Mathf.Lerp(metersFills[0].x, metersFills[0].y, health.Value / maxHealth));
+        metersMaterials[1].SetFloat("_FillAmount", Mathf.Lerp(metersFills[1].x, metersFills[1].y, speed.Value / maxSpeed));
+        metersMaterials[2].SetFloat("_FillAmount", Mathf.Lerp(metersFills[2].x, metersFills[2].y, oxygen.Value / maxOxygen));
+        metersMaterials[3].SetFloat("_FillAmount", Mathf.Lerp(metersFills[3].x, metersFills[3].y, fuel.Value / maxFuel));
     }
 }
