@@ -20,6 +20,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
     private CC_Movement movement;
     private CC_CameraController cameraController;
     private CC_Interaction interaction;
+    private INV_PlayerEquipment equipment;
 
     [Header("Cursor")]
     public bool lockCursorOnStart = true;
@@ -123,6 +124,7 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         movement = GetComponent<CC_Movement>();
         cameraController = GetComponent<CC_CameraController>();
         interaction = GetComponent<CC_Interaction>();
+        equipment = GetComponent<INV_PlayerEquipment>();
 
         if (interaction != null && interaction.playerController == null)
         {
@@ -152,6 +154,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
         if (hotBar == null)
         {
             hotBar = GetComponentInChildren<INV_HotBar>();
+        }
+
+        if (equipment == null)
+        {
+            equipment = GetComponentInChildren<INV_PlayerEquipment>();
         }
     }
 
@@ -694,6 +701,11 @@ public class CC_CharacterPlayerController : NetworkBehaviour
             {
                 crafting.SetupEverything(false);
             }
+        }
+
+        if (equipment != null)
+        {
+            equipment.RefreshEquipmentFromInventory();
         }
 
         SetInMenu(state || IsPauseOpen() || IsInteractMenuOpen());

@@ -66,6 +66,8 @@ public class INV_Inventory : MonoBehaviour
     private GridRuntime playerRuntime = new GridRuntime();
     private GridRuntime chestRuntime = new GridRuntime();
 
+    public event System.Action OnPlayerInventoryChanged;
+
     // currently opened chest for this player
     private INV_Chest activeChest;
 
@@ -225,6 +227,11 @@ public class INV_Inventory : MonoBehaviour
 
         UpdateHoverItem();
         UpdateHoverTooltip();
+    }
+
+    private void NotifyPlayerInventoryChanged()
+    {
+        OnPlayerInventoryChanged?.Invoke();
     }
 
     private void RefreshRuntimeVisuals(GridRuntime runtime)
@@ -407,6 +414,7 @@ public class INV_Inventory : MonoBehaviour
                 hotBar.RefreshAllVisuals();
             }
 
+            NotifyPlayerInventoryChanged();
             return true;
         }
 
@@ -451,6 +459,7 @@ public class INV_Inventory : MonoBehaviour
             Debug.Log($"INV, Added: {item.Name} at {cell}");
         }
 
+        NotifyPlayerInventoryChanged();
         return true;
     }
 
@@ -514,6 +523,7 @@ public class INV_Inventory : MonoBehaviour
                 remaining--;
             }
 
+            NotifyPlayerInventoryChanged();
             return true;
         }
 
@@ -542,6 +552,7 @@ public class INV_Inventory : MonoBehaviour
             }
         }
 
+        NotifyPlayerInventoryChanged();
         return true;
     }
 
@@ -1502,6 +1513,7 @@ public class INV_Inventory : MonoBehaviour
         {
             Destroy(inst.ui.gameObject);
         }
+        NotifyPlayerInventoryChanged();
     }
 
     private void RemoveLocalChestItemInstance(ItemInstance inst)
@@ -1553,6 +1565,7 @@ public class INV_Inventory : MonoBehaviour
                 hotBar.RefreshAllVisuals();
             }
 
+            NotifyPlayerInventoryChanged();
             return take > 0;
         }
 
@@ -1981,6 +1994,7 @@ public class INV_Inventory : MonoBehaviour
             hotBar.RefreshAllVisuals();
         }
 
+        NotifyPlayerInventoryChanged();
         return add > 0;
     }
 
@@ -2381,6 +2395,7 @@ public class INV_Inventory : MonoBehaviour
                 hotBar2.RefreshAllVisuals();
             }
 
+            NotifyPlayerInventoryChanged();
             return true;
         }
 

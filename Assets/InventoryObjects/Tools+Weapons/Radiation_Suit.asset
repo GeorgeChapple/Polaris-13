@@ -15,15 +15,24 @@ MonoBehaviour:
   itemID: radiation_suit
   m_name: Radiation Suit
   description: Stops <i>some</i> radiation
-  itemType: 3
+  itemType: 4
   itemRarity: 2
   durability: 0
+  passiveEquipment: 1
+  equipmentType: 2
+  additionalMaxOxygen: 0
+  additionalOxygenRegenPerSecond: 0
+  bleh: 1
+  additionalGroundThrusterAccel: 0
+  additionalGroundThrusterUpSpeedCap: 0
+  additionalThrusterAccel: 0
+  additionalSpaceStabilisationAccel: 0
+  unlocked: 0
+  hidden: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
-  unlocked: 0
-  hidden: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 0
@@ -52,8 +61,8 @@ MonoBehaviour:
   autoColliderScale: 1
   colliderScale: 1
   dropAsMeshCollider: 1
-  equippedPrefab: {fileID: 0}
-  applyEquippedPrefabVisuals: 0
+  equippedPrefab: {fileID: 3959890959759627763, guid: 4c75af726381c58419ccb41da44517e2, type: 3}
+  applyEquippedPrefabVisuals: 1
   forwardAxisRot: 2
   inventoryMeshOffset: {x: 0, y: 0, z: 0}
   inventoryMeshRotation: {x: 0, y: 0, z: 0}
