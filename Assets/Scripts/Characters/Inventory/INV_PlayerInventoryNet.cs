@@ -36,6 +36,45 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     public event Action<bool, string> OnCraftRequestFinished;
 
+    [System.Serializable]
+    public struct NetworkInventoryItemData : INetworkSerializable, System.IEquatable<NetworkInventoryItemData>
+    {
+        public FixedString128Bytes itemId;
+        public FixedString128Bytes inventoryItemUniqueId;
+        public int quantity;
+        public int cellX;
+        public int cellY;
+        public int rotation;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref itemId);
+            serializer.SerializeValue(ref inventoryItemUniqueId);
+            serializer.SerializeValue(ref quantity);
+            serializer.SerializeValue(ref cellX);
+            serializer.SerializeValue(ref cellY);
+            serializer.SerializeValue(ref rotation);
+        }
+
+        public bool Equals(NetworkInventoryItemData other)
+        {
+            return itemId.Equals(other.itemId)
+                && inventoryItemUniqueId.Equals(other.inventoryItemUniqueId)
+                && quantity == other.quantity
+                && cellX == other.cellX
+                && cellY == other.cellY
+                && rotation == other.rotation;
+        }
+    }
+
+    // synced player inventory item list.
+    // owner builds this from local inventory, server writes it, everyone can read it.
+    private NetworkList<NetworkInventoryItemData> networkInventoryItems = new NetworkList<NetworkInventoryItemData>();
+
+    private bool inventoryEventsHooked;
+
+    public NetworkList<NetworkInventoryItemData> NetworkInventoryItems => networkInventoryItems;
+
     // replicated equipped item id, the visual is built locally on each player from this
     private NetworkVariable<FixedString128Bytes> equippedItemId = new NetworkVariable<FixedString128Bytes>
     (
@@ -66,12 +105,21 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
         equippedItemId.OnValueChanged += OnEquippedItemIdChanged;
         RebuildEquippedVisuals(equippedItemId.Value.ToString());
+
+        HookInventoryEvents();
+
+        if (IsOwner)
+        {
+            SyncLocalInventoryToServer();
+        }
     }
 
     // clean up network subscriptions when despawned.
     public override void OnNetworkDespawn()
     {
         equippedItemId.OnValueChanged -= OnEquippedItemIdChanged;
+
+        UnhookInventoryEvents();
 
         ClearEquippedVisual();
 
@@ -101,6 +149,154 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         {
             crafting = GetComponentInChildren<INV_Crafting>();
         }
+    }
+
+    private void HookInventoryEvents()
+    {
+        if (inventoryEventsHooked) { return; }
+
+        CacheRefs();
+
+        if (inventory == null) { return; }
+
+        inventory.OnPlayerInventoryChanged += OnLocalInventoryChanged;
+        inventoryEventsHooked = true;
+    }
+
+    private void UnhookInventoryEvents()
+    {
+        if (!inventoryEventsHooked) { return; }
+
+        if (inventory != null)
+        {
+            inventory.OnPlayerInventoryChanged -= OnLocalInventoryChanged;
+        }
+
+        inventoryEventsHooked = false;
+    }
+
+    private void OnLocalInventoryChanged()
+    {
+        if (!IsOwner) { return; }
+
+        SyncLocalInventoryToServer();
+    }
+
+    // build the owner local inventory into network data.
+    private NetworkInventoryItemData[] BuildInventorySnapshot()
+    {
+        CacheRefs();
+
+        if (inventory == null || inventory.Items == null)
+        {
+            return new NetworkInventoryItemData[0];
+        }
+
+        List<NetworkInventoryItemData> snapshot = new List<NetworkInventoryItemData>();
+
+        for (int i = 0; i < inventory.Items.Count; i++)
+        {
+            INV_Inventory.ItemInstance inst = inventory.Items[i];
+            if (inst == null || inst.data == null) { continue; }
+
+            NetworkInventoryItemData data = new NetworkInventoryItemData();
+            data.itemId = inst.data.ItemID;
+            data.inventoryItemUniqueId = string.IsNullOrWhiteSpace(inst.inventoryItemUniqueId) ? string.Empty : inst.inventoryItemUniqueId;
+            data.quantity = Mathf.Max(1, inst.quantity);
+            data.cellX = inst.cell.x;
+            data.cellY = inst.cell.y;
+            data.rotation = (int)inst.rotation;
+
+            snapshot.Add(data);
+        }
+
+        return snapshot.ToArray();
+    }
+
+    // owner sends their local inventory snapshot to the server.
+    private void SyncLocalInventoryToServer()
+    {
+        if (!IsSpawned) { return; }
+        if (!IsOwner) { return; }
+
+        NetworkInventoryItemData[] snapshot = BuildInventorySnapshot();
+
+        if (IsServer)
+        {
+            ApplyInventorySnapshot_Server(snapshot);
+            return;
+        }
+
+        SubmitInventorySnapshotRpc(snapshot);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void SubmitInventorySnapshotRpc(NetworkInventoryItemData[] snapshot, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams)) { return; }
+
+        ApplyInventorySnapshot_Server(snapshot);
+    }
+
+    // server writes the synced inventory list.
+    private void ApplyInventorySnapshot_Server(NetworkInventoryItemData[] snapshot)
+    {
+        if (!IsServer) { return; }
+
+        networkInventoryItems.Clear();
+
+        if (snapshot == null) { return; }
+
+        for (int i = 0; i < snapshot.Length; i++)
+        {
+            NetworkInventoryItemData data = snapshot[i];
+
+            if (data.itemId.IsEmpty) { continue; }
+
+            data.quantity = Mathf.Max(1, data.quantity);
+            networkInventoryItems.Add(data);
+        }
+    }
+
+    // get the synced item count for quests and other shared systems.
+    public int GetNetworkItemCount(string itemId)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return 0;
+        }
+
+        int total = 0;
+
+        for (int i = 0; i < networkInventoryItems.Count; i++)
+        {
+            NetworkInventoryItemData data = networkInventoryItems[i];
+
+            if (data.itemId.ToString() != itemId)
+            {
+                continue;
+            }
+
+            total += Mathf.Max(1, data.quantity);
+        }
+
+        return total;
+    }
+
+    // check the synced inventory has enough of an item.
+    public bool HasNetworkItemAmount(string itemId, int amount)
+    {
+        if (string.IsNullOrWhiteSpace(itemId))
+        {
+            return false;
+        }
+
+        if (amount <= 0)
+        {
+            return true;
+        }
+
+        return GetNetworkItemCount(itemId) >= amount;
     }
 
     private void CacheObserverEquippedRoot()

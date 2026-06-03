@@ -1,14 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
 
 // Made By: Jason Lodge
-// Summary: Tutorial manager.
-// Waits for the player to spawn, finds player refs, handles ordered tutorial steps,
-// checks player inventory, updates objective ui and moves marker over current objective target.
-public class TUT_TutorialManager : MonoBehaviour
+// Summary: Shared quest manager.
+// Waits for players to spawn, finds all player refs, syncs ordered quest steps,
+// checks player inventory, updates local objective ui and moves marker over current objective target.
+public class TUT_TutorialManager : NetworkBehaviour
 {
     public enum TutorialCompleteType
     {
@@ -47,10 +48,26 @@ public class TUT_TutorialManager : MonoBehaviour
         public bool completed;
     }
 
+    [System.Serializable]
+    public class PlayerRefs
+    {
+        [Header("Refs")]
+        public INV_PlayerInventoryNet inventoryNet;
+        public Camera playerCamera;
+        public CC_CharacterValues characterValues;
+        public CC_Movement movement;
+
+        [Header("Runtime")]
+        public bool isLocal;
+    }
+
     [Header("Runtime Refs")]
-    [SerializeField] private INV_Inventory playerInventory;
+    [SerializeField] private INV_PlayerInventoryNet playerInventoryNet;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private CC_CharacterValues playerCharacterValues;
+
+    [Header("Multiplayer Refs")]
+    [SerializeField] private List<PlayerRefs> playerRefs = new List<PlayerRefs>();
 
     [Header("Objective UI")]
     [SerializeField] private TextMeshProUGUI objectiveTitleText;
@@ -67,31 +84,83 @@ public class TUT_TutorialManager : MonoBehaviour
     [SerializeField] private bool startWhenPlayerRefsFound = true;
     [SerializeField] private bool hideMarkerWhenBehindCamera = true;
     [SerializeField] private float edgePadding = 32f;
+    [SerializeField] private bool destroySessionCodeObject = false;
     [SerializeField] private string sessionCodeObjectTag = "SessionCode";
+    [SerializeField] private bool hideItems = false;
     [SerializeField] private List<INV_Item> itemsToShow = new List<INV_Item>();
+
+    [Header("Quest Settings")]
+    [Tooltip("If true, every player must have the required inventory items. If false, any player can complete the item step.")]
+    [SerializeField] private bool allPlayersNeedRequiredItems;
+
+    private NetworkVariable<int> syncedStepIndex = new NetworkVariable<int>(
+        -1,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private NetworkVariable<bool> syncedQuestRunning = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private NetworkVariable<bool> syncedQuestFinished = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
 
     private UI_TutorialObjectiveMarker currentMarker;
     private int currentStepIndex = -1;
     private bool tutorialRunning;
     private bool tutorialFinished;
     private bool findingRefs;
+    private bool localQuestSettingsApplied;
 
     public int CurrentStepIndex => currentStepIndex;
     public TutorialStep CurrentStep => GetCurrentStep();
     public bool TutorialRunning => tutorialRunning;
     public bool TutorialFinished => tutorialFinished;
+    public List<PlayerRefs> PlayerRefsList => playerRefs;
 
     private void Start()
     {
+        if (!IsSpawned)
+        {
+            StartCoroutine(WaitForPlayerRefs());
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        syncedStepIndex.OnValueChanged += OnSyncedStepIndexChanged;
+        syncedQuestRunning.OnValueChanged += OnSyncedQuestStateChanged;
+        syncedQuestFinished.OnValueChanged += OnSyncedQuestStateChanged;
+
+        ApplySyncedStateToLocal();
+
         StartCoroutine(WaitForPlayerRefs());
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        syncedStepIndex.OnValueChanged -= OnSyncedStepIndexChanged;
+        syncedQuestRunning.OnValueChanged -= OnSyncedQuestStateChanged;
+        syncedQuestFinished.OnValueChanged -= OnSyncedQuestStateChanged;
     }
 
     private void Update()
     {
+        CachePlayerRefs();
+
         if (!tutorialRunning || tutorialFinished) { return; }
 
         TutorialStep step = GetCurrentStep();
         if (step == null) { return; }
+
+        // only the server decides if inventory steps are done.
+        if (IsSpawned && !IsServer) { return; }
 
         if (step.completeType == TutorialCompleteType.InventoryItems)
         {
@@ -117,6 +186,12 @@ public class TUT_TutorialManager : MonoBehaviour
         {
             CachePlayerRefs();
 
+            // dedicated servers do not need local ui refs.
+            if (IsSpawned && IsServer && !IsClient)
+            {
+                break;
+            }
+
             if (HasPlayerRefs())
             {
                 break;
@@ -133,57 +208,96 @@ public class TUT_TutorialManager : MonoBehaviour
         }
     }
 
-    // find the local player refs needed by tutorial UI.
+    // find all players and local refs needed by quest ui.
     private void CachePlayerRefs()
     {
-        if (playerInventory == null)
-        {
-            playerInventory = FindLocalInventory();
-        }
+        CacheAllPlayerRefs();
 
-        if (playerCamera == null)
-        {
-            playerCamera = FindLocalCamera();
-        }
+        PlayerRefs localRefs = GetLocalPlayerRefs();
 
-        if (playerCharacterValues == null)
+        if (localRefs != null)
         {
-            playerCharacterValues = FindLocalCharacterValues();
+            if (playerInventoryNet == null) { playerInventoryNet = localRefs.inventoryNet; }
+            if (playerCamera == null) { playerCamera = localRefs.playerCamera; }
+            if (playerCharacterValues == null) { playerCharacterValues = localRefs.characterValues; }
         }
-
-        GameObject[] sessionCodeUI = GameObject.FindGameObjectsWithTag(sessionCodeObjectTag);
-        foreach (GameObject obj in sessionCodeUI)
+        if (destroySessionCodeObject)
         {
-            obj.SetActive(false);
+            GameObject[] sessionCodeUI = GameObject.FindGameObjectsWithTag(sessionCodeObjectTag);
+            foreach (GameObject obj in sessionCodeUI)
+            {
+                obj.SetActive(false);
+            }
+        }
+    }
+
+    // find every player inventory net, camera, movement and character values.
+    private void CacheAllPlayerRefs()
+    {
+        playerRefs.Clear();
+
+        INV_PlayerInventoryNet[] inventoryNets = FindObjectsByType<INV_PlayerInventoryNet>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+
+        for (int i = 0; i < inventoryNets.Length; i++)
+        {
+            INV_PlayerInventoryNet inventoryNet = inventoryNets[i];
+            if (inventoryNet == null) { continue; }
+
+            CC_Movement movement = inventoryNet.GetComponent<CC_Movement>();
+            if (movement == null)
+            {
+                movement = inventoryNet.GetComponentInParent<CC_Movement>();
+            }
+
+            CC_CharacterValues characterValues = inventoryNet.GetComponent<CC_CharacterValues>();
+            if (characterValues == null)
+            {
+                characterValues = inventoryNet.GetComponentInChildren<CC_CharacterValues>(true);
+            }
+            if (characterValues == null)
+            {
+                characterValues = inventoryNet.GetComponentInParent<CC_CharacterValues>();
+            }
+
+            bool isLocal = inventoryNet.IsOwner;
+
+            if (movement != null)
+            {
+                isLocal = movement.IsLocallyControlled();
+            }
+
+            PlayerRefs refs = new PlayerRefs();
+            refs.inventoryNet = inventoryNet;
+            refs.movement = movement;
+            refs.characterValues = characterValues;
+            refs.isLocal = isLocal;
+            refs.playerCamera = FindCameraForMovement(movement, isLocal);
+
+            playerRefs.Add(refs);
         }
     }
 
     private bool HasPlayerRefs()
     {
-        return playerInventory != null && playerCamera != null;
+        return playerInventoryNet != null && playerCamera != null;
     }
 
-    // find the inventory owned by the local player.
-    private INV_Inventory FindLocalInventory()
+    private PlayerRefs GetLocalPlayerRefs()
     {
-        INV_Inventory[] inventories = FindObjectsByType<INV_Inventory>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-
-        for (int i = 0; i < inventories.Length; i++)
+        for (int i = 0; i < playerRefs.Count; i++)
         {
-            INV_Inventory inventory = inventories[i];
-            if (inventory == null) { continue; }
+            PlayerRefs refs = playerRefs[i];
+            if (refs == null) { continue; }
+            if (!refs.isLocal) { continue; }
 
-            CC_Movement movement = inventory.GetComponent<CC_Movement>();
-            if (movement != null && !movement.IsLocallyControlled()) { continue; }
-
-            return inventory;
+            return refs;
         }
 
         return null;
     }
 
-    // find the camera attached to the local player.
-    private Camera FindLocalCamera()
+    // find the camera attached to a player movement.
+    private Camera FindCameraForMovement(CC_Movement movement, bool isLocal)
     {
         CC_CameraController[] controllers = FindObjectsByType<CC_CameraController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 
@@ -191,14 +305,14 @@ public class TUT_TutorialManager : MonoBehaviour
         {
             CC_CameraController controller = controllers[i];
             if (controller == null || controller.movement == null) { continue; }
-            if (!controller.movement.IsLocallyControlled()) { continue; }
+            if (movement != null && controller.movement != movement) { continue; }
             if (controller.cameraRoot == null) { continue; }
 
             Camera cam = controller.cameraRoot.GetComponentInChildren<Camera>(true);
             if (cam != null) { return cam; }
         }
 
-        if (Camera.main != null)
+        if (isLocal && Camera.main != null)
         {
             return Camera.main;
         }
@@ -206,48 +320,37 @@ public class TUT_TutorialManager : MonoBehaviour
         return null;
     }
 
-    // find the character values attached to the local player.
-    private CC_CharacterValues FindLocalCharacterValues()
-    {
-        CC_CharacterValues[] characterValuesArr = FindObjectsByType<CC_CharacterValues>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-
-        for (int i = 0; i < characterValuesArr.Length; i++)
-        {
-            CC_CharacterValues characterValues = characterValuesArr[i];
-            if (characterValues == null) { continue; }
-
-            if (playerInventory == null) { FindLocalInventory(); return null; }
-            CC_Movement movement = playerInventory.GetComponent<CC_Movement>();
-            if (!movement.IsLocallyControlled()) { continue; }
-
-            return characterValues;
-        }
-
-        return null;
-    }
-
-    // reset tutorial state and begin at the first step.
+    // reset quest state and begin at the first step.
     public void StartTutorial()
     {
         CachePlayerRefs();
 
-        if (!HasPlayerRefs())
+        if (IsSpawned && !IsServer)
         {
-            StartCoroutine(WaitForPlayerRefs());
+            StartTutorialServerRpc();
             return;
         }
 
-        INV_ItemDatabase.Instance.HideItems(itemsToShow, true);
-        if (playerCharacterValues != null) { playerCharacterValues.SetSurvivalToggles(false, false, false); }
+        StartTutorialServer();
+    }
 
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void StartTutorialServerRpc()
+    {
+        StartTutorialServer();
+    }
+
+    // start the shared quest from the server.
+    private void StartTutorialServer()
+    {
         if (steps == null || steps.Count == 0)
         {
-            tutorialFinished = true;
-            tutorialRunning = false;
-            ClearObjectiveUI();
-            ClearObjectiveMarker();
+            FinishTutorialServer();
             return;
         }
+
+        syncedQuestRunning.Value = true;
+        syncedQuestFinished.Value = false;
 
         tutorialRunning = true;
         tutorialFinished = false;
@@ -258,39 +361,98 @@ public class TUT_TutorialManager : MonoBehaviour
             steps[i].completed = false;
         }
 
-        SetStep(0);
+        ApplyQuestSettingsClientRpc();
+        SetStepServer(0);
     }
 
     // mark the current step done and move to the next one.
     public void CompleteCurrentStep()
     {
+        if (IsSpawned && !IsServer)
+        {
+            CompleteCurrentStepServerRpc();
+            return;
+        }
+
+        CompleteCurrentStepServer();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void CompleteCurrentStepServerRpc()
+    {
+        CompleteCurrentStepServer();
+    }
+
+    // complete the current shared quest step from the server.
+    private void CompleteCurrentStepServer()
+    {
+        if (!tutorialRunning || tutorialFinished) { return; }
+
         TutorialStep step = GetCurrentStep();
         if (step == null) { return; }
         if (step.completed) { return; }
 
         step.completed = true;
-        step.onStepCompleted?.Invoke();
+        StepCompletedClientRpc(currentStepIndex);
 
-        SetStep(currentStepIndex + 1);
+        SetStepServer(currentStepIndex + 1);
     }
 
-    // switch tutorial state to a specific step.
-    private void SetStep(int stepIndex)
+    // switch quest state to a specific step.
+    private void SetStepServer(int stepIndex)
     {
         if (stepIndex < 0 || steps == null || stepIndex >= steps.Count)
         {
-            FinishTutorial();
+            FinishTutorialServer();
             return;
         }
 
         currentStepIndex = stepIndex;
+        syncedStepIndex.Value = stepIndex;
 
         TutorialStep step = GetCurrentStep();
         if (step == null)
         {
-            SetStep(currentStepIndex + 1);
+            SetStepServer(currentStepIndex + 1);
             return;
         }
+
+        StepStartedClientRpc(stepIndex);
+    }
+
+    // clean up quest ui and restore hidden items.
+    private void FinishTutorialServer()
+    {
+        tutorialRunning = false;
+        tutorialFinished = true;
+        currentStepIndex = -1;
+
+        syncedQuestRunning.Value = false;
+        syncedQuestFinished.Value = true;
+        syncedStepIndex.Value = -1;
+
+        QuestFinishedClientRpc();
+    }
+
+    [ClientRpc]
+    private void ApplyQuestSettingsClientRpc()
+    {
+        ApplyLocalQuestSettings();
+    }
+
+    [ClientRpc]
+    private void StepStartedClientRpc(int stepIndex)
+    {
+        if (stepIndex < 0 || steps == null || stepIndex >= steps.Count) { return; }
+
+        tutorialRunning = true;
+        tutorialFinished = false;
+        currentStepIndex = stepIndex;
+
+        ApplyLocalQuestSettings();
+
+        TutorialStep step = GetCurrentStep();
+        if (step == null) { return; }
 
         RefreshObjectiveUI(step);
         RefreshObjectiveMarker(step);
@@ -298,17 +460,99 @@ public class TUT_TutorialManager : MonoBehaviour
         step.onStepStarted?.Invoke();
     }
 
-    // clean up tutorial UI and restore hidden items.
-    private void FinishTutorial()
+    [ClientRpc]
+    private void StepCompletedClientRpc(int stepIndex)
+    {
+        if (stepIndex < 0 || steps == null || stepIndex >= steps.Count) { return; }
+
+        TutorialStep step = steps[stepIndex];
+        if (step == null) { return; }
+
+        step.completed = true;
+        step.onStepCompleted?.Invoke();
+    }
+
+    [ClientRpc]
+    private void QuestFinishedClientRpc()
     {
         tutorialRunning = false;
         tutorialFinished = true;
         currentStepIndex = -1;
 
-        INV_ItemDatabase.Instance.ResetHidden();
+        localQuestSettingsApplied = false;
+
+        if (INV_ItemDatabase.Instance != null)
+        {
+            INV_ItemDatabase.Instance.ResetHidden();
+        }
 
         ClearObjectiveUI();
         ClearObjectiveMarker();
+    }
+
+    private void OnSyncedStepIndexChanged(int previousValue, int newValue)
+    {
+        ApplySyncedStateToLocal();
+    }
+
+    private void OnSyncedQuestStateChanged(bool previousValue, bool newValue)
+    {
+        ApplySyncedStateToLocal();
+    }
+
+    // apply networked quest state to this client without firing step events.
+    private void ApplySyncedStateToLocal()
+    {
+        tutorialRunning = syncedQuestRunning.Value;
+        tutorialFinished = syncedQuestFinished.Value;
+        currentStepIndex = syncedStepIndex.Value;
+
+        if (tutorialRunning && !tutorialFinished)
+        {
+            ApplyLocalQuestSettings();
+
+            TutorialStep step = GetCurrentStep();
+            if (step != null)
+            {
+                RefreshObjectiveUI(step);
+                RefreshObjectiveMarker(step);
+            }
+
+            return;
+        }
+
+        if (tutorialFinished)
+        {
+            localQuestSettingsApplied = false;
+
+            if (INV_ItemDatabase.Instance != null)
+            {
+                INV_ItemDatabase.Instance.ResetHidden();
+            }
+
+            ClearObjectiveUI();
+            ClearObjectiveMarker();
+        }
+    }
+
+    // apply local player only quest settings.
+    private void ApplyLocalQuestSettings()
+    {
+        if (localQuestSettingsApplied) { return; }
+
+        CachePlayerRefs();
+
+        if (INV_ItemDatabase.Instance != null && hideItems)
+        {
+            INV_ItemDatabase.Instance.HideItems(itemsToShow, true);
+        }
+
+        if (playerCharacterValues != null)
+        {
+            playerCharacterValues.SetSurvivalToggles(false, false, false);
+        }
+
+        localQuestSettingsApplied = true;
     }
 
     private TutorialStep GetCurrentStep()
@@ -319,18 +563,64 @@ public class TUT_TutorialManager : MonoBehaviour
         return steps[currentStepIndex];
     }
 
-    // check the player has all items needed for this step.
+    // check players have all items needed for this step.
     private bool HasRequiredItems(TutorialStep step)
     {
         if (step == null) { return false; }
+        if (step.requiredItems == null || step.requiredItems.Count == 0) { return false; }
 
-        if (playerInventory == null)
+        CachePlayerRefs();
+
+        if (allPlayersNeedRequiredItems)
         {
-            playerInventory = FindLocalInventory();
+            return AllPlayersHaveRequiredItems(step);
         }
 
-        if (playerInventory == null) { return false; }
-        if (step.requiredItems == null || step.requiredItems.Count == 0) { return false; }
+        return AnyPlayerHasRequiredItems(step);
+    }
+
+    // check if any player has the required items.
+    private bool AnyPlayerHasRequiredItems(TutorialStep step)
+    {
+        for (int i = 0; i < playerRefs.Count; i++)
+        {
+            PlayerRefs refs = playerRefs[i];
+            if (refs == null || refs.inventoryNet == null) { continue; }
+
+            if (InventoryNetHasRequiredItems(refs.inventoryNet, step))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // check if every player has the required items.
+    private bool AllPlayersHaveRequiredItems(TutorialStep step)
+    {
+        bool foundPlayer = false;
+
+        for (int i = 0; i < playerRefs.Count; i++)
+        {
+            PlayerRefs refs = playerRefs[i];
+            if (refs == null || refs.inventoryNet == null) { continue; }
+
+            foundPlayer = true;
+
+            if (!InventoryNetHasRequiredItems(refs.inventoryNet, step))
+            {
+                return false;
+            }
+        }
+
+        return foundPlayer;
+    }
+
+    // check one synced player inventory has all items needed for this step.
+    private bool InventoryNetHasRequiredItems(INV_PlayerInventoryNet inventoryNet, TutorialStep step)
+    {
+        if (inventoryNet == null) { return false; }
 
         for (int i = 0; i < step.requiredItems.Count; i++)
         {
@@ -339,7 +629,7 @@ public class TUT_TutorialManager : MonoBehaviour
 
             int amount = Mathf.Max(1, req.amount);
 
-            if (!playerInventory.HasItemAmount(req.item.ItemID, amount))
+            if (!inventoryNet.HasNetworkItemAmount(req.item.ItemID, amount))
             {
                 return false;
             }
@@ -348,7 +638,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return true;
     }
 
-    // show the current tutorial objective text.
+    // show the current quest objective text.
     private void RefreshObjectiveUI(TutorialStep step)
     {
         if (objectiveTitleText != null)
@@ -437,7 +727,7 @@ public class TUT_TutorialManager : MonoBehaviour
         return currentMarker;
     }
 
-    // remove the active tutorial marker.
+    // remove the active quest marker.
     private void ClearObjectiveMarker()
     {
         if (currentMarker != null)
@@ -452,7 +742,7 @@ public class TUT_TutorialManager : MonoBehaviour
     {
         if (playerCamera != null) { return playerCamera; }
 
-        playerCamera = FindLocalCamera();
+        CachePlayerRefs();
         return playerCamera;
     }
 }
