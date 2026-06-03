@@ -40,6 +40,13 @@ public class INV_CraftingInteract : NetworkBehaviour
                 lasers[i].SetPositions(new Vector3[2] { laserTarget.position, laserTips[i].position });
             }
         }
+        else
+        {
+            for (int i = 0; i < lasers.Length; i++)
+            {
+                lasers[i].SetPositions(new Vector3[2] { new Vector2 (0,0), new Vector2(0, 0) });
+            }
+        }
     }
 
     public void OnInteractedWith(GameObject interactor)
