@@ -195,7 +195,10 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        inventory.TryAddItem(item);
+        if (inventory.TryAddItem(item))
+        {
+            UnlockItemLocally(itemId);
+        }
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
@@ -214,9 +217,19 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
+        bool addedAny = false;
+
         for (int i = 0; i < amount; i++)
         {
-            inventory.TryAddItem(item);
+            if (inventory.TryAddItem(item))
+            {
+                addedAny = true;
+            }
+        }
+
+        if (addedAny)
+        {
+            UnlockItemLocally(itemId);
         }
     }
 
@@ -236,13 +249,17 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
             return;
         }
 
-        inventory.TryAddItemAtCell
-        (
-            item,
-            new Vector2Int(cellX, cellY),
-            (INV_Inventory.ItemInstance.Rotation)rotation,
-            amount
+        bool added = inventory.TryAddItemAtCell
+        (item,
+        new Vector2Int(cellX, cellY),
+        (INV_Inventory.ItemInstance.Rotation)rotation,
+        amount
         );
+
+        if (added)
+        {
+            UnlockItemLocally(itemId);
+        }
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
@@ -718,7 +735,15 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
         if (inventory != null && !string.IsNullOrWhiteSpace(itemId))
         {
             INV_Item item = GetItemById(itemId);
-            if (item != null) { added = inventory.TryAddItem(item); }
+            if (item != null)
+            {
+                added = inventory.TryAddItem(item);
+
+                if (added)
+                {
+                    UnlockItemLocally(itemId);
+                }
+            }
         }
 
         ConfirmWorldPickupAddResultRpc(pickupRef, added);
@@ -996,18 +1021,28 @@ public class INV_PlayerInventoryNet : NetworkBehaviour
 
     private void UnlockCraftedItem(string craftedItemId)
     {
-        if (string.IsNullOrWhiteSpace(craftedItemId) || INV_ItemDatabase.Instance == null)
+        UnlockItemLocally(craftedItemId);
+    }
+
+    private void UnlockItemLocally(string itemId)
+    {
+        if (string.IsNullOrWhiteSpace(itemId) || INV_ItemDatabase.Instance == null)
         {
             return;
         }
 
-        INV_Item item = INV_ItemDatabase.Instance.GetItemById(craftedItemId);
+        INV_Item item = INV_ItemDatabase.Instance.GetItemById(itemId);
         if (item == null)
         {
             return;
         }
 
         item.UnlockItem();
+
+        if (crafting != null)
+        {
+            crafting.RebuildCraftingView();
+        }
     }
 
     // equipped item

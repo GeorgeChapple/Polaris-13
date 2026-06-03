@@ -638,8 +638,14 @@ MonoBehaviour:
     playNextSound: 0
   playFirstSoundOnAwake: 1
   audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
-  playAs3D: 0
+  targetAudioMixer: {fileID: -5376822762015411565, guid: c6d35a4d77afc024cb605bdbceda4fb9, type: 2}
+  playAs3D: 1
   useLocalAudioSource: 0
+  minDistance: 1
+  maxDistance: 25
+  rolloffMode: 0
+  dopplerLevel: 1
+  spread: 0
   useRandomPitch: 0
   minPitch: 0.9
   maxPitch: 1.1

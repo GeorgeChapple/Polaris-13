@@ -13,6 +13,7 @@ public class CC_Movement : NetworkBehaviour
 {
     [Header("References")]
     public CC_CharacterValues values;
+    public CC_CharacterValuesNet valuesNet;
     public CC_CameraController cameraController;
     public RS_Move rocket;
 
@@ -25,8 +26,17 @@ public class CC_Movement : NetworkBehaviour
     public float accelerationRate = 12f;
     public bool canTeleport = true;
 
-    public NetworkVariable<bool> drift = new NetworkVariable<bool>();
-    public NetworkVariable<Vector3> referenceDirection = new NetworkVariable<Vector3>();
+    public NetworkVariable<bool> drift = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+        );
+
+    public NetworkVariable<Vector3> referenceDirection = new NetworkVariable<Vector3>(
+        Vector3.zero,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+        );
 
     [Header("Sprint")]
     public float sprintSpeedMult = 1.5f;
@@ -1085,9 +1095,9 @@ public class CC_Movement : NetworkBehaviour
             RespawnAtSpawnPoint();
         }
 
-        if (values != null)
+        if (valuesNet != null)
         {
-            values.RespawnReset();
+            valuesNet.RequestRespawnReset();
         }
 
         grounded = false;

@@ -20,7 +20,7 @@ GameObject:
   - component: {fileID: 4043289975837125573}
   - component: {fileID: -5068223315693377172}
   - component: {fileID: 8125151144193780619}
-  - component: {fileID: -8685877586269666714}
+  - component: {fileID: -7557512867754937723}
   - component: {fileID: 4777909367696245790}
   - component: {fileID: -4007602469334299474}
   m_Layer: 8
@@ -345,7 +345,7 @@ MonoBehaviour:
   UseRigidBodyForMotion: 1
   AutoUpdateKinematicState: 1
   AutoSetKinematicOnDespawn: 1
---- !u!114 &-8685877586269666714
+--- !u!114 &-7557512867754937723
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -354,9 +354,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2353747757295221720}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43141b504e23a714189cdeca698376f7, type: 3}
+  m_Script: {fileID: 11500000, guid: 5a9e3ef3f49e10c4098dba5aed4c9fcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   sounds:
   - soundName: Metal Collision 1
     audioClip: {fileID: 8300000, guid: 6cecdb635578c3c4a9727de5f4b1fc35, type: 3}
@@ -375,12 +376,20 @@ MonoBehaviour:
     playNextSound: 0
   playFirstSoundOnAwake: 0
   audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
+  targetAudioMixer: {fileID: -5376822762015411565, guid: c6d35a4d77afc024cb605bdbceda4fb9, type: 2}
   playAs3D: 1
+  ownerHearsOwnSoundsAs2D: 0
   useLocalAudioSource: 0
+  minDistance: 1
+  maxDistance: 25
+  rolloffMode: 0
+  dopplerLevel: 1
+  spread: 0
   useRandomPitch: 1
   minPitch: 0.9
   maxPitch: 1.1
   spawnAtThisObject: 1
+  debugNetworkAudio: 0
 --- !u!114 &4777909367696245790
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -393,7 +402,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44a23beb8358b6344b35223a36a7b5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sfx: {fileID: -8685877586269666714}
+  network: 1
+  sfx: {fileID: 0}
+  sfxNet: {fileID: -7557512867754937723}
 --- !u!114 &-4007602469334299474
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -414,8 +425,14 @@ MonoBehaviour:
     playNextSound: 0
   playFirstSoundOnAwake: 0
   audioSourcePrefab: {fileID: 621256079573396716, guid: 1b9123f6bd74739458c845b6fc18d7db, type: 3}
+  targetAudioMixer: {fileID: -5376822762015411565, guid: c6d35a4d77afc024cb605bdbceda4fb9, type: 2}
   playAs3D: 0
   useLocalAudioSource: 0
+  minDistance: 1
+  maxDistance: 25
+  rolloffMode: 0
+  dopplerLevel: 1
+  spread: 0
   useRandomPitch: 0
   minPitch: 0.9
   maxPitch: 1.1
