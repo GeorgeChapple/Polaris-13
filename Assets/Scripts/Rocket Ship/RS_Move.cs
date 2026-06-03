@@ -3,6 +3,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using System;
 using TMPro;
+using System.Collections;
 
 // Made by: George Chapple, Jason Lodge
 // Summary: we're not actually moving the ship, we're going to be moving all of the stuff inside the parent
@@ -45,6 +46,19 @@ public class RS_Move : NetworkBehaviour
     [SerializeField] private Renderer smallScreenL;
     [SerializeField] private Renderer smallScreenR;
 
+    [Header("SwitchRotators")]
+    [SerializeField] private Transform speedRotator;
+    [SerializeField] private Vector3 speedRotatorMin;
+    [SerializeField] private Vector3 speedRotatorMax;
+
+    private bool changeSpeed = false;
+    private int speedDirection = -1;
+    private float speedDirectionSpeed = 0.5f;
+    private float speedDirectionSpeed_Time = 0f;
+    private float speedDirectionSpeed_TimeToTake = 5f;
+    private float speedDirectionSpeedMin = 2f;
+    private float speedDirectionSpeedMax = 10f;
+
 
     public override void OnNetworkSpawn()
     {
@@ -66,27 +80,70 @@ public class RS_Move : NetworkBehaviour
         {
             metersMaterials[i] = meters[i].materials[1];
         }
+        StartCoroutine(UpdateVisuals());
     }
 
     void Update()
     {
-        UpdateMeters();
-        UpdateText();
-        UpdateScreens();
         if (!IsServer)
         {
             return;
         }
+        ChangeSpeed();
         UpdateDirection();
         MoveShip();
         TickOxygen();
         TickFuel();
     }
 
+    private IEnumerator UpdateVisuals()
+    {
+        while (true)
+        {
+            UpdateMeters();
+            UpdateText();
+            UpdateScreens();
+            UpdateRotators();
+            yield return null;
+        }
+    }
+
     [Rpc(SendTo.Server)]
     public void EmergencyStopRpc()
     {
+        StopChangeSpeedRpc();
         targetSpeed.Value = 0;
+    }
+
+    [Rpc(SendTo.Server)]
+    public void FlipSpeedRpc()
+    {
+        speedDirection *= -1;
+        changeSpeed = true;
+    }
+
+    private void ChangeSpeed()
+    {
+        if (changeSpeed)
+        {
+            if (speedDirectionSpeed_Time < 1)
+            {
+                speedDirectionSpeed_Time += Time.deltaTime / speedDirectionSpeed_TimeToTake;
+            }
+            speedDirectionSpeed = Mathf.Lerp(speedDirectionSpeedMin, speedDirectionSpeedMax, speedDirectionSpeed_Time);
+            if ((targetSpeed.Value < maxSpeed && speedDirection == 1) || (targetSpeed.Value > 0 && speedDirection == -1))
+            {
+                targetSpeed.Value = Mathf.Lerp(targetSpeed.Value, targetSpeed.Value + (maxSpeed * (speedDirectionSpeed / 100)) * speedDirection, Time.deltaTime);
+            }
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    public void StopChangeSpeedRpc()
+    {
+        changeSpeed = false;
+        speedDirectionSpeed = speedDirectionSpeedMin;
+        speedDirectionSpeed_Time = 0f;
     }
 
     private void MoveShip()
@@ -149,5 +206,10 @@ public class RS_Move : NetworkBehaviour
         smallScreenR.material.SetVector("_Offset", new Vector4(Mathf.Lerp(10, 1, health.Value / maxHealth), 0, 0, 0));
         smallScreenR.material.SetFloat("_NoiseScale", Mathf.Lerp(10, 0, oxygen.Value / maxOxygen));
         smallScreenR.material.SetFloat("_Amplitude", Mathf.Lerp(0, 0.35f, fuel.Value / maxFuel));
+    }
+
+    private void UpdateRotators()
+    {
+        speedRotator.position = Vector3.Lerp(speedRotatorMin, speedRotatorMax, targetSpeed.Value / maxSpeed);
     }
 }
