@@ -1,6 +1,8 @@
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
+using System;
+using TMPro;
 
 // Made by: George Chapple, Jason Lodge
 // Summary: we're not actually moving the ship, we're going to be moving all of the stuff inside the parent
@@ -30,7 +32,14 @@ public class RS_Move : NetworkBehaviour
     [Header("Meters")]
     [SerializeField] private Renderer[] meters;
     [SerializeField] private Vector2[] metersFills;
-    private Material[] metersMaterials = new Material[4];
+    private Material[] metersMaterials = new Material[7];
+
+    [Header("Text References")]
+    [SerializeField] private TextMeshProUGUI speedText;
+
+    [Header("Screen References")]
+    [SerializeField] private Renderer smallScreenL;
+    [SerializeField] private Renderer smallScreenR;
 
 
     public override void OnNetworkSpawn()
@@ -52,13 +61,12 @@ public class RS_Move : NetworkBehaviour
     void Update()
     {
         UpdateMeters();
+        UpdateText();
+        UpdateScreens();
         if (!IsServer)
         {
             return;
         }
-
-        Debug.Log("Oxygen drain : " + oxygenDrainRate * NetworkManager.ConnectedClientsList.Count);
-        Debug.Log("Fuel drain : " + fuelDrainRate * speed.Value);
         UpdateDirection();
         MoveShip();
         TickOxygen();
@@ -107,5 +115,21 @@ public class RS_Move : NetworkBehaviour
         metersMaterials[1].SetFloat("_FillAmount", Mathf.Lerp(metersFills[1].x, metersFills[1].y, speed.Value / maxSpeed));
         metersMaterials[2].SetFloat("_FillAmount", Mathf.Lerp(metersFills[2].x, metersFills[2].y, oxygen.Value / maxOxygen));
         metersMaterials[3].SetFloat("_FillAmount", Mathf.Lerp(metersFills[3].x, metersFills[3].y, fuel.Value / maxFuel));
+        metersMaterials[4].SetFloat("_FillAmount", Mathf.Lerp(metersFills[4].x, metersFills[4].y, fuel.Value / maxFuel));
+        metersMaterials[5].SetFloat("_FillAmount", Mathf.Lerp(metersFills[5].x, metersFills[5].y, fuel.Value / maxFuel));
+        metersMaterials[6].SetFloat("_FillAmount", Mathf.Lerp(metersFills[6].x, metersFills[6].y, fuel.Value / maxFuel));
+    }
+
+    private void UpdateText()
+    {
+        speedText.text = "SPEED: " + Math.Truncate(Mathf.Lerp(0, 100, speed.Value / maxSpeed)).ToString() + "%";
+    }
+
+    private void UpdateScreens()
+    {
+        smallScreenL.material.SetVector("_Offset_Multiplier", new Vector4(0, Mathf.Lerp(0, 1, speed.Value / maxSpeed), 0, 0));
+        smallScreenR.material.SetVector("_Offset", new Vector4(Mathf.Lerp(10, 1, health.Value / maxHealth), 0, 0, 0));
+        smallScreenR.material.SetFloat("_NoiseScale", Mathf.Lerp(10, 0, oxygen.Value / maxOxygen));
+        smallScreenR.material.SetFloat("_Amplitude", Mathf.Lerp(0, 0.35f, fuel.Value / maxFuel));
     }
 }
