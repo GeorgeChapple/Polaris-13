@@ -6525,7 +6525,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2597951738145493905}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6535,9 +6535,9 @@ RectTransform:
   - {fileID: 6207750944211630218}
   m_Father: {fileID: 4384255643803604961}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 100, y: -25}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: -100, y: 25}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2948513718352719565
@@ -15526,7 +15526,6 @@ MonoBehaviour:
   sceneName: Test_Menu
   hostEndSessionButton: {fileID: 7814924543985006119}
   clientLeaveSessionButton: {fileID: 3260770772941332952}
-  loadDelay: 0.25
   enableCursor: 1
 --- !u!114 &2346565107143020631
 MonoBehaviour:
