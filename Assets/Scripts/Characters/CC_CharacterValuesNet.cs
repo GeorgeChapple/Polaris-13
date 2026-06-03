@@ -25,9 +25,13 @@ public class CC_CharacterValuesNet : NetworkBehaviour
     private NetworkVariable<float> oxygen = new NetworkVariable<float>(0f);
     private NetworkVariable<float> maxOxygen = new NetworkVariable<float>(0f);
 
+    private NetworkVariable<bool> isDead = new NetworkVariable<bool>(false);
+
     private NetworkVariable<bool> enableNoOxygenDeath = new NetworkVariable<bool>(true);
     private NetworkVariable<bool> enableHunger = new NetworkVariable<bool>(true);
     private NetworkVariable<bool> enableThirst = new NetworkVariable<bool>(true);
+
+    private bool applyingNetworkValues;
 
     private void Awake()
     {
@@ -56,6 +60,8 @@ public class CC_CharacterValuesNet : NetworkBehaviour
 
         oxygen.OnValueChanged += OnAnyValueChanged;
         maxOxygen.OnValueChanged += OnAnyValueChanged;
+
+        isDead.OnValueChanged += OnAnyBoolValueChanged;
 
         enableNoOxygenDeath.OnValueChanged += OnAnyBoolValueChanged;
         enableHunger.OnValueChanged += OnAnyBoolValueChanged;
@@ -88,6 +94,8 @@ public class CC_CharacterValuesNet : NetworkBehaviour
 
         oxygen.OnValueChanged -= OnAnyValueChanged;
         maxOxygen.OnValueChanged -= OnAnyValueChanged;
+
+        isDead.OnValueChanged -= OnAnyBoolValueChanged;
 
         enableNoOxygenDeath.OnValueChanged -= OnAnyBoolValueChanged;
         enableHunger.OnValueChanged -= OnAnyBoolValueChanged;
@@ -132,6 +140,11 @@ public class CC_CharacterValuesNet : NetworkBehaviour
 
     private void PushFromCharacterValues_Server()
     {
+        if (characterValues == null)
+        {
+            return;
+        }
+
         health.Value = characterValues.Health;
         maxHealth.Value = characterValues.maxHealth;
 
@@ -147,6 +160,8 @@ public class CC_CharacterValuesNet : NetworkBehaviour
         oxygen.Value = characterValues.Oxygen;
         maxOxygen.Value = characterValues.maxOxygen;
 
+        isDead.Value = characterValues.isDead;
+
         enableNoOxygenDeath.Value = characterValues.EnableNoOxygenDeath;
         enableHunger.Value = characterValues.EnableHunger;
         enableThirst.Value = characterValues.EnableThirst;
@@ -158,6 +173,13 @@ public class CC_CharacterValuesNet : NetworkBehaviour
         {
             return;
         }
+
+        if (applyingNetworkValues)
+        {
+            return;
+        }
+
+        applyingNetworkValues = true;
 
         characterValues.SetAll
         (
@@ -174,5 +196,125 @@ public class CC_CharacterValuesNet : NetworkBehaviour
             enableHunger.Value,
             enableThirst.Value
         );
+
+        ApplyDeathState_Client();
+
+        applyingNetworkValues = false;
+    }
+
+    private void ApplyDeathState_Client()
+    {
+        if (characterValues == null)
+        {
+            return;
+        }
+
+        if (isDead.Value)
+        {
+            if (!characterValues.isDead)
+            {
+                characterValues.Kill();
+            }
+
+            return;
+        }
+
+        if (characterValues.isDead)
+        {
+            float revivePercent = 1f;
+
+            if (maxHealth.Value > 0f)
+            {
+                revivePercent = Mathf.Clamp01(health.Value / maxHealth.Value);
+            }
+
+            if (revivePercent <= 0f)
+            {
+                revivePercent = 1f;
+            }
+
+            characterValues.Revive(revivePercent);
+        }
+    }
+
+    public void RequestRevive(float healthPercent = 1f)
+    {
+        if (!IsSpawned)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            Revive_Server(healthPercent);
+            return;
+        }
+
+        RequestReviveRpc(healthPercent);
+    }
+
+    public void RequestRespawnReset()
+    {
+        if (!IsSpawned)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            RespawnReset_Server();
+            return;
+        }
+
+        RequestRespawnResetRpc();
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestReviveRpc(float healthPercent, RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        Revive_Server(healthPercent);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void RequestRespawnResetRpc(RpcParams rpcParams = default)
+    {
+        if (!IsSenderOwner(rpcParams))
+        {
+            return;
+        }
+
+        RespawnReset_Server();
+    }
+
+    private void Revive_Server(float healthPercent)
+    {
+        if (!IsServer || characterValues == null)
+        {
+            return;
+        }
+
+        characterValues.Revive(healthPercent);
+        PushFromCharacterValues_Server();
+    }
+
+    private void RespawnReset_Server()
+    {
+        if (!IsServer || characterValues == null)
+        {
+            return;
+        }
+
+        characterValues.RespawnReset();
+        PushFromCharacterValues_Server();
+    }
+
+    private bool IsSenderOwner(RpcParams rpcParams)
+    {
+        return OwnerClientId == rpcParams.Receive.SenderClientId;
     }
 }

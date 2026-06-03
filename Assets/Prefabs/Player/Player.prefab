@@ -2999,7 +2999,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8300266011381695584}
   m_HandleRect: {fileID: 4413220172885515415}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -7264,7 +7264,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 8501576351295428300}
   m_Direction: 0
   m_Value: 1
-  m_Size: 0.99999994
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -14404,6 +14404,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   values: {fileID: 6908361564922073646}
+  valuesNet: {fileID: 2963449317703620547}
   cameraController: {fileID: 5716702273530058439}
   rocket: {fileID: 0}
   customGravityBody: {fileID: 7581093040414068935}
@@ -14555,6 +14556,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   invincible: 0
+  enableOxygenDeath: 1
+  enableHunger: 1
+  enableThirst: 1
   maxHealth: 100
   health: 100
   maxStamina: 100
