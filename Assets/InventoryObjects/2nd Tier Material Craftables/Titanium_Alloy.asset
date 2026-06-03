@@ -18,12 +18,21 @@ MonoBehaviour:
   itemType: 4
   itemRarity: 2
   durability: 0
+  passiveEquipment: 0
+  equipmentType: 0
+  additionalMaxOxygen: 0
+  additionalOxygenRegenPerSecond: 0
+  bleh: 0
+  additionalGroundThrusterAccel: 0
+  additionalGroundThrusterUpSpeedCap: 0
+  additionalThrusterAccel: 0
+  additionalSpaceStabilisationAccel: 0
+  unlocked: 0
+  hidden: 0
   hungerReplenish: 0
   hungerDrainDelay: 0
   thirstReplenish: 0
   thirstDrainDelay: 0
-  unlocked: 0
-  hidden: 0
   retailPrice: 0
   shopMultiplierRange: {x: 0.75, y: 2}
   chanceOfSpawnInChest: 10
@@ -48,7 +57,7 @@ MonoBehaviour:
   mesh: {fileID: 4938614927589811204, guid: e2fff58effd6e75408173e0e66adf4d3, type: 3}
   material: {fileID: 2100000, guid: 08fca99e942446d4b96bb03df6d75614, type: 2}
   twoHanded: 0
-  dropCollider: 0
+  dropCollider: 1
   autoColliderScale: 1
   colliderScale: 1
   dropAsMeshCollider: 1

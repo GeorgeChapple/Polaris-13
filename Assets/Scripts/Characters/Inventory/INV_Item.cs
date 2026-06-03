@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 
 using static SP_SpawnSettings;
+using System.Runtime.CompilerServices;
 
 
 #if UNITY_EDITOR
@@ -19,23 +20,44 @@ public class INV_Item : ScriptableObject
     [SerializeField] private string m_name;
     [SerializeField, TextArea(1, 5)] private string description;
 
-    public enum ItemType { Item, Consumable, Weapon, Tool, Resource, Placeable }
+    public enum ItemType { Item, Consumable, Weapon, Tool, Equipment, Resource, Placeable }
     [SerializeField] private ItemType itemType = ItemType.Item;
     public enum ItemRarity { Common, Uncommon, Rare, Epic }
     [SerializeField] private ItemRarity itemRarity = ItemRarity.Common;
 
     [Header("Specs")]
     [SerializeField] private float durability;
-    [SerializeField] private float hungerReplenish;
-    [SerializeField] private float hungerDrainDelay;
-    [SerializeField] private float thirstReplenish;
-    [SerializeField] private float thirstDrainDelay;
+
+    [Tooltip("If true, when this item is in the players inventory it gives them the benefits until it is no longer in inventory.")]
+    [SerializeField] private bool passiveEquipment;
+    public enum EquipmentType { None, Oxygen, Radiation, Thruster }
+    [SerializeField] private EquipmentType equipmentType = EquipmentType.None;
+
+    [Header("Oxygen Equipment")]
+    [SerializeField] private float additionalMaxOxygen = 100f;
+    [SerializeField] private float additionalOxygenRegenPerSecond = 30f;
+
+    [Header("Radiation Equipment")]
+    [Tooltip("No radiation yet, this is placeholder.")]
+    [SerializeField] private bool bleh = false;
+
+    [Header("Thruster Equipment")]
+    [SerializeField] private float additionalGroundThrusterAccel = 4f;
+    [SerializeField] private float additionalGroundThrusterUpSpeedCap = 4f;
+    [SerializeField] private float additionalThrusterAccel = 2f;
+    [SerializeField] private float additionalSpaceStabilisationAccel = 4f;
 
     [Tooltip("Whether the item has been seen by the player, dictates whether any crafting recipes this item is in shows its name.")]
     [SerializeField] private bool unlocked = false;
 
     [Tooltip("Whether the item is hidden in the crafting menu.")]
     [SerializeField] private bool hidden = false;
+
+    [Header("Consumable")]
+    [SerializeField] private float hungerReplenish;
+    [SerializeField] private float hungerDrainDelay;
+    [SerializeField] private float thirstReplenish;
+    [SerializeField] private float thirstDrainDelay;
 
     [Header("Shop")]
     [SerializeField] private int retailPrice;
@@ -177,10 +199,23 @@ public class INV_Item : ScriptableObject
     public ItemRarity ItemRarityVal => itemRarity;
 
     public float Durability => durability;
+
     public float HungerReplenish => hungerReplenish;
     public float HungerDrainDelay => hungerDrainDelay;
     public float ThirstReplenish => thirstReplenish;
     public float ThirstDrainDelay => thirstDrainDelay;
+
+    public bool PassiveEquipment => passiveEquipment;
+    public EquipmentType EquipmentTypeVal => equipmentType;
+
+    public float AdditionalMaxOxygen => additionalMaxOxygen;
+    public float AdditionalOxygenRegenPerSecond => additionalOxygenRegenPerSecond;
+
+    public float AdditionalGroundThrusterAccel => additionalGroundThrusterAccel;
+    public float AdditionalGroundThrusterUpSpeedCap => additionalGroundThrusterUpSpeedCap;
+    public float AdditionalThrusterAccel => additionalThrusterAccel;
+    public float AdditionalSpaceStabilisationAccel => additionalSpaceStabilisationAccel;
+
     public bool Unlocked => unlocked;
     public bool Hidden => hidden;
 
