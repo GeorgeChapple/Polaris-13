@@ -82,7 +82,7 @@ public class SP_MapGenerator : MonoBehaviour
 
     private void Update()
     {
-        shipEffect.SetVector3("_position", ClampVector(ship.worldPosition, mapSize));
+        shipEffect.SetVector3("_position", ClampVector(ship.worldPosition.Value, mapSize));
         shipEffect.SetVector3("_rotation", Quaternion.LookRotation(ship.worldDirectionNetworked.Value).eulerAngles + new Vector3(-90, 0, 0));
     }
 

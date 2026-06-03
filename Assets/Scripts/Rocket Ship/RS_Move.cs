@@ -10,10 +10,10 @@ using TMPro;
 public class RS_Move : NetworkBehaviour
 {
     [Header("Global Values")]
-    public Vector3 worldPosition;
+    public NetworkVariable<Vector3> worldPosition = new NetworkVariable<Vector3>();
     public NetworkVariable<Vector3> worldDirectionNetworked = new NetworkVariable<Vector3>();
     public Vector3 worldDirection;
-    public Vector3 targetPosition;
+    public NetworkVariable<Vector3> targetPosition = new NetworkVariable<Vector3>();
     public NetworkVariable<float> speed = new NetworkVariable<float>();
     public NetworkVariable<float> targetSpeed = new NetworkVariable<float>();
     public NetworkVariable<float> health = new NetworkVariable<float>();
@@ -36,6 +36,10 @@ public class RS_Move : NetworkBehaviour
 
     [Header("Text References")]
     [SerializeField] private TextMeshProUGUI speedText;
+    [SerializeField] private TextMeshProUGUI positionText;
+    [SerializeField] private TextMeshProUGUI targetText;
+    [SerializeField] private TextMeshProUGUI jumpText;
+    [SerializeField] private TextMeshProUGUI POI_Text;
 
     [Header("Screen References")]
     [SerializeField] private Renderer smallScreenL;
@@ -49,9 +53,15 @@ public class RS_Move : NetworkBehaviour
 
     private void Start()
     {
-        health.Value = maxHealth;
-        fuel.Value = maxFuel;
-        oxygen.Value = maxOxygen;
+        if (IsServer)
+        {
+            health.Value = maxHealth;
+            fuel.Value = maxFuel;
+            oxygen.Value = maxOxygen;
+            targetPosition.Value = new Vector3(0, 0, 100000);
+            worldPosition.Value = Vector3.zero;
+            targetSpeed.Value = maxSpeed / 4f;
+        }
         for (int i = 0; i < meters.Length; ++i)
         {
             metersMaterials[i] = meters[i].materials[1];
@@ -73,9 +83,15 @@ public class RS_Move : NetworkBehaviour
         TickFuel();
     }
 
+    [Rpc(SendTo.Server)]
+    public void EmergencyStopRpc()
+    {
+        targetSpeed.Value = 0;
+    }
+
     private void MoveShip()
     {
-        if (fuel.Value > 0 && (targetPosition - worldPosition).magnitude > targetSpeed.Value)
+        if (fuel.Value > 0 && (targetPosition.Value - worldPosition.Value).magnitude > targetSpeed.Value)
         {
             speed.Value = Mathf.Lerp(speed.Value, targetSpeed.Value, Time.deltaTime * speedChangeRate);
         }
@@ -83,12 +99,12 @@ public class RS_Move : NetworkBehaviour
         {
             speed.Value = Mathf.Lerp(speed.Value, 0, Time.deltaTime * speedChangeRate);
         }
-        worldPosition = Vector3.Lerp(worldPosition, worldPosition + (worldDirection * speed.Value), Time.deltaTime);
+        worldPosition.Value = Vector3.Lerp(worldPosition.Value, worldPosition.Value + (worldDirection * speed.Value), Time.deltaTime);
     }
 
     private void UpdateDirection()
     {
-        Vector3 targetDirection = (targetPosition - worldPosition).normalized;
+        Vector3 targetDirection = (targetPosition.Value - worldPosition.Value).normalized;
         worldDirection = Vector3.Slerp(worldDirection, targetDirection, Time.deltaTime);
         worldDirectionNetworked.Value = worldDirection;
     }
@@ -123,6 +139,8 @@ public class RS_Move : NetworkBehaviour
     private void UpdateText()
     {
         speedText.text = "SPEED: " + Math.Truncate(Mathf.Lerp(0, 100, speed.Value / maxSpeed)).ToString() + "%";
+        positionText.text = "X: " + Math.Truncate(worldPosition.Value.x) + " Y: " + Math.Truncate(worldPosition.Value.y) + " Z: " + Math.Truncate(worldPosition.Value.z);
+        targetText.text = "X: " + Math.Truncate(targetPosition.Value.x) + " Y: " + Math.Truncate(targetPosition.Value.y) + " Z: " + Math.Truncate(targetPosition.Value.z);
     }
 
     private void UpdateScreens()
