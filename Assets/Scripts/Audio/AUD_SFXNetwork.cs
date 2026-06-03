@@ -1,11 +1,14 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Audio;
 
 // Made by: Jason Lodge
 // Summary: SFX script, stores a list of sounds and can play random sounds, sounds by name, sounds by list order, and chained sounds.
+// Networked version: owner asks the server to play sounds, then all clients play them.
+// Owner hears their own sounds in 2D, other players hear them using playAs3D's current state.
 
-public class AUD_SFX : MonoBehaviour
+public class AUD_SFXNetwork : NetworkBehaviour
 {
     [System.Serializable]
     public class Sound
@@ -42,6 +45,9 @@ public class AUD_SFX : MonoBehaviour
     [Header("Audio Mode")]
     [Tooltip("Should sounds play in 3D. If false, sounds play in 2D.")]
     [SerializeField] private bool playAs3D = true;
+
+    [Tooltip("If true, the owning player hears their own sounds in 2D.")]
+    [SerializeField] private bool ownerHearsOwnSoundsAs2D = true;
 
     [Tooltip("If true, this script adds and uses an AudioSource on this object instead of spawning a prefab. This allows previous clips to be cut off.")]
     [SerializeField] private bool useLocalAudioSource = false;
@@ -82,7 +88,16 @@ public class AUD_SFX : MonoBehaviour
     private void Awake()
     {
         InitialiseComponents();
-        if (playFirstSoundOnAwake) { PlaySound(0); }
+
+        if (!IsSpawned && playFirstSoundOnAwake)
+        {
+            PlaySoundLocalOnly(0, GetPitch());
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (playFirstSoundOnAwake && IsOwner) { PlaySound(0); }
     }
 
     private void Update()
@@ -124,8 +139,14 @@ public class AUD_SFX : MonoBehaviour
             return;
         }
 
-        int soundIndex = Random.Range(0, sounds.Count);
-        PlaySound(soundIndex);
+        if (!IsSpawned)
+        {
+            int localSoundIndex = Random.Range(0, sounds.Count);
+            PlaySoundLocalOnly(localSoundIndex, GetPitch());
+            return;
+        }
+
+        PlayRandomSoundRequestRpc();
     }
 
     public void PlaySound(int soundIndex)
@@ -142,8 +163,13 @@ public class AUD_SFX : MonoBehaviour
             return;
         }
 
-        currentSoundIndex = soundIndex;
-        PlaySound(sounds[soundIndex], soundIndex);
+        if (!IsSpawned)
+        {
+            PlaySoundLocalOnly(soundIndex, GetPitch());
+            return;
+        }
+
+        PlaySoundRequestRpc(soundIndex);
     }
 
     public void PlaySound(string soundName)
@@ -168,6 +194,105 @@ public class AUD_SFX : MonoBehaviour
 
     public void StopSound()
     {
+        if (!IsSpawned)
+        {
+            StopSoundLocalOnly();
+            return;
+        }
+
+        StopSoundRequestRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void PlayRandomSoundRequestRpc(RpcParams rpcParams = default)
+    {
+        if (sounds == null || sounds.Count == 0)
+        {
+            return;
+        }
+
+        if (!CanSenderPlaySound(rpcParams))
+        {
+            return;
+        }
+
+        int soundIndex = Random.Range(0, sounds.Count);
+        float pitch = GetPitch();
+
+        PlaySoundRpc(soundIndex, pitch);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void PlaySoundRequestRpc(int soundIndex, RpcParams rpcParams = default)
+    {
+        if (sounds == null || sounds.Count == 0)
+        {
+            return;
+        }
+
+        if (soundIndex < 0 || soundIndex >= sounds.Count)
+        {
+            return;
+        }
+
+        if (!CanSenderPlaySound(rpcParams))
+        {
+            return;
+        }
+
+        float pitch = GetPitch();
+
+        PlaySoundRpc(soundIndex, pitch);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void StopSoundRequestRpc(RpcParams rpcParams = default)
+    {
+        if (!CanSenderPlaySound(rpcParams))
+        {
+            return;
+        }
+
+        StopSoundRpc();
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlaySoundRpc(int soundIndex, float pitch)
+    {
+        PlaySoundLocalOnly(soundIndex, pitch);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void StopSoundRpc()
+    {
+        StopSoundLocalOnly();
+    }
+
+    private bool CanSenderPlaySound(RpcParams rpcParams)
+    {
+        if (NetworkManager.Singleton == null)
+        {
+            return false;
+        }
+
+        if (IsServer && OwnerClientId == NetworkManager.Singleton.LocalClientId)
+        {
+            return true;
+        }
+
+        ulong senderClientId = rpcParams.Receive.SenderClientId;
+
+        if (senderClientId != OwnerClientId)
+        {
+            Debug.LogWarning("AUD_SFX blocked sound request from non-owner.", this);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void StopSoundLocalOnly()
+    {
         if (localAudioSource == null)
         {
             InitialiseComponents();
@@ -183,7 +308,23 @@ public class AUD_SFX : MonoBehaviour
         currentSoundIndex = -1;
     }
 
-    private void PlaySound(Sound sound, int soundIndex)
+    private void PlaySoundLocalOnly(int soundIndex, float pitch)
+    {
+        if (sounds == null || sounds.Count == 0)
+        {
+            return;
+        }
+
+        if (soundIndex < 0 || soundIndex >= sounds.Count)
+        {
+            return;
+        }
+
+        currentSoundIndex = soundIndex;
+        PlaySound(sounds[soundIndex], soundIndex, pitch);
+    }
+
+    private void PlaySound(Sound sound, int soundIndex, float pitch)
     {
         if (sound == null)
         {
@@ -199,14 +340,14 @@ public class AUD_SFX : MonoBehaviour
 
         if (useLocalAudioSource)
         {
-            PlayLocalSound(sound, soundIndex);
+            PlayLocalSound(sound, soundIndex, pitch);
             return;
         }
 
-        PlaySpawnedSound(sound, soundIndex);
+        PlaySpawnedSound(sound, soundIndex, pitch);
     }
 
-    private void PlayLocalSound(Sound sound, int soundIndex)
+    private void PlayLocalSound(Sound sound, int soundIndex, float pitch)
     {
         if (localAudioSource == null)
         {
@@ -227,7 +368,7 @@ public class AUD_SFX : MonoBehaviour
         localAudioSource.clip = sound.audioClip;
         localAudioSource.loop = sound.loop;
         localAudioSource.volume = sound.volume;
-        localAudioSource.pitch = GetPitch();
+        localAudioSource.pitch = pitch;
         localAudioSource.spatialBlend = GetSpatialBlend();
 
         ApplyAudioSourceSettings(localAudioSource);
@@ -238,7 +379,7 @@ public class AUD_SFX : MonoBehaviour
         localSoundWasPlayingLastFrame = localAudioSource.isPlaying;
     }
 
-    private void PlaySpawnedSound(Sound sound, int soundIndex)
+    private void PlaySpawnedSound(Sound sound, int soundIndex, float pitch)
     {
         if (audioSourcePrefab == null)
         {
@@ -269,7 +410,7 @@ public class AUD_SFX : MonoBehaviour
         audioSource.clip = sound.audioClip;
         audioSource.loop = sound.loop;
         audioSource.volume = sound.volume;
-        audioSource.pitch = GetPitch();
+        audioSource.pitch = pitch;
         audioSource.spatialBlend = GetSpatialBlend();
 
         ApplyAudioSourceSettings(audioSource);
@@ -278,11 +419,11 @@ public class AUD_SFX : MonoBehaviour
 
         if (!sound.loop)
         {
-            AUD_SFX_SpawnedSound spawnedSoundScript = spawnedSound.GetComponent<AUD_SFX_SpawnedSound>();
+            AUD_SFX.AUD_SFX_SpawnedSound spawnedSoundScript = spawnedSound.GetComponent<AUD_SFX.AUD_SFX_SpawnedSound>();
 
             if (spawnedSoundScript == null)
             {
-                spawnedSoundScript = spawnedSound.AddComponent<AUD_SFX_SpawnedSound>();
+                spawnedSoundScript = spawnedSound.AddComponent<AUD_SFX.AUD_SFX_SpawnedSound>();
             }
 
             spawnedSoundScript.Initialise(this, audioSource, soundIndex);
@@ -310,7 +451,8 @@ public class AUD_SFX : MonoBehaviour
             return;
         }
 
-        PlaySound(nextSoundIndex);
+        // chained sounds are played locally because the first networked sound already reached every client
+        PlaySoundLocalOnly(nextSoundIndex, GetPitch());
     }
 
     private void ApplyAudioSourceSettings(AudioSource audioSource)
@@ -329,6 +471,11 @@ public class AUD_SFX : MonoBehaviour
 
     private float GetSpatialBlend()
     {
+        if (ownerHearsOwnSoundsAs2D && IsOwner)
+        {
+            return 0f;
+        }
+
         if (playAs3D)
         {
             return 1f;
@@ -351,53 +498,5 @@ public class AUD_SFX : MonoBehaviour
         }
 
         return Random.Range(minPitch, maxPitch);
-    }
-
-    public class AUD_SFX_SpawnedSound : MonoBehaviour
-    {
-        private AUD_SFX sfxScript;
-        private AUD_SFXNetwork sfxScriptNetwork;
-        private AudioSource audioSource;
-
-        private int soundIndex;
-
-        private bool wasPlayingLastFrame;
-
-        public void Initialise(AUD_SFX newSfxScript, AudioSource newAudioSource, int newSoundIndex)
-        {
-            sfxScript = newSfxScript;
-            audioSource = newAudioSource;
-            soundIndex = newSoundIndex;
-
-            wasPlayingLastFrame = audioSource.isPlaying;
-        }
-        public void Initialise(AUD_SFXNetwork newSfxScriptNetwork, AudioSource newAudioSource, int newSoundIndex)
-        {
-            sfxScriptNetwork = newSfxScriptNetwork;
-            audioSource = newAudioSource;
-            soundIndex = newSoundIndex;
-
-            wasPlayingLastFrame = audioSource.isPlaying;
-        }
-
-        private void Update()
-        {
-            if (audioSource == null)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            // if the spawned sound finished naturally, try to play the next sound before destroying this object
-            if (wasPlayingLastFrame && !audioSource.isPlaying && audioSource.clip != null)
-            {
-                if (sfxScript != null) { sfxScript.TryPlayNextSound(soundIndex); }
-                if (sfxScriptNetwork != null) { sfxScriptNetwork.TryPlayNextSound(soundIndex); }
-                Destroy(gameObject);
-                return;
-            }
-
-            wasPlayingLastFrame = audioSource.isPlaying;
-        }
     }
 }

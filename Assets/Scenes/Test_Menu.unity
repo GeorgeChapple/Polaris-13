@@ -1053,8 +1053,9 @@ GameObject:
   m_Component:
   - component: {fileID: 127790024}
   - component: {fileID: 127790023}
-  - component: {fileID: 127790022}
+  - component: {fileID: 127790026}
   - component: {fileID: 127790021}
+  - component: {fileID: 127790025}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1074,36 +1075,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abb784de49c4d3248b0a1284fa2f1571, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &127790022
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 127790020}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_ProtocolType: 0
-  m_UseWebSockets: 0
-  m_UseEncryption: 0
-  m_MaxPacketQueueSize: 128
-  m_MaxPayloadSize: 6144
-  m_HeartbeatTimeoutMS: 500
-  m_ConnectTimeoutMS: 1000
-  m_MaxConnectAttempts: 60
-  m_DisconnectTimeoutMS: 30000
-  ConnectionData:
-    Address: 127.0.0.1
-    Port: 7777
-    ServerListenAddress: 127.0.0.1
-    ClientBindPort: 0
-  DebugSimulator:
-    PacketDelayMS: 0
-    PacketJitterMS: 0
-    PacketDropRate: 0
 --- !u!114 &127790023
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1119,7 +1090,7 @@ MonoBehaviour:
   NetworkManagerExpanded: 0
   NetworkConfig:
     ProtocolVersion: 0
-    NetworkTransport: {fileID: 127790022}
+    NetworkTransport: {fileID: 127790026}
     PlayerPrefab: {fileID: 6189470309648960028, guid: d96cf2a6e1f93844e932049c62c0e624, type: 3}
     Prefabs:
       NetworkPrefabsLists:
@@ -1162,6 +1133,48 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &127790025
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 127790020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6fd89dc549847f4096c58273ff2e979, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &127790026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 127790020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ProtocolType: 1
+  m_UseWebSockets: 0
+  m_UseEncryption: 0
+  m_MaxPacketQueueSize: 128
+  m_MaxPayloadSize: 6144
+  m_HeartbeatTimeoutMS: 500
+  m_ConnectTimeoutMS: 1000
+  m_MaxConnectAttempts: 60
+  m_DisconnectTimeoutMS: 30000
+  ConnectionData:
+    Address: 127.0.0.1
+    Port: 7778
+    ServerListenAddress: 127.0.0.1
+    ClientBindPort: 0
+  DebugSimulator:
+    PacketDelayMS: 0
+    PacketJitterMS: 0
+    PacketDropRate: 0
 --- !u!1 &139106590
 GameObject:
   m_ObjectHideFlags: 0
@@ -1473,6 +1486,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc0ba1978d7612c45831720f668ba870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  forceInputFieldText: 1
   inputFieldToUpdate: {fileID: 1636974538}
   buttonToUpdate: {fileID: 185080822}
   sessionName: tutorial
@@ -4354,6 +4368,7 @@ GameObject:
   m_Component:
   - component: {fileID: 680327122}
   - component: {fileID: 680327123}
+  - component: {fileID: 680327125}
   - component: {fileID: 680327124}
   m_Layer: 5
   m_Name: Create Session
@@ -4468,6 +4483,22 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &680327125
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680327121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc0ba1978d7612c45831720f668ba870, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  forceInputFieldText: 0
+  inputFieldToUpdate: {fileID: 890547800}
+  buttonToUpdate: {fileID: 1785575950}
+  sessionName: 
 --- !u!1 &686376522
 GameObject:
   m_ObjectHideFlags: 0
@@ -5342,6 +5373,7 @@ GameObject:
   m_Component:
   - component: {fileID: 872938334}
   - component: {fileID: 872938335}
+  - component: {fileID: 872938337}
   - component: {fileID: 872938336}
   m_Layer: 5
   m_Name: Join Session By Code
@@ -5444,6 +5476,22 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &872938337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 872938333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc0ba1978d7612c45831720f668ba870, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  forceInputFieldText: 0
+  inputFieldToUpdate: {fileID: 265927700}
+  buttonToUpdate: {fileID: 1927348428}
+  sessionName: 
 --- !u!1 &886717109
 GameObject:
   m_ObjectHideFlags: 0
@@ -9118,6 +9166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc0ba1978d7612c45831720f668ba870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  forceInputFieldText: 1
   inputFieldToUpdate: {fileID: 388926203}
   buttonToUpdate: {fileID: 1302420475}
   sessionName: tutorial

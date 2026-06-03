@@ -33,6 +33,9 @@ public class IT_PushDevice : CC_INV_UsableItems
     private bool hasPlayedChargeSound = false;
     private bool hasPlayedChimeSound = false;
 
+    private bool hasPlayedChargeSoundLocal = false;
+    private bool hasPlayedChimeSoundLocal = false;
+
     private NetworkObject playerWhoSent;
 
     public override void SendItemId(string ItemId)
@@ -54,27 +57,19 @@ public class IT_PushDevice : CC_INV_UsableItems
 
         if (cooldownTimerLocal <= 0f)
         {
-            if (!hasPlayedChargeSound)
+            if (!hasPlayedChargeSoundLocal)
             {
-                if (sfx != null)
-                {
-                    sfx.PlaySound("Charge");
-                }
-
-                hasPlayedChargeSound = true;
+                PlayChargeSoundLocal();
+                hasPlayedChargeSoundLocal = true;
             }
 
             chargingTimerLocal += Time.deltaTime;
             chargingTimerLocal = Mathf.Clamp(chargingTimerLocal, 0f, Mathf.Max(0.001f, chargeTime));
 
-            if (chargingTimerLocal >= chargeTime && !hasPlayedChimeSound)
+            if (chargingTimerLocal >= chargeTime && !hasPlayedChimeSoundLocal)
             {
-                if (sfxChime != null)
-                {
-                    sfxChime.PlaySound(0);
-                }
-
-                hasPlayedChimeSound = true;
+                PlayChimeSoundLocal();
+                hasPlayedChimeSoundLocal = true;
             }
 
             float safeChargeTime = Mathf.Max(0.001f, chargeTime);
@@ -82,7 +77,8 @@ public class IT_PushDevice : CC_INV_UsableItems
         }
         else
         {
-            hasPlayedChargeSound = false;
+            hasPlayedChargeSoundLocal = false;
+            hasPlayedChimeSoundLocal = false;
         }
     }
 
@@ -95,11 +91,28 @@ public class IT_PushDevice : CC_INV_UsableItems
 
         if (cooldownTimer <= 0f)
         {
+            if (!hasPlayedChargeSound)
+            {
+                PlayChargeSoundRpc(netObjRef);
+                hasPlayedChargeSound = true;
+            }
+
             chargingTimer += Time.deltaTime;
             chargingTimer = Mathf.Clamp(chargingTimer, 0f, Mathf.Max(0.001f, chargeTime));
 
+            if (chargingTimer >= chargeTime && !hasPlayedChimeSound)
+            {
+                PlayChimeSoundRpc(netObjRef);
+                hasPlayedChimeSound = true;
+            }
+
             float safeChargeTime = Mathf.Max(0.001f, chargeTime);
             pushForce = Mathf.Lerp(0f, maxPushForce, Mathf.Clamp(chargingTimer, 0f, safeChargeTime) / safeChargeTime);
+        }
+        else
+        {
+            hasPlayedChargeSound = false;
+            hasPlayedChimeSound = false;
         }
     }
 
@@ -109,6 +122,8 @@ public class IT_PushDevice : CC_INV_UsableItems
         {
             return;
         }
+
+        PlayBlastSoundRpc(netObjRef);
 
         cooldownTimer = cooldown;
 
@@ -139,6 +154,8 @@ public class IT_PushDevice : CC_INV_UsableItems
 
         pushForce = 0f;
         chargingTimer = 0f;
+        hasPlayedChargeSound = false;
+        hasPlayedChimeSound = false;
     }
 
     public override void OnUseReleasedLocally(NetworkObjectReference netObjRef)
@@ -148,16 +165,80 @@ public class IT_PushDevice : CC_INV_UsableItems
             return;
         }
 
-        if (sfx != null)
-        {
-            sfx.PlaySound("Blast");
-        }
+        PlayBlastSoundLocal();
 
         cooldownTimerLocal = cooldown;
         pushForceLocal = 0f;
         chargingTimerLocal = 0f;
-        hasPlayedChargeSound = false;
-        hasPlayedChimeSound = false;
+        hasPlayedChargeSoundLocal = false;
+        hasPlayedChimeSoundLocal = false;
+    }
+
+    private void PlayChargeSoundLocal()
+    {
+        if (sfx != null)
+        {
+            sfx.PlaySound("Charge");
+        }
+    }
+
+    private void PlayChimeSoundLocal()
+    {
+        if (sfxChime != null)
+        {
+            sfxChime.PlaySound(0);
+        }
+    }
+
+    private void PlayBlastSoundLocal()
+    {
+        if (sfx != null)
+        {
+            sfx.PlaySound("Blast");
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayChargeSoundRpc(NetworkObjectReference sender)
+    {
+        if (IsLocalSender(sender))
+        {
+            return;
+        }
+
+        PlayChargeSoundLocal();
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayChimeSoundRpc(NetworkObjectReference sender)
+    {
+        if (IsLocalSender(sender))
+        {
+            return;
+        }
+
+        PlayChimeSoundLocal();
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayBlastSoundRpc(NetworkObjectReference sender)
+    {
+        if (IsLocalSender(sender))
+        {
+            return;
+        }
+
+        PlayBlastSoundLocal();
+    }
+
+    private bool IsLocalSender(NetworkObjectReference sender)
+    {
+        if (!sender.TryGet(out NetworkObject senderNetObj))
+        {
+            return false;
+        }
+
+        return senderNetObj.IsOwner;
     }
 
     private void PushObject(Collider col)
@@ -195,7 +276,7 @@ public class IT_PushDevice : CC_INV_UsableItems
 
         UpdateChargeUI(chargingTimer, cooldownTimer);
 
-        if (!NetworkManager.Singleton.IsHost)
+        if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsHost)
         {
             UpdateChargeUI(chargingTimerLocal, cooldownTimerLocal);
         }
@@ -248,6 +329,11 @@ public class IT_PushDevice : CC_INV_UsableItems
 
     private void OnDrawGizmos()
     {
+        if (muzzlePoint == null)
+        {
+            return;
+        }
+
         CustomGizmos.DrawBox(muzzlePoint.transform.position + (pushVolumeForwardOffset + pushVolumeBounds.z / 2) * muzzlePoint.forward, Quaternion.LookRotation(muzzlePoint.forward), pushVolumeBounds, Color.cyan);
     }
 }
