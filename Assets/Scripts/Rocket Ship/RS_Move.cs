@@ -50,6 +50,15 @@ public class RS_Move : NetworkBehaviour
     [SerializeField] private Transform speedRotator;
     [SerializeField] private Vector3 speedRotatorMin;
     [SerializeField] private Vector3 speedRotatorMax;
+    [SerializeField] private Transform jumpRotator;
+    [SerializeField] private Vector3 jumpRotatorMin;
+    [SerializeField] private Vector3 jumpRotatorMax;
+    [SerializeField] private Transform engineRotator;
+    [SerializeField] private Vector3 engineRotatorMin;
+    [SerializeField] private Vector3 engineRotatorMax;
+    [SerializeField] private Transform electricRotator;
+    [SerializeField] private Vector3 electricRotatorMin;
+    [SerializeField] private Vector3 electricRotatorMax;
 
     private bool changeSpeed = false;
     private int speedDirection = -1;
