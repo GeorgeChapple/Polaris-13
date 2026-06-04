@@ -1696,6 +1696,8 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
+  currentStepName: Go to the crafting room
+  completeOnlyCurrentStep: 1
 --- !u!114 &52109385
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4972,6 +4974,8 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
+  currentStepName: Check out the plant room
+  completeOnlyCurrentStep: 1
 --- !u!114 &184291415
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12356,6 +12360,8 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
+  currentStepName: Head to the chest room
+  completeOnlyCurrentStep: 1
 --- !u!114 &523568264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13926,19 +13932,7 @@ MonoBehaviour:
         m_Calls: []
     onStepCompleted:
       m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-          m_MethodName: SetTrigger
-          m_Mode: 5
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: Open
-            m_BoolArgument: 0
-          m_CallState: 2
+        m_Calls: []
     completed: 0
   - title: Go to the crafting room
     description: 'This is the ship''s cockpit, from here you can view your ship''s
@@ -13955,31 +13949,7 @@ MonoBehaviour:
         m_Calls: []
     onStepCompleted:
       m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-          m_MethodName: ResetTrigger
-          m_Mode: 5
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: Open
-            m_BoolArgument: 0
-          m_CallState: 2
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-          m_MethodName: SetTrigger
-          m_Mode: 5
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: Close
-            m_BoolArgument: 0
-          m_CallState: 2
+        m_Calls: []
     completed: 0
   - title: Head to the chest room
     description: 'This is your crafting room, the central crating station is used
@@ -14407,6 +14377,8 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
+  currentStepName: Gear Up
+  completeOnlyCurrentStep: 1
 --- !u!114 &655973426
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45008,6 +44980,8 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
+  currentStepName: Head back downstairs
+  completeOnlyCurrentStep: 1
 --- !u!114 &1589960010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46546,6 +46520,8 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
+  currentStepName: Head upstairs
+  completeOnlyCurrentStep: 1
 --- !u!114 &1688975925
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50376,6 +50352,8 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
+  currentStepName: You're on your own
+  completeOnlyCurrentStep: 1
 --- !u!114 &1926112639
 MonoBehaviour:
   m_ObjectHideFlags: 0

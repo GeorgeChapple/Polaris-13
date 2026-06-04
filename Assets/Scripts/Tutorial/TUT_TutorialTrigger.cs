@@ -13,6 +13,9 @@ public class TUT_TutorialTrigger : NetworkBehaviour
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private bool oneShot = true;
 
+    [SerializeField] private string currentStepName;
+    [SerializeField] private bool completeOnlyCurrentStep = true;
+
     private NetworkVariable<bool> used = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
@@ -50,8 +53,10 @@ public class TUT_TutorialTrigger : NetworkBehaviour
 
             return;
         }
-
-        tutorialManager.CompleteCurrentStep();
+        if (tutorialManager.CurrentStep.title == currentStepName && completeOnlyCurrentStep)
+        {
+            tutorialManager.CompleteCurrentStep();
+        }
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -77,6 +82,9 @@ public class TUT_TutorialTrigger : NetworkBehaviour
 
         if (tutorialManager == null) { return; }
 
-        tutorialManager.CompleteCurrentStep();
+        if (tutorialManager.CurrentStep.title == currentStepName && completeOnlyCurrentStep)
+        {
+            tutorialManager.CompleteCurrentStep();
+        }
     }
 }
