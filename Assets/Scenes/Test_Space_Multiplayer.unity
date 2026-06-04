@@ -4974,7 +4974,7 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
-  currentStepName: Check out the plant room
+  currentStepName: Head upstairs
   completeOnlyCurrentStep: 1
 --- !u!114 &184291415
 MonoBehaviour:
@@ -13943,7 +13943,7 @@ MonoBehaviour:
     completeType: 0
     requiredItems: []
     objectiveTarget: {fileID: 52109382}
-    markerWorldOffset: {x: 0, y: 0, z: 0}
+    markerWorldOffset: {x: 0, y: 3, z: 0}
     onStepStarted:
       m_PersistentCalls:
         m_Calls: []
@@ -13959,38 +13959,28 @@ MonoBehaviour:
 '
     completeType: 0
     requiredItems: []
-    objectiveTarget: {fileID: 1688975922}
-    markerWorldOffset: {x: 0, y: 1, z: 0}
+    objectiveTarget: {fileID: 523568261}
+    markerWorldOffset: {x: 0, y: 5, z: 0}
     onStepStarted:
       m_PersistentCalls:
         m_Calls: []
     onStepCompleted:
       m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-          m_MethodName: SetTrigger
-          m_Mode: 5
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: Open
-            m_BoolArgument: 0
-          m_CallState: 2
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-          m_MethodName: ResetTrigger
-          m_Mode: 5
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: Close
-            m_BoolArgument: 0
-          m_CallState: 2
+        m_Calls: []
+    completed: 0
+  - title: Go to the engine room
+    description: You can store any extra items in this room, 6 chests should be all
+      a good A.S.T.R.A crew should need
+    completeType: 0
+    requiredItems: []
+    objectiveTarget: {fileID: 1688975922}
+    markerWorldOffset: {x: 0, y: 5, z: 0}
+    onStepStarted:
+      m_PersistentCalls:
+        m_Calls: []
+    onStepCompleted:
+      m_PersistentCalls:
+        m_Calls: []
     completed: 0
   - title: Head upstairs
     description: Te engine room is where the magic happens. 4 of A.S.T.R.A's state
@@ -14001,7 +13991,7 @@ MonoBehaviour:
     - item: {fileID: 11400000, guid: 4196f0152793071458449864540a0f64, type: 2}
       amount: 1
     objectiveTarget: {fileID: 184291412}
-    markerWorldOffset: {x: 0, y: 1, z: 0}
+    markerWorldOffset: {x: 0, y: 5, z: 0}
     onStepStarted:
       m_PersistentCalls:
         m_Calls: []
@@ -14013,36 +14003,24 @@ MonoBehaviour:
     description: The mess hall is where a good A.S.T.R.A employee will come to relax
       and socialise. Another Star Table can be found here in order to keep on eye
       on where the ship is
-    completeType: 1
+    completeType: 0
     requiredItems:
     - item: {fileID: 11400000, guid: 2c066f48628094a4c983552960f2893e, type: 2}
       amount: 1
-    objectiveTarget: {fileID: 0}
-    markerWorldOffset: {x: 0, y: 1, z: 0}
+    objectiveTarget: {fileID: 1589960007}
+    markerWorldOffset: {x: 0, y: 5, z: 0}
     onStepStarted:
       m_PersistentCalls:
         m_Calls: []
     onStepCompleted:
       m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-          m_MethodName: SetTrigger
-          m_Mode: 5
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: Open
-            m_BoolArgument: 0
-          m_CallState: 2
+        m_Calls: []
     completed: 0
   - title: Head back downstairs
     description: And finally we have the plant room. This is a hungry astronauts
       main source of nutrition. Here plants can be grown and resown to keep our hungry
       employees well fed
-    completeType: 1
+    completeType: 0
     requiredItems:
     - item: {fileID: 11400000, guid: 4d517a15a1976224fafcb704ee656e4c, type: 2}
       amount: 1
@@ -14061,25 +14039,13 @@ MonoBehaviour:
     completeType: 0
     requiredItems: []
     objectiveTarget: {fileID: 0}
-    markerWorldOffset: {x: 0, y: 1, z: 0}
+    markerWorldOffset: {x: 0, y: 0, z: 0}
     onStepStarted:
       m_PersistentCalls:
         m_Calls: []
     onStepCompleted:
       m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 0}
-          m_TargetAssemblyTypeName: MS_SessionEnder, Assembly-CSharp
-          m_MethodName: EndSession
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
+        m_Calls: []
     completed: 0
   startWhenPlayerRefsFound: 1
   hideMarkerWhenBehindCamera: 1
@@ -42566,37 +42532,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6600421854480319471, guid: 87a4be7423dab734aab6c9c10aa7b6e5, type: 3}
   m_PrefabInstance: {fileID: 1452462206}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1452556166
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1452556167}
-  m_Layer: 0
-  m_Name: Tutorial Markers
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1452556167
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1452556166}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.741731, y: -1.7369078, z: 65.019485}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &1455832571
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -44980,7 +44915,7 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
-  currentStepName: Head back downstairs
+  currentStepName: Check out the plant room
   completeOnlyCurrentStep: 1
 --- !u!114 &1589960010
 MonoBehaviour:
@@ -46520,7 +46455,7 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
-  currentStepName: Head upstairs
+  currentStepName: Go to the engine room
   completeOnlyCurrentStep: 1
 --- !u!114 &1688975925
 MonoBehaviour:
@@ -50352,7 +50287,7 @@ MonoBehaviour:
   tutorialManager: {fileID: 631956845}
   playerTag: Player
   oneShot: 1
-  currentStepName: You're on your own
+  currentStepName: Head back downstairs
   completeOnlyCurrentStep: 1
 --- !u!114 &1926112639
 MonoBehaviour:
@@ -60986,7 +60921,6 @@ SceneRoots:
   - {fileID: 184291412}
   - {fileID: 1589960007}
   - {fileID: 1926112636}
-  - {fileID: 1452556167}
   - {fileID: 67259200}
   - {fileID: 410087041}
   - {fileID: 1240343277}

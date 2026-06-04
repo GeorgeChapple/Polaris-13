@@ -16,7 +16,7 @@ public class TUT_TutorialTrigger : NetworkBehaviour
     [SerializeField] private string currentStepName;
     [SerializeField] private bool completeOnlyCurrentStep = true;
 
-    private NetworkVariable<bool> used = new NetworkVariable<bool>(
+    public NetworkVariable<bool> used = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
@@ -70,7 +70,7 @@ public class TUT_TutorialTrigger : NetworkBehaviour
     {
         if (oneShot && used.Value) { return; }
 
-        if (oneShot)
+        if (oneShot && tutorialManager.CurrentStep.title == currentStepName && completeOnlyCurrentStep)
         {
             used.Value = true;
         }
