@@ -88,7 +88,7 @@ public class RS_Move : NetworkBehaviour
             health.Value = maxHealth;
             fuel.Value = maxFuel;
             oxygen.Value = maxOxygen;
-            targetPosition.Value = new Vector3(0, 0, 100000);
+            targetPosition.Value = new Vector3(500, 500, 500);
             worldPosition.Value = Vector3.zero;
             targetSpeed.Value = maxSpeed / 4f;
         }

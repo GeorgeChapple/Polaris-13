@@ -4,18 +4,23 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem.HID;
 using UnityEngine.VFX;
+using Unity.Netcode;
 
-public class SP_MapGenerator : MonoBehaviour
+public class SP_MapGenerator : NetworkBehaviour
 {
     public Vector3 mapSize;
     public Biome[] biomes;
-    public int seed;
     public List<ClusterManager> clusters = new List<ClusterManager>();
+    public NetworkVariable<int> seed = new NetworkVariable<int>();
     public Texture2D positionData;
     private int spawned = 0;
     private VisualEffect mapEffect;
     [SerializeField] private VisualEffect shipEffect;
     [SerializeField] private RS_Move ship;
+    [SerializeField] private Transform x_Line;
+    [SerializeField] private Transform y_Line;
+    [SerializeField] private Transform z_Line;
+
 
     [Serializable]
     public struct Biome
@@ -66,12 +71,15 @@ public class SP_MapGenerator : MonoBehaviour
     private void Awake()
     {
         mapEffect = GetComponent<VisualEffect>();
-        UnityEngine.Random.InitState(seed);
-        clusters = GenerateMap(biomes[0]);
     }
 
     private void Start()
     {
+        if (IsServer){
+            seed.Value = UnityEngine.Random.Range(0, 2147483647);
+        }
+        UnityEngine.Random.InitState(seed.Value);
+        clusters = GenerateMap(biomes[0]);
         UpdateTextureData();
         //if (save)
         //{
@@ -84,6 +92,20 @@ public class SP_MapGenerator : MonoBehaviour
     {
         shipEffect.SetVector3("_position", ClampVector(ship.worldPosition.Value, mapSize));
         shipEffect.SetVector3("_rotation", Quaternion.LookRotation(ship.worldDirectionNetworked.Value).eulerAngles + new Vector3(-90, 0, 0));
+        UpdateTargetLines();
+    }
+
+    private void UpdateTargetLines() {
+        Vector3 clampedTarget = ClampVector(ship.targetPosition.Value, mapSize);
+        x_Line.position = new Vector3(0, clampedTarget.y, clampedTarget.z);
+        y_Line.position = new Vector3(clampedTarget.x, 0, clampedTarget.z);
+        z_Line.position = new Vector3(clampedTarget.x, clampedTarget.y, 0);
+        x_Line.GetComponent<LineRenderer>().SetPosition(0, transform.position + x_Line.position + new Vector3(-0.5f, 0, 0));
+        x_Line.GetComponent<LineRenderer>().SetPosition(1, transform.position + x_Line.position + new Vector3(0.5f, 0, 0));
+        y_Line.GetComponent<LineRenderer>().SetPosition(0, transform.position + y_Line.position + new Vector3(0, -0.5f, 0));
+        y_Line.GetComponent<LineRenderer>().SetPosition(1, transform.position + y_Line.position + new Vector3(0, 0.5f, 0));
+        z_Line.GetComponent<LineRenderer>().SetPosition(0, transform.position + z_Line.position + new Vector3(0, 0, -0.5f));
+        z_Line.GetComponent<LineRenderer>().SetPosition(1, transform.position + z_Line.position + new Vector3(0, 0, 0.5f));
     }
 
     private void UpdateTextureData()
