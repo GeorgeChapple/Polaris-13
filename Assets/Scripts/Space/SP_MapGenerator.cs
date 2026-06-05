@@ -27,6 +27,9 @@ public class SP_MapGenerator : NetworkBehaviour
     private Vector3 moveTargetNegative;
     private bool movingTarget;
 
+    [SerializeField]
+    GameObject[] temporarySpawners = new GameObject[3];
+
 
     [Serializable]
     public struct Biome
@@ -114,14 +117,11 @@ public class SP_MapGenerator : NetworkBehaviour
                     Cluster cl = clusters[i].clusterGroup[j];
                     float magnitude = (ship.worldPosition.Value - cl.position).magnitude;
                     if (magnitude < cl.radius && !cl.spawned) {
-                        Debug.Log("AHH");
-                        if (cl.prefab != null) {
-                           GameObject newObj = Instantiate(cl.prefab);
-                           NetworkObject netObj = newObj.GetComponent<NetworkObject>();
-                            if (netObj != null && !netObj.IsSpawned)
-                            {
-                                netObj.Spawn();
-                            }
+                        GameObject newObj = Instantiate(temporarySpawners[UnityEngine.Random.Range(0,3)]);
+                        NetworkObject netObj = newObj.GetComponent<NetworkObject>();
+                        if (netObj != null && !netObj.IsSpawned)
+                        {
+                            netObj.Spawn();
                         }
                         cl.spawned = true;
                     }
@@ -279,7 +279,7 @@ public class SP_MapGenerator : NetworkBehaviour
                     offset *= UnityEngine.Random.Range(prefab.spawnRadius.x, prefab.spawnRadius.y);
 
                     Cluster newCluster = new Cluster(
-                        prefab.prefabs[UnityEngine.Random.Range(0, prefab.prefabs.Length)],
+                        prefab.prefabs[0],
                         newPosition + offset,
                         UnityEngine.Random.Range(prefab.triggerRadius.x, prefab.triggerRadius.y),
                         prefab.colour,

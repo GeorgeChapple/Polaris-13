@@ -17231,6 +17231,7 @@ MonoBehaviour:
   rocket: {fileID: 0}
   spawnerSettings:
   - {fileID: 11400000, guid: 618e5ee6909c13a47a595d6359a40e5c, type: 2}
+  - {fileID: 11400000, guid: 1a399ccc00b159a41b49e69b519f4581, type: 2}
   cannotTeleport: []
   spaceBounds: {x: 1000, y: 1000, z: 400}
   maxDebrisReached: 0
@@ -28318,20 +28319,32 @@ PrefabInstance:
       objectReference: {fileID: 1741541691}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: mapSize.x
-      value: 1000
+      value: 10000
       objectReference: {fileID: 0}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: mapSize.y
-      value: 1000
+      value: 10000
       objectReference: {fileID: 0}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: mapSize.z
-      value: 1000
+      value: 10000
       objectReference: {fileID: 0}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: movingTargetSpeed
-      value: 100
+      value: 1000
       objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: 'temporarySpawners.Array.data[0]'
+      value: 
+      objectReference: {fileID: 8256891143383499699, guid: 9341f8fbe3fdfb74f92b067df5becf77, type: 3}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: 'temporarySpawners.Array.data[1]'
+      value: 
+      objectReference: {fileID: 8256891143383499699, guid: 38c7b5a338487bd488d6fd6d36c0d0cf, type: 3}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: 'temporarySpawners.Array.data[2]'
+      value: 
+      objectReference: {fileID: 8256891143383499699, guid: 654cef5e02d8ee648b2695cf4485e2e3, type: 3}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: biomes.Array.data[0].clusterSpawns.Array.size
       value: 3
