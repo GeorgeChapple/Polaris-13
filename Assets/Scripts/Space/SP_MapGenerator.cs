@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -62,14 +63,16 @@ public class SP_MapGenerator : NetworkBehaviour
         public float radius;
         public Color colour;
         public float colourBrightness;
+        public bool spawned;
 
-        public Cluster(GameObject _prefab, Vector3 _position, float _radius, Color _colour, float _colourBrightness)
+        public Cluster(GameObject _prefab, Vector3 _position, float _radius, Color _colour, float _colourBrightness, bool _spawned)
         {
             prefab = _prefab;
             position = _position;
             radius = _radius;
             colour = _colour;
             colourBrightness = _colourBrightness;
+            spawned = _spawned;
         }
     }
 
@@ -86,6 +89,9 @@ public class SP_MapGenerator : NetworkBehaviour
         UnityEngine.Random.InitState(seed.Value);
         clusters = GenerateMap(biomes[0]);
         UpdateTextureData();
+        if (IsServer) {
+            StartCoroutine(CheckShipPosition());
+        }
         //if (save)
         //{
         //    File.WriteAllBytes("Assets/Shaders/Untitled.png", positionData.EncodeToPNG());
@@ -99,6 +105,35 @@ public class SP_MapGenerator : NetworkBehaviour
         shipEffect.SetVector3("_rotation", Quaternion.LookRotation(ship.worldDirectionNetworked.Value).eulerAngles + new Vector3(-90, 0, 0));
         UpdateTargetLines();
         UpdateTargetPosition();
+    }
+
+    private IEnumerator CheckShipPosition() {
+        while (true) {
+            for (int i = 0; i < clusters.Count; i++) {
+                for (int j = 0; j < clusters[i].clusterGroup.Count; j++) {
+                    Cluster cl = clusters[i].clusterGroup[j];
+                    float magnitude = (ship.worldPosition.Value - cl.position).magnitude;
+                    if (magnitude < cl.radius && !cl.spawned) {
+                        Debug.Log("AHH");
+                        if (cl.prefab != null) {
+                           GameObject newObj = Instantiate(cl.prefab);
+                           NetworkObject netObj = newObj.GetComponent<NetworkObject>();
+                            if (netObj != null && !netObj.IsSpawned)
+                            {
+                                netObj.Spawn();
+                            }
+                        }
+                        cl.spawned = true;
+                    }
+                    else if (magnitude > cl.radius && cl.spawned) {
+                        cl.spawned = false;
+                    }
+                    yield return null;
+                }
+                yield return null;
+            }
+            yield return null;
+        }
     }
 
     private void UpdateTargetLines() {
@@ -248,7 +283,8 @@ public class SP_MapGenerator : NetworkBehaviour
                         newPosition + offset,
                         UnityEngine.Random.Range(prefab.triggerRadius.x, prefab.triggerRadius.y),
                         prefab.colour,
-                        prefab.colourBrightness
+                        prefab.colourBrightness,
+                        false
                         );
                     newClusters.Add(newCluster);
                     spawned++;

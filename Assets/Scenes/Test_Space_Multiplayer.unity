@@ -769,7 +769,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &16108291
 RectTransform:
   m_ObjectHideFlags: 0
@@ -17285,7 +17285,6 @@ MonoBehaviour:
   rocket: {fileID: 0}
   spawnerSettings:
   - {fileID: 11400000, guid: 618e5ee6909c13a47a595d6359a40e5c, type: 2}
-  - {fileID: 11400000, guid: 1a399ccc00b159a41b49e69b519f4581, type: 2}
   cannotTeleport: []
   spaceBounds: {x: 1000, y: 1000, z: 400}
   maxDebrisReached: 0
@@ -28373,20 +28372,60 @@ PrefabInstance:
       objectReference: {fileID: 1741541691}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: mapSize.x
-      value: 10000
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: mapSize.y
-      value: 10000
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: mapSize.z
-      value: 10000
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: movingTargetSpeed
       value: 100
       objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[0].maxSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[0].minSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[1].maxSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[1].minSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[2].maxSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[2].minSpawn
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[0].clusterPrefab
+      value: 
+      objectReference: {fileID: 11400000, guid: 687200ee5a951d245b03e60079bdf591, type: 2}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[1].clusterPrefab
+      value: 
+      objectReference: {fileID: 11400000, guid: aacc21b9726130d4b9a05899d6207c3e, type: 2}
+    - target: {fileID: 166445927755368273, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
+      propertyPath: biomes.Array.data[0].clusterSpawns.Array.data[2].clusterPrefab
+      value: 
+      objectReference: {fileID: 11400000, guid: 83cd6d4f9dadcf449bb013acca8e653c, type: 2}
     - target: {fileID: 2891787427740602561, guid: 14156d85a22c2b5459454c2e06bccd48, type: 3}
       propertyPath: m_Name
       value: Map
@@ -30657,7 +30696,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &953287803
 RectTransform:
   m_ObjectHideFlags: 0
@@ -33880,7 +33919,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1073455436
 RectTransform:
   m_ObjectHideFlags: 0

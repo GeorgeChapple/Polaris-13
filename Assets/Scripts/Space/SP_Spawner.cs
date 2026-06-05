@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class SP_Spawner : NetworkBehaviour
 {
-    [HideInInspector] public SP_SpawnSettings settings;
+    public SP_SpawnSettings settings;
     private SP_SpaceManager spaceManager;
     private float timeLimit;
     private float timer = 0;
@@ -62,7 +62,9 @@ public class SP_Spawner : NetworkBehaviour
                     return;
                 }
 
-                spaceManager.spawners.Remove(this);
+                if (spaceManager.spawners.ContainsKey(this)) {
+                    spaceManager.spawners.Remove(this);
+                }
 
                 // Despawn/destroy spawners
                 NetworkObject netObj = GetComponent<NetworkObject>();
