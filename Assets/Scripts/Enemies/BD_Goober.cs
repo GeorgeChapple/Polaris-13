@@ -1,8 +1,8 @@
-using NUnit.Framework;
+using Unity.Netcode;
 using UnityEngine;
 using System.Collections.Generic;
 
-public class BD_Goober : MonoBehaviour
+public class BD_Goober : NetworkBehaviour
 {
     private List<Rigidbody> neighbours = new List<Rigidbody>();
     public Transform target;
@@ -13,18 +13,24 @@ public class BD_Goober : MonoBehaviour
     [SerializeField] private float cohesion = 1f;
     [SerializeField] private float cohesionThreshold = 1f;
     [SerializeField] private Vector3 bounds = new Vector3(20, 20, 20);
-    private Rigidbody rb;
+    [SerializeField] private Rigidbody rb;
     public Vector3 velocity = Vector3.forward;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody>();
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
+        if (!IsServer)
+        {
+            return;
+        }
+
         neighbours.Clear();
         foreach (BD_Goober gb in FindObjectsByType<BD_Goober>(FindObjectsSortMode.None))
         {
@@ -41,21 +47,31 @@ public class BD_Goober : MonoBehaviour
         {
             FlockUpdate(Vector3.zero);
         }
-        //Boid.Constrain(rb, bounds);
+        Boid.Constrain(rb, bounds);
     }
 
     private void FlockUpdate(Vector3 target)
     {
         Vector3 targetVelocity = Vector3.zero;
-        targetVelocity += Boid.Separation(rb, neighbours) * separation;
-        if (targetVelocity.magnitude < alignmentThreshold)
+
+        if (neighbours.Count > 0)
         {
-            targetVelocity += Boid.Alignment(rb, target, neighbours) * alignment;
+            targetVelocity += Boid.Separation(rb, neighbours) * separation;
+            if (targetVelocity.magnitude < alignmentThreshold)
+            {
+                targetVelocity += Boid.Alignment(rb, target, neighbours) * alignment;
+            }
+            if (targetVelocity.magnitude < cohesionThreshold)
+            {
+                targetVelocity += Boid.Cohesion(rb, neighbours) * cohesion;
+            }
         }
-        if (targetVelocity.magnitude < cohesionThreshold)
+
+        if (targetVelocity == Vector3.zero)
         {
-            targetVelocity += Boid.Cohesion(rb, neighbours) * cohesion;
+            targetVelocity = Boid.Seek(rb, target);
         }
+
         targetVelocity.Normalize();
         velocity = targetVelocity;
         MoveBoid();
@@ -63,7 +79,11 @@ public class BD_Goober : MonoBehaviour
 
     private void MoveBoid()
     {
-        transform.rotation = Quaternion.LookRotation((rb.position + velocity).normalized, Vector3.up);
+        if (velocity != Vector3.zero)
+        {
+            transform.rotation = Quaternion.LookRotation(velocity.normalized, Vector3.up);
+        }
+
         rb.MovePosition(Vector3.Lerp(rb.position, rb.position + velocity * speed, Time.deltaTime));
     }
 }

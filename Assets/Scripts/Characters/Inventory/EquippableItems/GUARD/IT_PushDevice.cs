@@ -16,6 +16,8 @@ public class IT_PushDevice : CC_INV_UsableItems
     [SerializeField] private float cooldown = 0.5f;
     [SerializeField] private bool ignoreSelf = true;
 
+    [SerializeField] private int maxDamage = 50;
+
     [SerializeField] private Image uIChargeImage;
     [SerializeField] private TextMeshProUGUI uIChargeText;
     [SerializeField] private float minimumFill;
@@ -244,6 +246,15 @@ public class IT_PushDevice : CC_INV_UsableItems
     private void PushObject(Collider col)
     {
         Rigidbody rb = col.GetComponent<Rigidbody>();
+
+        ENM_Goober enemy = col.GetComponentInParent<ENM_Goober>();
+        if (enemy != null)
+        {
+            float damagePercent = Mathf.InverseLerp(0f, maxPushForce, pushForce);
+            float damageToDeal = Mathf.Lerp(0f, maxDamage, damagePercent);
+
+            enemy.DamageRpc(damageToDeal);
+        }
 
         if (rb != null)
         {
