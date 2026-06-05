@@ -16,6 +16,9 @@ public class BD_Goober : NetworkBehaviour
     [SerializeField] private Rigidbody rb;
     public Vector3 velocity = Vector3.forward;
 
+    [SerializeField] private float neighborSearchRadius = 15;
+    [SerializeField] private LayerMask searchLayer;
+
     void Awake()
     {
         if (rb == null)
@@ -24,7 +27,7 @@ public class BD_Goober : NetworkBehaviour
         }
     }
 
-    void Update()
+    void LateUpdate()
     {
         if (!IsServer)
         {
@@ -32,11 +35,21 @@ public class BD_Goober : NetworkBehaviour
         }
 
         neighbours.Clear();
-        foreach (BD_Goober gb in FindObjectsByType<BD_Goober>(FindObjectsSortMode.None))
+        //foreach (BD_Goober gb in FindObjectsByType<BD_Goober>(FindObjectsSortMode.None))
+        //{
+        //    if (gb != this)
+        //    {
+        //        neighbours.Add(gb.GetComponent<Rigidbody>());
+        //    }
+        //}
+
+        Collider[] closeNeighbors = Physics.OverlapSphere(transform.position, neighborSearchRadius, searchLayer);
+        if (closeNeighbors.Length > 1) 
         {
-            if (gb != this)
+            foreach (Collider col in closeNeighbors)
             {
-                neighbours.Add(gb.GetComponent<Rigidbody>());
+                col.TryGetComponent<ENM_Goober>(out ENM_Goober goob);
+                neighbours.Add(goob.GetComponent<Rigidbody>());
             }
         }
         if (target != null)

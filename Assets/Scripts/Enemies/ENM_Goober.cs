@@ -38,6 +38,11 @@ public class ENM_Goober : NetworkBehaviour
     [SerializeField] private float attackStunPushForce = 5f;
     [SerializeField] private float attackStunTorqueForce = 5f;
 
+    [Header("Shader")]
+    [SerializeField] private Renderer rend;
+    [SerializeField] private string shaderGraphValueName;
+    [SerializeField] private float glowSpeed;
+
     private NetworkVariable<float> health = new NetworkVariable<float>(0f);
     private NetworkVariable<bool> isDead = new NetworkVariable<bool>(false);
     private NetworkVariable<bool> isChargingAttack = new NetworkVariable<bool>(false);
@@ -112,6 +117,16 @@ public class ENM_Goober : NetworkBehaviour
         TickTargeting_Server();
         TickMovementTarget_Server();
         TryStartAttack_Server();
+
+        float prev = rend.material.GetFloat(shaderGraphValueName);
+        if (isChargingAttack.Value)
+        {
+            rend.material.SetFloat(shaderGraphValueName, Mathf.Lerp(prev, 1, Time.deltaTime * glowSpeed));
+        }
+        else
+        {
+            rend.material.SetFloat(shaderGraphValueName, Mathf.Lerp(prev, 0.1f, Time.deltaTime * glowSpeed));
+        }
     }
 
     private void TickTargeting_Server()

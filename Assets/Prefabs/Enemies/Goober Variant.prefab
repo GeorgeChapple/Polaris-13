@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4546608682872581448}
   - component: {fileID: 4540042633070431045}
   - component: {fileID: 8183765584287451429}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: GeoSphere002
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -97,7 +97,7 @@ GameObject:
   - component: {fileID: 4806344788403502449}
   - component: {fileID: 1182155130775892098}
   - component: {fileID: 1321690224957649666}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: GeoSphere001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -183,7 +183,7 @@ GameObject:
   - component: {fileID: 7107534432244497668}
   - component: {fileID: 5836021398780756208}
   - component: {fileID: 4444129236451079674}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Object001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -274,7 +274,7 @@ GameObject:
   - component: {fileID: 2034842981062388041}
   - component: {fileID: 7330831841801765904}
   - component: {fileID: 7479044319053510762}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Goober Variant
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -454,10 +454,12 @@ MonoBehaviour:
   cohesion: 0.45
   cohesionThreshold: 1.2
   bounds: {x: 200, y: 200, z: 400}
-  boundsFleeDistance: 5
-  boundsFleeStrength: 2
   rb: {fileID: 426073082396360611}
   velocity: {x: 0, y: 0, z: 1}
+  neighborSearchRadius: 15
+  searchLayer:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!114 &7479044319053510762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -491,6 +493,9 @@ MonoBehaviour:
   stunDelay: 1
   attackStunPushForce: 5
   attackStunTorqueForce: 5
+  rend: {fileID: 3128771791764054324}
+  shaderGraphValueName: _Attack
+  glowSpeed: 2
 --- !u!1 &6998034143592185775
 GameObject:
   m_ObjectHideFlags: 0
@@ -502,7 +507,7 @@ GameObject:
   - component: {fileID: 8015411067307685218}
   - component: {fileID: 310855125131798953}
   - component: {fileID: 3128771791764054324}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Printed Goober
   m_TagString: Untagged
   m_Icon: {fileID: 0}
