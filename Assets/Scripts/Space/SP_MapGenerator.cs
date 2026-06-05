@@ -1,21 +1,32 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem.HID;
 using UnityEngine.VFX;
+using Unity.Netcode;
 
-public class SP_MapGenerator : MonoBehaviour
+public class SP_MapGenerator : NetworkBehaviour
 {
     public Vector3 mapSize;
     public Biome[] biomes;
-    public int seed;
     public List<ClusterManager> clusters = new List<ClusterManager>();
+    public NetworkVariable<int> seed = new NetworkVariable<int>();
     public Texture2D positionData;
     private int spawned = 0;
     private VisualEffect mapEffect;
     [SerializeField] private VisualEffect shipEffect;
     [SerializeField] private RS_Move ship;
+    [SerializeField] private Transform x_Line;
+    [SerializeField] private Transform y_Line;
+    [SerializeField] private Transform z_Line;
+
+    [SerializeField] private float movingTargetSpeed = 100f;
+    private Vector3 moveTargetPositive;
+    private Vector3 moveTargetNegative;
+    private bool movingTarget;
+
 
     [Serializable]
     public struct Biome
@@ -52,27 +63,35 @@ public class SP_MapGenerator : MonoBehaviour
         public float radius;
         public Color colour;
         public float colourBrightness;
+        public bool spawned;
 
-        public Cluster(GameObject _prefab, Vector3 _position, float _radius, Color _colour, float _colourBrightness)
+        public Cluster(GameObject _prefab, Vector3 _position, float _radius, Color _colour, float _colourBrightness, bool _spawned)
         {
             prefab = _prefab;
             position = _position;
             radius = _radius;
             colour = _colour;
             colourBrightness = _colourBrightness;
+            spawned = _spawned;
         }
     }
 
     private void Awake()
     {
         mapEffect = GetComponent<VisualEffect>();
-        UnityEngine.Random.InitState(seed);
-        clusters = GenerateMap(biomes[0]);
     }
 
     private void Start()
     {
+        if (IsServer){
+            seed.Value = UnityEngine.Random.Range(0, 2147483647);
+        }
+        UnityEngine.Random.InitState(seed.Value);
+        clusters = GenerateMap(biomes[0]);
         UpdateTextureData();
+        if (IsServer) {
+            StartCoroutine(CheckShipPosition());
+        }
         //if (save)
         //{
         //    File.WriteAllBytes("Assets/Shaders/Untitled.png", positionData.EncodeToPNG());
@@ -84,6 +103,72 @@ public class SP_MapGenerator : MonoBehaviour
     {
         shipEffect.SetVector3("_position", ClampVector(ship.worldPosition.Value, mapSize));
         shipEffect.SetVector3("_rotation", Quaternion.LookRotation(ship.worldDirectionNetworked.Value).eulerAngles + new Vector3(-90, 0, 0));
+        UpdateTargetLines();
+        UpdateTargetPosition();
+    }
+
+    private IEnumerator CheckShipPosition() {
+        while (true) {
+            for (int i = 0; i < clusters.Count; i++) {
+                for (int j = 0; j < clusters[i].clusterGroup.Count; j++) {
+                    Cluster cl = clusters[i].clusterGroup[j];
+                    float magnitude = (ship.worldPosition.Value - cl.position).magnitude;
+                    if (magnitude < cl.radius && !cl.spawned) {
+                        Debug.Log("AHH");
+                        if (cl.prefab != null) {
+                           GameObject newObj = Instantiate(cl.prefab);
+                           NetworkObject netObj = newObj.GetComponent<NetworkObject>();
+                            if (netObj != null && !netObj.IsSpawned)
+                            {
+                                netObj.Spawn();
+                            }
+                        }
+                        cl.spawned = true;
+                    }
+                    else if (magnitude > cl.radius && cl.spawned) {
+                        cl.spawned = false;
+                    }
+                    yield return null;
+                }
+                yield return null;
+            }
+            yield return null;
+        }
+    }
+
+    private void UpdateTargetLines() {
+        Vector3 clampedTarget = ClampVector(ship.targetPosition.Value, mapSize);
+        x_Line.position = new Vector3(0, clampedTarget.y, clampedTarget.z);
+        y_Line.position = new Vector3(clampedTarget.x, 0, clampedTarget.z);
+        z_Line.position = new Vector3(clampedTarget.x, clampedTarget.y, 0);
+        x_Line.GetComponent<LineRenderer>().SetPosition(0, transform.position + x_Line.position + new Vector3(-0.5f, 0, 0));
+        x_Line.GetComponent<LineRenderer>().SetPosition(1, transform.position + x_Line.position + new Vector3(0.5f, 0, 0));
+        y_Line.GetComponent<LineRenderer>().SetPosition(0, transform.position + y_Line.position + new Vector3(0, -0.5f, 0));
+        y_Line.GetComponent<LineRenderer>().SetPosition(1, transform.position + y_Line.position + new Vector3(0, 0.5f, 0));
+        z_Line.GetComponent<LineRenderer>().SetPosition(0, transform.position + z_Line.position + new Vector3(0, 0, -0.5f));
+        z_Line.GetComponent<LineRenderer>().SetPosition(1, transform.position + z_Line.position + new Vector3(0, 0, 0.5f));
+    }
+
+    private void UpdateTargetPosition() {
+        if (!IsServer) { return; }
+        if (!(ship.targetPosition.Value.x > mapSize.x / 2)) {
+            ship.targetPosition.Value += new Vector3(moveTargetPositive.x, 0, 0) * Time.deltaTime * movingTargetSpeed;
+        }
+        if (!(ship.targetPosition.Value.y > mapSize.y / 2)) {
+            ship.targetPosition.Value += new Vector3(0, moveTargetPositive.y, 0) * Time.deltaTime * movingTargetSpeed;
+        }
+        if (!(ship.targetPosition.Value.z > mapSize.z / 2)) {
+            ship.targetPosition.Value += new Vector3(0, 0, moveTargetPositive.z) * Time.deltaTime * movingTargetSpeed;
+        }
+        if (!(ship.targetPosition.Value.x < mapSize.x / 2 * -1)) {
+            ship.targetPosition.Value += new Vector3(moveTargetNegative.x, 0, 0) * Time.deltaTime * movingTargetSpeed;
+        }
+        if (!(ship.targetPosition.Value.y < mapSize.y / 2 * -1)) {
+            ship.targetPosition.Value += new Vector3(0, moveTargetNegative.y, 0) * Time.deltaTime * movingTargetSpeed;
+        }
+        if (!(ship.targetPosition.Value.z < mapSize.z / 2 * -1)) {
+            ship.targetPosition.Value += new Vector3(0, 0, moveTargetNegative.z) * Time.deltaTime * movingTargetSpeed;
+        }
     }
 
     private void UpdateTextureData()
@@ -198,7 +283,8 @@ public class SP_MapGenerator : MonoBehaviour
                         newPosition + offset,
                         UnityEngine.Random.Range(prefab.triggerRadius.x, prefab.triggerRadius.y),
                         prefab.colour,
-                        prefab.colourBrightness
+                        prefab.colourBrightness,
+                        false
                         );
                     newClusters.Add(newCluster);
                     spawned++;
@@ -208,6 +294,68 @@ public class SP_MapGenerator : MonoBehaviour
             }
         }
         return newClusterManagers;
+    }
+
+    
+
+    [Rpc(SendTo.Server)]
+    public void SetHighMoveAmountXPositiveRpc() {
+        moveTargetPositive = new Vector3(1, moveTargetPositive.y, moveTargetPositive.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetHighMoveAmountYPositiveRpc() {
+        moveTargetPositive = new Vector3(moveTargetPositive.x, 1, moveTargetPositive.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetHighMoveAmountZPositiveRpc() {
+        moveTargetPositive = new Vector3(moveTargetPositive.x, moveTargetPositive.y, 1);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetLowMoveAmountXPositiveRpc() {
+        moveTargetPositive = new Vector3(0, moveTargetPositive.y, moveTargetPositive.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetLowMoveAmountYPositiveRpc() {
+        moveTargetPositive = new Vector3(moveTargetPositive.x, 0, moveTargetPositive.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetLowMoveAmountZPositiveRpc() {
+        moveTargetPositive = new Vector3(moveTargetPositive.x, moveTargetPositive.y, 0);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetHighMoveAmountXNegativeRpc() {
+        moveTargetNegative = new Vector3(-1, moveTargetNegative.y, moveTargetNegative.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetHighMoveAmountYNegativeRpc() {
+        moveTargetNegative = new Vector3(moveTargetNegative.x, -1, moveTargetNegative.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetHighMoveAmountZNegativeRpc() {
+        moveTargetNegative = new Vector3(moveTargetNegative.x, moveTargetNegative.y, -1);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetLowMoveAmountXNegativeRpc() {
+        moveTargetNegative = new Vector3(0, moveTargetNegative.y, moveTargetNegative.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetLowMoveAmountYNegativeRpc() {
+        moveTargetNegative = new Vector3(moveTargetNegative.x, 0, moveTargetNegative.z);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetLowMoveAmountZNegativeRpc() {
+        moveTargetNegative = new Vector3(moveTargetNegative.x, moveTargetNegative.y, 0);
     }
 
     private void OnDrawGizmosSelected()

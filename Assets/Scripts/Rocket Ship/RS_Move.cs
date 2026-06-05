@@ -35,6 +35,9 @@ public class RS_Move : NetworkBehaviour
     [SerializeField] private Vector2[] metersFills;
     private Material[] metersMaterials = new Material[7];
 
+    [Header("Sound References")]
+    [SerializeField] private AUD_SFX sfx;
+
     [Header("Text References")]
     [SerializeField] private TextMeshProUGUI speedText;
     [SerializeField] private TextMeshProUGUI positionText;
@@ -60,6 +63,10 @@ public class RS_Move : NetworkBehaviour
     [SerializeField] private Vector3 electricRotatorMin;
     [SerializeField] private Vector3 electricRotatorMax;
 
+    private bool canHonk = true;
+    private int enginesOn = 1;
+    private int electricsOn = 1;
+    private float electricsPower = 1;
     private bool changeSpeed = false;
     private int speedDirection = -1;
     private float speedDirectionSpeed = 0.5f;
@@ -81,7 +88,7 @@ public class RS_Move : NetworkBehaviour
             health.Value = maxHealth;
             fuel.Value = maxFuel;
             oxygen.Value = maxOxygen;
-            targetPosition.Value = new Vector3(0, 0, 100000);
+            targetPosition.Value = new Vector3(500, 500, 500);
             worldPosition.Value = Vector3.zero;
             targetSpeed.Value = maxSpeed / 4f;
         }
@@ -114,6 +121,39 @@ public class RS_Move : NetworkBehaviour
             UpdateScreens();
             UpdateRotators();
             yield return null;
+        }
+    }
+
+    private IEnumerator HonkCooldown() {
+        canHonk = false;
+        yield return new WaitForSeconds(4f);
+        canHonk = true;
+    }
+
+    [Rpc(SendTo.Everyone)]
+    public void ToggleEngineRpc() {
+        if (enginesOn == 1) {
+            enginesOn = 0;
+        } 
+        else {
+            enginesOn = 1;
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    public void ToggleElectricsRpc() {
+        electricsOn++;
+        if (electricsOn > 1) {
+            electricsOn = 0;
+            electricsPower = 0;
+        }
+    }
+
+    [Rpc(SendTo.Everyone)]
+    public void HonkRpc() {
+        if (sfx != null && canHonk) {
+            StartCoroutine(HonkCooldown());
+            sfx.PlaySound("Horn");
         }
     }
 
@@ -157,7 +197,7 @@ public class RS_Move : NetworkBehaviour
 
     private void MoveShip()
     {
-        if (fuel.Value > 0 && (targetPosition.Value - worldPosition.Value).magnitude > targetSpeed.Value)
+        if (fuel.Value > 0 && (targetPosition.Value - worldPosition.Value).magnitude > targetSpeed.Value && enginesOn == 1)
         {
             speed.Value = Mathf.Lerp(speed.Value, targetSpeed.Value, Time.deltaTime * speedChangeRate);
         }
@@ -212,13 +252,20 @@ public class RS_Move : NetworkBehaviour
     private void UpdateScreens()
     {
         smallScreenL.material.SetVector("_Offset_Multiplier", new Vector4(0, Mathf.Lerp(0, 1, speed.Value / maxSpeed), 0, 0));
+        smallScreenL.material.SetFloat("_Brightness", electricsPower);
         smallScreenR.material.SetVector("_Offset", new Vector4(Mathf.Lerp(10, 1, health.Value / maxHealth), 0, 0, 0));
         smallScreenR.material.SetFloat("_NoiseScale", Mathf.Lerp(10, 0, oxygen.Value / maxOxygen));
         smallScreenR.material.SetFloat("_Amplitude", Mathf.Lerp(0, 0.35f, fuel.Value / maxFuel));
+        smallScreenR.material.SetFloat("_Brightness", electricsPower);
     }
 
     private void UpdateRotators()
     {
         speedRotator.position = Vector3.Lerp(speedRotatorMin, speedRotatorMax, targetSpeed.Value / maxSpeed);
+        engineRotator.position = Vector3.Lerp(engineRotatorMin, engineRotatorMax, enginesOn);
+        electricRotator.position = Vector3.Lerp(electricRotatorMin, electricRotatorMax, electricsOn);
+        if (electricsPower <= 1) {
+            electricsPower = Mathf.Lerp(electricsPower, electricsPower + 0.1f, electricsOn * Time.deltaTime);
+        }
     }
 }
